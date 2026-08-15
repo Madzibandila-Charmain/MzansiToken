@@ -44,7 +44,7 @@ def token_count(tokenized_sentences: list[list[str]]) -> int:
     total =0
 
     for token_list in tokenized_sentences:
-        total += len(token_count)
+        total += len(token_list)
     return total
 
 # Metric 2: Fertility 
@@ -66,7 +66,7 @@ def fertility(tokenized_sentences: list[list[str]], sentences: list[str]) -> flo
     # Count total tokens using token_count function above
     total_tokens = token_count(tokenized_sentences)
     # Count total words across all sentences.
-    total_words = sum(len(sentences.split()) for sentence in sentences)
+    total_words = sum(len(sentence.split()) for sentence in sentences)
     # Guard against division by zero
     return round(total_tokens / total_words, 3) if total_words > 0 else 0.0
 
@@ -89,7 +89,7 @@ def compression(tokenized_sentences: list[list[str]], sentences: list[str]) -> f
     # Counts total bytes across all sentences. 
     # sentence.encode("utf-8") converts a string to a byte object.
     # len() on bytes object gives the number if bytes which are summed across all sentences.
-    total_bytes = sum(len(sentences.encode("utf-8")) for sentence in sentences)
+    total_bytes = sum(len(sentence.encode("utf-8")) for sentence in sentences)
     # Count total tokens using our helper function.
     total_tokens = token_count(tokenized_sentences)
     # Guard against division by zero and return the result.
@@ -193,3 +193,33 @@ def compute_efficiency_metrics(tokenizer, corpus: dict[str, list[str]]) -> dict[
 
     # Return the full results dictionary
     return results
+
+# Quick test 
+if __name__ == "__main__":
+    import sys
+
+    # Get the data directory and model name from command-line arguments.
+    # Default values mean you can run: python BackEnd/metrics.py
+    # Or specify custom values: python BackEnd/metrics.py DataSets/FLORES gpt2
+    DATA_DIR = sys.argv[1] if len(sys.argv) > 1 else "DataSets/FLORES"
+    MODEL    = sys.argv[2] if len(sys.argv) > 2 else "gpt2"
+
+    print(f"\n Loading FLORES from '{DATA_DIR}' ")
+    corpus = load_flores(DATA_DIR)
+ 
+    print(f"\n Loading tokenizer '{MODEL}' ")
+    tokenizer = load_tokenizer(MODEL)
+ 
+    print(f"\n Computing efficiency metrics \n")
+    metrics = compute_efficiency_metrics(tokenizer, corpus)
+
+    print(f"{'Language':<12} {'Tokens':>8} {'Fertility':>10} {'Compression':>13} {'Premium':>9}")
+    print("-" * 58)
+
+    # Sort languages by token_premium so the most efficient appears first.
+    # sorted() returns a new sorted list without changing the original.
+    # key=lambda x: (x[1]["token_premium"] or 0) means: sort by the token_premium value, treating None as 0.
+    for lang, m in sorted(metrics.items(), key=lambda x: (x[1]["token_premium"] or 0)):
+        # Format token_premium as "1.000x" or "N/A" if None
+        premium = f"{m['token_premium']:.3f}x" if m["token_premium"] is not None else "N/A"
+        print(f"{lang:<12} {m['token_count']:>8,} {m['fertility']:>10.3f} {m['compression']:>13.3f} {premium:>9}")
