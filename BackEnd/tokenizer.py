@@ -63,3 +63,31 @@ def load_tokenizer(model_name: str) -> PreTrainedTokenizer | PreTrainedTokenizer
 
     # Return the validated tokenizer to whoever called this function
     return tokenizer
+
+def tokenize_text(tokenizer, text: str) -> list[str]:
+    """
+    Tokenize a single string into a list of subword token strings.
+
+    This is the core operation that the whole dashboard is built around.
+    The tokenizer splits text into subword units — not words, not characters,
+    but something in between that the model was trained to work with.
+
+    Why .tokenize() and not .encode()?
+        .encode() returns integer IDs e.g. [15496, 318, 4090, 3240, 30]
+        .tokenize() returns human-readable strings e.g. ["Where", "Gis", ...]
+        We need strings for:
+            - Displaying colour-coded tokens in the qualitative view
+            - Counting tokens for the efficiency metrics
+            - Checking morpheme boundary alignment
+
+    Args:
+        tokenizer: A loaded tokenizer returned by `load_tokenizer()`.
+        text (str): The raw input string to tokenize.
+
+    Returns:
+        list[str]: A list of token strings, or empty list if text is empty.
+    """
+
+    if not text or not text.strip():
+        return []
+    return tokenizer.tokenize(text)
