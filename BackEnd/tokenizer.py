@@ -91,3 +91,23 @@ def tokenize_text(tokenizer, text: str) -> list[str]:
     if not text or not text.strip():
         return []
     return tokenizer.tokenize(text)
+
+def tokenize_corpus(tokenizer, sentences: list[str]) -> list[list[str]]:
+    """
+    Tokenize a list of sentences, returning a list of token lists.
+ 
+    This is used to tokenize all 997 FLORES sentences for a given language
+    before computing efficiency metrics across the whole corpus.
+ 
+    Args:
+        tokenizer: a loaded tokenizer returned by load_tokenizer()
+        sentences: list of raw sentence strings e.g. the 997 FLORES sentences
+ 
+    Returns:
+        A list of token lists, one per sentence.
+    """
+    tokenized_sentences = []
+    for sentence in sentences:
+        tokens = tokenize_text(tokenizer, sentence)
+        tokenized_sentences.append(tokens)
+    return tokenized_sentences
