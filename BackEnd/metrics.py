@@ -118,3 +118,78 @@ def token_premium(lang_token_count: int, eng_token_count: int) -> float | None:
         return None
  
     return round(lang_token_count / eng_token_count, 3)
+
+# Compute all metrics for all languages
+def compute_efficiency_metrics(tokenizer, corpus: dict[str, list[str]]) -> dict[str, dict]:
+    """
+    Compute four efficiency metrics for each language in the corpus.
+
+    This function is called by api.py. It runs all four metric
+    functions together and returns one dictionary with everything
+    needed for the dashboard.
+
+    Return type: dict[str, dict]
+        - Outer dict: language names (e.g. "isiZulu")
+        - Inner dict: metric names (e.g. "fertility")
+
+    Example output:
+    {
+        "English": {
+            "token_count":   25741,
+            "fertility":     1.228,
+            "compression":   4.867,
+            "token_premium": 1.0,
+        },
+        "isiZulu": {
+            "token_count":   61665,
+            "fertility":     4.095,
+            "compression":   2.280,
+            "token_premium": 2.396,
+        },
+        ...one entry per language...
+    }
+
+    Args:
+        tokenizer: tokenizer object from load_tokenizer()
+        corpus:    dict from load_flores() — {language_name: [sentences]}
+
+    Returns:
+        dict mapping each language to its four metrics
+    """
+
+    # Tokenize every language’s sentences
+    # tokenized_corpus will hold {language: [list of token lists]}
+    tokenized_corpus: dict[str, list[list[str]]] = {}
+
+    for language, sentences in corpus.items():
+        # tokenize_corpus() applies the tokenizer to each sentence
+        # and returns a list of token lists for that language
+        tokenized_corpus[language] = tokenize_corpus(tokenizer, sentences)
+
+    # Get English token count as baseline for token_premium
+    # If English is missing, warn and set baseline to None
+    if "English" not in tokenized_corpus:
+        print("Warning: English not in corpus - token_premium will be None for all languages.")
+        eng_count = None
+    else:
+        eng_count = token_count(tokenized_corpus["English"])
+
+    # Compute all four metrics for each language
+    results = {}
+    for language, sentences in corpus.items():
+        # Get the tokenized sentences for this language
+        token_lists = tokenized_corpus[language]
+
+        # Compute total token count (used in multiple metrics)
+        lang_token_count = token_count(token_lists)
+
+        # Store all metrics in a dictionary for this language
+        results[language] = {
+            "token_count":   lang_token_count,                       # total number of tokens
+            "fertility":     fertility(token_lists, sentences),      # average tokens per word
+            "compression":   compression(token_lists, sentences),    # how compact the language is
+            "token_premium": token_premium(lang_token_count, eng_count),  # cost relative to English
+        }
+
+    # Return the full results dictionary
+    return results
