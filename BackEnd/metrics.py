@@ -23,3 +23,26 @@ Usage:
 
 from flores import load_flores, LANGUAGES
 from tokenizer import load_tokenizer, tokenize_corpus
+
+# Metric 1:  Tockn Count
+def token_count(tokenized_sentences: list[list[str]]) -> int:
+    """
+    Count the total number of tokens across all sentences.
+
+    Parameter type:
+        A list where each item is itself a list of strings.
+        The outer list has one item per sentence (997 for FLORES).
+        Each inner list contains the token string for that sentence.
+
+    Args:
+        tokenized_sentences: list of token lists, one per sentence
+ 
+    Returns:
+        int: total number of tokens across all sentences
+    """
+
+    total =0
+
+    for token_list in tokenized_sentences:
+        total += len(token_count)
+    return total
