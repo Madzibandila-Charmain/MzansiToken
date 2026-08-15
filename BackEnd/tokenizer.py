@@ -111,3 +111,35 @@ def tokenize_corpus(tokenizer, sentences: list[str]) -> list[list[str]]:
         tokens = tokenize_text(tokenizer, sentence)
         tokenized_sentences.append(tokens)
     return tokenized_sentences
+
+def get_tokenizer_info(tokenizer) -> dict:
+    """
+    Extract basic metadata about a loaded tokenizer.
+
+    This is displayed in the dashboard header so the user knows exactly what they loaded
+    — not just the name they typed, but the actual vocabulary size and class of the tokenizer.
+
+    Args:
+        tokenizer: a loaded tokenizer returned by load_tokenizer()
+
+    Returns:
+        dict with keys: vocab_size, model_type, class
+    """
+
+    return {
+        # vocab_size: how many unique tokens this tokenizer knows.
+        # This is a built-in attribute of all Hugging Face tokenizers.
+        "vocab_size": tokenizer.vocab_size,
+ 
+        # model_type: the architecture name e.g. "gpt2", "llama", "gemma".
+        # We use getattr() instead of tokenizer.model_type directly because
+        # not all tokenizers have this attribute — getattr() returns "unknown"
+        # as a default if the attribute does not exist, instead of crashing.
+        # getattr(object, attribute_name, default_value)
+        "model_type": getattr(tokenizer, "model_type", "unknown"),
+
+        # __class__.__name__: the Python class name of this tokenizer.
+        # e.g. "GPT2Tokenizer", "LlamaTokenizer", "GemmaTokenizer"
+        # .name gives us the class name as a readable string.
+        "class": tokenizer.__class__.__name__,
+    }
