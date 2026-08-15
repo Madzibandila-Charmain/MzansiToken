@@ -69,3 +69,28 @@ def fertility(tokenized_sentences: list[list[str]], sentences: list[str]) -> flo
     total_words = sum(len(sentences.split()) for sentence in sentences)
     # Guard against division by zero
     return round(total_tokens / total_words, 3) if total_words > 0 else 0.0
+
+# Metric 3: Compression 
+def compression(tokenized_sentences: list[list[str]], sentences: list[str]) -> float:
+    """
+    Compute the average number if UTF-8 bytes per token.
+
+    Formula:
+        compression = total_bytes / total_tokens
+
+    Args:
+        tokenized_sentences: list of token lists (from tokenize_corpus)
+        sentences: the original sentence strings (from load_flores)
+ 
+    Returns:
+        float: average bytes per token, rounded to 3 decimal places
+    """
+
+    # Counts total bytes across all sentences. 
+    # sentence.encode("utf-8") converts a string to a byte object.
+    # len() on bytes object gives the number if bytes which are summed across all sentences.
+    total_bytes = sum(len(sentences.encode("utf-8")) for sentence in sentences)
+    # Count total tokens using our helper function.
+    total_tokens = token_count(tokenized_sentences)
+    # Guard against division by zero and return the result.
+    return round(total_bytes / total_tokens, 3) if total_tokens > 0 else 0.0
