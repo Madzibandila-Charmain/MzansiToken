@@ -94,3 +94,27 @@ def compression(tokenized_sentences: list[list[str]], sentences: list[str]) -> f
     total_tokens = token_count(tokenized_sentences)
     # Guard against division by zero and return the result.
     return round(total_bytes / total_tokens, 3) if total_tokens > 0 else 0.0
+
+# Metric 4: Token Premium
+def token_premium(lang_token_count: int, eng_token_count: int) -> float | None:
+    """
+    Compute how many more tokens this language needs compared to English.
+    
+    Formula: 
+        token_premium = tokens(this langauge) / tokens(English)
+
+        English is always 1.0 (it is the baseline).
+
+    Args:
+        lang_token_count: total tokens for this language
+        eng_token_count: total token for English, pass None if English is not in the corpus
+
+    Returns:
+        float: token premium value, or None if Englih is unavailable
+    """
+
+    # If English token count is None or zero, we cannot compute the premium. Return None rather than a fabricated number.
+    if not eng_token_count:
+        return None
+ 
+    return round(lang_token_count / eng_token_count, 3)
