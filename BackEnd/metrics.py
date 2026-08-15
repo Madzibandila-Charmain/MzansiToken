@@ -46,3 +46,26 @@ def token_count(tokenized_sentences: list[list[str]]) -> int:
     for token_list in tokenized_sentences:
         total += len(token_count)
     return total
+
+# Metric 2: Fertility 
+def fertility(tokenized_sentences: list[list[str]], sentences: list[str]) -> float:
+    """
+    Compute the average number if tokens per word.
+
+    Formula:
+        fertility = total_token / total words
+
+    Args:
+        tokenized_sentences: list of token lists (from tokenize_corpus)
+        sentences: original raw sentence strings (from load_flores)
+
+    Return:
+        float: average tokens per word, rounded to 3 decimal places
+    """ 
+
+    # Count total tokens using token_count function above
+    total_tokens = token_count(tokenized_sentences)
+    # Count total words across all sentences.
+    total_words = sum(len(sentences.split()) for sentence in sentences)
+    # Guard against division by zero
+    return round(total_tokens / total_words, 3) if total_words > 0 else 0.0
