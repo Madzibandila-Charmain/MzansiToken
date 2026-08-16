@@ -68,3 +68,34 @@ def get_example_sentence(tokenizer, corpus: dict[str, list[str]], index: int) ->
         "total_sentences": total,
         "languages":       languages
     }
+
+def get_random_sentence(tokenizer, corpus: dict[str, list[str]]) -> dict:
+    """
+    Get a random sentence tokenized across all 9 languages.
+
+    This is a simple wrapper around get_example_sentence().
+    Instead of picking a specific index, it chooses one at random.
+    The frontend uses this when the user clicks "Next sentence".
+
+    Args:
+        tokenizer: a loaded tokenizer from load_tokenizer()
+        corpus:    dict from load_flores()
+
+    Returns:
+        Same structure as get_example_sentence()
+    """
+
+    # Figure out how many sentences are in the dataset
+    if "English" in corpus:
+        total = len(corpus["English"])
+    else:
+        # Fallback: use the first language if English is missing
+        total = len(next(iter(corpus.values())))
+
+    # Pick a random index between 0 and total-1
+    # randint includes both ends, so it can return 0 or the last index
+    random_index = random.randint(0, total - 1)
+
+    # Reuse get_example_sentence() with the random index
+    return get_example_sentence(tokenizer, corpus, random_index)
+   
