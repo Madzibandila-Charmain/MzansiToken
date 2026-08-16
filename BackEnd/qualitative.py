@@ -98,4 +98,26 @@ def get_random_sentence(tokenizer, corpus: dict[str, list[str]]) -> dict:
 
     # Reuse get_example_sentence() with the random index
     return get_example_sentence(tokenizer, corpus, random_index)
+
+def get_sentence_count(corpus: dict[str, list[str]]) -> int:
+    """
+    Return the total number of sentences in the corpus.
+
+    The frontend uses this to know the valid range for the sentence
+    index slider or navigation buttons.
+
+    Args:
+        corpus: dict from load_flores()
+
+    Returns:
+        int: number of sentences (997 for the full FLORES dev set)
+    """
+
+    # If English is in the corpus, use its length as the total
+    if "English" in corpus:
+        return len(corpus["English"])
+
+    # Otherwise, fall back to the first language in the dict
+    return len(next(iter(corpus.values())))
+
    
