@@ -120,4 +120,35 @@ def get_sentence_count(corpus: dict[str, list[str]]) -> int:
     # Otherwise, fall back to the first language in the dict
     return len(next(iter(corpus.values())))
 
-   
+# Quick test
+if __name__ == "__main__":
+    import sys
+
+    # If you pass arguments when running the script, use them. Otherwise, fall back to defaults.
+    DATA_DIR = sys.argv[1] if len(sys.argv) > 1 else "DataSets/FLORES"
+    MODEL    = sys.argv[2] if len(sys.argv) > 2 else "gpt2"
+
+    # Load the FLORES dataset
+    print(f"\n Loading FLORES from '{DATA_DIR}' ")
+    corpus = load_flores(DATA_DIR)
+
+    # Load the tokenizer (e.g. GPT-2)
+    print(f"\n Loading tokenizer '{MODEL}' ")
+    tokenizer = load_tokenizer(MODEL)
+
+    # Grab one random sentence across all languages
+    print(f"\n Random sentence example \n")
+    result = get_random_sentence(tokenizer, corpus)
+
+    # Show which sentence index we picked
+    print(f"Sentence index: {result['index']} of {result['total_sentences']}\n")
+
+    # Loop through each language and show a preview
+    for lang, data in result["languages"].items():
+        print(f"{lang}:")
+        # Show the first 60 characters of the sentence
+        print(f"  Text:   {data['sentence'][:60]}...")
+        # Show the first 8 tokens
+        print(f"  Tokens: {data['tokens'][:8]}...")
+        # Show how many tokens total
+        print(f"  Count:  {data['token_count']} tokens\n")
