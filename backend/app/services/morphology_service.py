@@ -27,6 +27,14 @@ class WordResult:
     fp: int
     fn: int
 
+@dataclass
+class MBIResult:
+    """Aggregated metric results"""
+    precision: float
+    recall: float
+    f1: float
+
+
 
 def to_boundary_vector(surf_word: str, split_word: str, delimeter="_") -> BoundaryVector:
     """
@@ -104,5 +112,33 @@ def compare_boundaries(predicted: BoundaryVector, gold: BoundaryVector) -> WordR
 
     return WordResult(predicted.word, TP, FP, FN)
             
-            
+def aggregate_results(word_results: list[WordResult]) -> MBIResult:
+    """
+    Micro-average TP/FP/FN across all words into overall precision/recall/F1
+
+    Args:
+        word_results: List of WordResult Objects
+
+    Return:
+        An MBIResult object with a that contains the precision/recall/F1 for all words 
+    
+    """
+
+    tot_tp = 0
+    tot_fp = 0
+    tot_fn = 0
+
+    for word_result in word_results:
+        tot_tp += word_result.tp
+        tot_fp += word_result.fp
+        tot_fn += word_result.fn
+
+    precision = tot_tp / (tot_tp + tot_fp)
+    recall = tot_tp / (tot_tp + tot_fn)
+    f1 = 2 * ((precision * recall) / (precision + recall))
+
+    return MBIResult(precision, f1, recall)
+    
+
+   
 
