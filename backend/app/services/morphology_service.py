@@ -86,7 +86,7 @@ def compare_boundaries(predicted: BoundaryVector, gold: BoundaryVector) -> WordR
 
     if len(predicted_vector) != len(gold_vector):
         raise ValueError(
-            f"Length mismatch predicted={len(predicted)}, gold={len(gold)}"
+            f"Length mismatch predicted={len(predicted_vector)}, gold={len(gold_vector)}"
         )
 
     # handle case where boundary vectors are empty
@@ -102,7 +102,7 @@ def compare_boundaries(predicted: BoundaryVector, gold: BoundaryVector) -> WordR
             elif predicted_vector[i] == 0 and gold_vector[i] == 1:
                 FN += 1
 
-    return WordResult(TP, FP, FN)
+    return WordResult(predicted.word, TP, FP, FN)
             
             
 

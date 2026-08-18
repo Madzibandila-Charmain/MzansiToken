@@ -1,11 +1,13 @@
 import pytest
 
-from app.services.morphology_service import to_boundary_vector, BoundaryVector
+from app.services.morphology_service import to_boundary_vector, compare_boundaries, BoundaryVector, WordResult
 
 def get_vector(result: BoundaryVector):
     """Helper to pull the raw list out of your BoundaryVector object."""
     return result.boundaries
 
+
+# -----------------------------to_boundary_vector Test---------------------------------
 
 # Basic correctness test
 
@@ -35,3 +37,37 @@ def test_to_boundary_vector_custom_delimeter():
     result = to_boundary_vector("hello", "hel-lo", "-")
     assert get_vector(result) == [0, 0, 1, 0]
 
+
+# -----------------------------compare_boundaries Test---------------------------------
+
+# Basic correctness test
+@pytest.mark.parametrize(
+    "predicted, gold, expected",
+    [
+        pytest.param([1, 0, 1, 0], [1, 0, 0, 1], (1, 1, 1), id="mixed"),
+        pytest.param([], [], (0, 0, 0), id="both_empty"),
+        pytest.param([1, 1, 1], [1, 1, 1], (3, 0, 0), id="perfect_match"),
+        pytest.param([0, 0, 0], [0, 0, 0], (0, 0, 0), id="no_boundaries_nonempty"),
+        pytest.param([1, 1, 1], [0, 0, 0], (0, 3, 0), id="all_false_positive"),
+        pytest.param([0, 0, 0], [1, 1, 1], (0, 0, 3), id="all_false_negative"),
+        pytest.param([1], [1], (1, 0, 0), id="single_boundary_match"),
+    ],
+)
+def test_compare_boundaries_correctness(predicted, gold, expected):
+    predicted_vector = BoundaryVector("test",predicted)
+    gold_vector = BoundaryVector("test",gold)
+
+    result = compare_boundaries(predicted_vector, gold_vector)
+
+    tp, fp, fn = expected
+    assert result.tp == tp
+    assert result.fp == fp
+    assert result.fn == fn
+
+# Exception test
+def test_compare_boundaries_mismatched_lengths_raises():
+    pred_bv = BoundaryVector("test", [1])
+    gold_bv = BoundaryVector("test", [1, 0])
+
+    with pytest.raises((ValueError, IndexError)):
+        compare_boundaries(pred_bv, gold_bv)
