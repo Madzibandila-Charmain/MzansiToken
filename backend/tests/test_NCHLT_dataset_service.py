@@ -95,6 +95,52 @@ def test_load_nchlt_data_ignores_malformed_lines_without_tab(tmp_path):
 
     assert result["isiZulu"] == [("Abafundi", "A_ba_fundi")]
 
+# Test if badly segmented words are skipped
+def test_load_nchlt_data_skips_badly_segmented_words(tmp_path):
+    data_dir = tmp_path / "NCHLT"
+    data_dir.mkdir()
+
+    (data_dir / "zul.txt").write_text(
+        "Abafundi\t_Abafundi\n"
+        "Abafundi\tAbafundi_\n"
+        "Abafundi\tAba__fundi\n"
+        "Abafundi\tA_ba_fundi\n",
+        encoding="utf-8",
+    )
+
+    result = load_nchlt_data(str(data_dir))
+
+    assert result["isiZulu"] == [("Abafundi", "A_ba_fundi")]
+
+# Test if surface word have delimiter
+def test_load_nchlt_data_skips_surface_segmentations(tmp_path):
+    data_dir = tmp_path / "NCHLT"
+    data_dir.mkdir()
+
+    (data_dir / "zul.txt").write_text(
+            "Ab_afundi\tAba_fundi\n"
+            "Abafundi\tA_ba_fundi\n",
+            encoding="utf-8",
+        )
+
+    result = load_nchlt_data(str(data_dir))
+
+    assert result["isiZulu"] == [("Abafundi", "A_ba_fundi")]
+
+# Test custom delimiters
+def test_load_nchlt_data_custom_delimeter(tmp_path):
+    data_dir = tmp_path / "NCHLT"
+    data_dir.mkdir()
+
+    (data_dir / "zul.txt").write_text(
+            "Abafundi\tA-ba-fundi\n",
+            encoding="utf-8",
+        )
+
+    result = load_nchlt_data(str(data_dir), False, "-")
+
+    assert result["isiZulu"] == [("Abafundi", "A-ba-fundi")]
+
 # function should strip whitespace properly
 def test_load_nchlt_data_strips_surface_and_gold_whitespace(tmp_path):
     data_dir = tmp_path / "NCHLT"
