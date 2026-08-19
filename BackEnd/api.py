@@ -32,3 +32,15 @@ def get_metrics(model_name: str):
     result = compute_efficiency_metrics(tokenizer, corpus)
     return result
     
+# Endpoint 2: Return the tokenizer info
+@app.get("/tokenizer/{model_name}")
+def get_tokenizer_endpoint(model_name: str):
+    try:
+        tokenizer = get_or_load_tokenizer(model_name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    info = get_tokenizer_info(tokenizer)
+    info["model_name"] = model_name
+    return 
+
