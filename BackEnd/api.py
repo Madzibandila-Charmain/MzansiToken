@@ -8,7 +8,7 @@ from qualitative import get_example_sentence, get_random_sentence, get_sentence_
 app = FastAPI()
 
 print("Loading FLORES corpus...")
-corpus = load_flores("DataSet/FLORES")
+corpus = load_flores("DataSets/FLORES")
 print(f"Corpus ready: {len(corpus)} languages loaded.")
 
 
@@ -20,3 +20,15 @@ def get_or_load_tokenizer(model_name):
         tokenizer = load_tokenizer(model_name)
         _tokenizer_cache[model_name] = tokenizer
         return tokenizer 
+
+# Endpoint 1: Return the efficiency metrics for a tokenizer
+@app.get("/metrics/{model_name}")
+def get_metrics(model_name: str):
+    try:
+        tokenizer = get_or_load_tokenizer(model_name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    result = compute_efficiency_metrics(tokenizer, corpus)
+    return result
+    
