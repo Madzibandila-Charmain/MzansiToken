@@ -10,3 +10,13 @@ app = FastAPI()
 print("Loading FLORES corpus...")
 corpus = load_flores("DataSet/FLORES")
 print(f"Corpus ready: {len(corpus)} languages loaded.")
+
+
+_tokenizer_cache = {}
+def get_or_load_tokenizer(model_name):
+    if model_name in _tokenizer_cache:
+        return _tokenizer_cache[model_name]
+    else:
+        tokenizer = load_tokenizer(model_name)
+        _tokenizer_cache[model_name] = tokenizer
+        return tokenizer 
