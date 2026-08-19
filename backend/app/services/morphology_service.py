@@ -99,7 +99,7 @@ def compare_boundaries(predicted: BoundaryVector, gold: BoundaryVector) -> WordR
 
     # handle case where boundary vectors are empty
     if len(predicted_vector) == 0 and len(gold_vector) == 0:
-        TP = FP = FN = 0
+        TP = FP = FN = 0 #No boundaries to compare, so don't consider it
     else:
         # Not empty
         for i in range(len(predicted_vector)):
@@ -128,16 +128,20 @@ def aggregate_results(word_results: list[WordResult]) -> MBIResult:
     tot_fp = 0
     tot_fn = 0
 
+    # get the total amount of of FP/FP/FN to aggregate all words
     for word_result in word_results:
         tot_tp += word_result.tp
         tot_fp += word_result.fp
         tot_fn += word_result.fn
 
-    precision = tot_tp / (tot_tp + tot_fp)
-    recall = tot_tp / (tot_tp + tot_fn)
-    f1 = 2 * ((precision * recall) / (precision + recall))
+    # Calulate resulte, handle case where metrics are zero
+    precision = tot_tp / (tot_tp + tot_fp) if (tot_tp + tot_fp) > 0 else 0.0
+    recall = tot_tp / (tot_tp + tot_fn) if (tot_tp + tot_fn) > 0 else 0.0
+    f1 = (2 * (precision * recall) / (precision + recall) 
+        if (precision + recall) > 0
+        else 0.0)
 
-    return MBIResult(precision, f1, recall)
+    return MBIResult(precision=precision, f1=f1, recall=recall)
     
 
    
