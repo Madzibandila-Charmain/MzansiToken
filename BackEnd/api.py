@@ -44,3 +44,22 @@ def get_tokenizer_endpoint(model_name: str):
     info["model_name"] = model_name
     return 
 
+# Endpoint 3 
+@app.get("/compare/{model_a}/{model_b}")
+def compare_tokenizers(model_a: str, model_b:str):
+    try:
+        tokenizerA = get_or_load_tokenizer(model_a)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Tokenizer A error: {e}")
+
+    try:
+        tokenizerB = get_or_load_tokenizer(model_b)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Tokenizer B error: {e}")
+    metrics_a = compute_efficiency_metrics(tokenizerA, corpus)
+    metrics_b = compute_efficiency_metrics(tokenizerB, corpus)
+
+    return {
+    "tokenizer_a": {"name": model_a, "metrics": metrics_a},
+    "tokenizer_b": {"name": model_b, "metrics": metrics_b}
+}
