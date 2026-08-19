@@ -110,7 +110,7 @@ def compare_boundaries(predicted: BoundaryVector, gold: BoundaryVector) -> WordR
             elif predicted_vector[i] == 0 and gold_vector[i] == 1:
                 FN += 1
 
-    return WordResult(predicted.word, TP, FP, FN)
+    return WordResult(predicted.word, tp=TP, fp=FP, fn=FN)
             
 def aggregate_results(word_results: list[WordResult]) -> MBIResult:
     """
@@ -142,7 +142,5 @@ def aggregate_results(word_results: list[WordResult]) -> MBIResult:
         else 0.0)
 
     return MBIResult(precision=precision, f1=f1, recall=recall)
-    
-
    
 
