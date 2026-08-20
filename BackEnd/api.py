@@ -199,3 +199,25 @@ def tokenize_text_endpoint(model_name: str, text: str):
 
     tokens = tokenize_text(tokenizer, text)
     return {"tokens": tokens, "count": len(tokens)}
+
+# Endpoint 7: Tokenize the whole FLORES corpus
+@app.get("/tokenize-corpus/{model_name}")
+def tokenize_corpus_endpoint(model_name: str):
+    """
+    Tokenize the entire FLORES dataset.
+
+    Useful for debugging or when the frontend wants raw tokenized data for all languages at once.
+
+    Args:
+        model_name (str): Hugging Face model name
+
+    Returns:
+        dict: tokenized corpus data
+        Example: {"English": [["Cape", "Town"], ...], "isiZulu": [...], ...}
+    """
+    try:
+        tokenizer = get_or_load_tokenizer(model_name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return tokenize_corpus(tokenizer, corpus)
