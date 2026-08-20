@@ -42,7 +42,7 @@ def get_tokenizer_endpoint(model_name: str):
 
     info = get_tokenizer_info(tokenizer)
     info["model_name"] = model_name
-    return 
+    return info
 
 # Endpoint 3: Compare the efficiency metrics of two tokenizers
 @app.get("/compare/{model_a}/{model_b}")
@@ -95,3 +95,18 @@ def get_example(model_name: str, index: int = -1):
 
     # Send the tokenized sentence data back to the frontend as JSON.
     return result
+
+# Endpoint 5
+@app.get("/sentence-count")
+def sentence_count():
+    """
+    Count how many sentences are in the FLORES dataset.
+
+    The frontend (the user-facing part) needs this number so it knows how far the sentence slider can go. In other words,
+    it sets the "max index" for navigation.
+
+    Returns:
+        int: total sentence count
+        Example: If there are 997 sentences, it returns 997.
+    """
+    return {"count": get_sentence_count(corpus)}
