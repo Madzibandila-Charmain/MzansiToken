@@ -161,7 +161,7 @@ def get_example(model_name: str, index: int = -1):
     # Send the tokenized sentence data back to the frontend as JSON.
     return result
 
-# Endpoint 5
+# Endpoint 5: Sentence count
 @app.get("/sentence-count")
 def sentence_count():
     """
@@ -175,3 +175,27 @@ def sentence_count():
         Example: If there are 997 sentences, it returns 997.
     """
     return {"count": get_sentence_count(corpus)}
+
+# Endpoint 6: Tokenize a single text
+@app.get("/tokenize-text/{model_name}")
+def tokenize_text_endpoint(model_name: str, text: str):
+    """
+    Break one piece of text into tokens.
+
+    The frontend uses this when a user types custom text and wants to see how the tokenizer splits it.
+
+    Args:
+        model_name (str): Hugging Face model name
+        text (str): input text
+
+    Returns:
+        dict: tokens and token count
+        Example: {"tokens": ["Cape", "Town"], "count": 2}
+    """
+    try:
+        tokenizer = get_or_load_tokenizer(model_name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    tokens = tokenize_text(tokenizer, text)
+    return {"tokens": tokens, "count": len(tokens)}
