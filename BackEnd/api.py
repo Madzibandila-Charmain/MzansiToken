@@ -1,3 +1,14 @@
+"""
+api.py - FastAPI backend for MzansiToken
+
+This file is the bridge between Python(backend) and React(frontend).
+FastAPI sets up endpoints that React can call to fetch tokeniser data.
+
+Endpoints:
+    Each endpoint is just a URL the frontend calls.
+    e.g GET /metrics/gpt2 → returns metrics for the gpt2 tokenizer.
+"""
+
 from flores import load_flores
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,6 +35,16 @@ def get_or_load_tokenizer(model_name):
 # Endpoint 1: Return the efficiency metrics for a tokenizer
 @app.get("/metrics/{model_name}")
 def get_metrics(model_name: str):
+    """
+    Get efficiency metrics for a tokenizer.
+
+    The frontend call this to fetch stats(token count, fertitliy, compression) 
+    for every languges in the FLORES corpus.
+
+    Returns:
+        dict: mertirc per language
+        e.g {"English": {"token_count": 2543, "fertility":1.399}}    
+    """
     try:
         tokenizer = get_or_load_tokenizer(model_name)
     except ValueError as e:
@@ -35,6 +56,16 @@ def get_metrics(model_name: str):
 # Endpoint 2: Return the tokenizer info
 @app.get("/tokenizer/{model_name}")
 def get_tokenizer_endpoint(model_name: str):
+    """
+    Load a tokenizer and return its info.
+
+    The frontend uses this to confirm the model exists and
+    grab details like vocab size and model type.
+
+    Returns:
+        dict: tokenizer details
+        Example: {"model_name": "gpt2", "vocab_size": 50257, ...}
+    """
     try:
         tokenizer = get_or_load_tokenizer(model_name)
     except ValueError as e:
@@ -47,6 +78,20 @@ def get_tokenizer_endpoint(model_name: str):
 # Endpoint 3: Compare the efficiency metrics of two tokenizers
 @app.get("/compare/{model_a}/{model_b}")
 def compare_tokenizers(model_a: str, model_b: str):
+    """
+    Compare two tokenizers side by side.
+
+    The frontend calls this to see how two models differ
+    across the FLORES dataset.
+
+    Returns:
+        dict: metrics for both tokenizers
+        Example: {
+            "tokenizer_a": {"name": "gpt2", "metrics": {...}},
+            "tokenizer_b": {"name": "gemma-2b", "metrics": {...}}
+        }
+    """
+
     # Load the first tokenizer, using the cache when it has already been loaded.
     try:
         tokenizerA = get_or_load_tokenizer(model_a)
@@ -77,6 +122,26 @@ def compare_tokenizers(model_a: str, model_b: str):
 # Endpoint 4: Qualitative example
 @app.get("/example/model/{model_name}")
 def get_example(model_name: str, index: int = -1):
+    """
+    Get a tokenization example.
+
+    The frontend calls this to display how a sentence looks
+    when broken into tokens across all FLORES languages.
+
+    Args:
+        model_name (str): Hugging Face model name
+        index (int): sentence index (0–996). If -1, pick random.
+
+    Returns:
+        dict: tokenized sentence data
+        Example: {
+            "index": 42,
+            "languages": {
+                "English": {"sentence": "...", "tokens": [...], "token_count": 12},
+                "isiZulu": {...}
+            }
+        }
+    """
 
     # Load the requested tokenizer, reusing the in-memory cache when possible.
     try:
