@@ -166,6 +166,10 @@ def get_example(model_name: str, index: int = -1):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+    total = get_sentence_count(corpus)
+    if index >= total:
+        raise HTTPException(status_code=400, detail=f"Index out of range (max {total-1})")
+
     # A negative index means that the caller did not choose a sentence.
     if index < 0:
         # Select a random sentence and tokenize it in every corpus language.
