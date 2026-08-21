@@ -18,6 +18,13 @@ from qualitative import get_example_sentence, get_random_sentence, get_sentence_
 
 app = FastAPI()
 
+# CORS
+# Without this the browser blocks every request from the React dev server.
+app.add_middleware(CORSMiddleware,
+                   allow_origins=["http://localhost:5173", "http://localhost:3000"],
+                   allow_methods=["GET"],
+                   allow_headers=["*"],)
+
 print("Loading FLORES corpus...")
 corpus = load_flores("DataSets/FLORES")
 print(f"Corpus ready: {len(corpus)} languages loaded.")
