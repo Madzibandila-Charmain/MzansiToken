@@ -29,24 +29,22 @@ print("Loading FLORES corpus...")
 corpus = load_flores("DataSets/FLORES")
 print(f"Corpus ready: {len(corpus)} languages loaded.")
 
-# Caches 
+# Caches
 _tokenizer_cache = {}
-def get_or_load_tokenizer(model_name):
+def get_or_load_tokenizer(model_name: str):
     if model_name in _tokenizer_cache:
         return _tokenizer_cache[model_name]
-    else:
-        tokenizer = load_tokenizer(model_name)
-        _tokenizer_cache[model_name] = tokenizer
-        return tokenizer 
+    tokenizer = load_tokenizer(model_name)
+    _tokenizer_cache[model_name] = tokenizer
+    return tokenizer
 
-_metrics_cache  = {}
-def get_or_compute_metrics(model_name, tokenizer):
-    if model_name in _metrics_cache :
+_metrics_cache = {}
+def get_or_compute_metrics(model_name: str, tokenizer):
+    if model_name in _metrics_cache:
         return _metrics_cache[model_name]
-
-    result = compute_efficiency_metrics(tokenizer, model_name)
+    result = compute_efficiency_metrics(tokenizer, corpus)
     _metrics_cache[model_name] = result
-    return result 
+    return result
 
 # Endpoint 1: Return the efficiency metrics for a tokenizer
 @app.get("/metrics/{model_name}")
@@ -66,7 +64,7 @@ def get_metrics(model_name: str):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    result = get_or_compute_metrics(tokenizer, corpus)
+    result = get_or_compute_metrics(model_name, tokenizer)
     return result
     
 # Endpoint 2: Return the tokenizer info
@@ -86,7 +84,6 @@ def get_tokenizer_endpoint(model_name: str):
         tokenizer = get_or_load_tokenizer(model_name)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
     info = get_tokenizer_info(tokenizer)
     info["model_name"] = model_name
     return info
@@ -123,9 +120,9 @@ def compare_tokenizers(model_a: str, model_b: str):
         raise HTTPException(status_code=400, detail=f"Tokenizer B error: {e}")
 
     # Calculate the efficiency metrics for the first tokenizer across the corpus.
-    metrics_a = get_or_compute_metrics(tokenizerA, corpus)
+    metrics_a = get_or_compute_metrics(model_a, tokenizerA)
     # Calculate the efficiency metrics for the second tokenizer across the corpus.
-    metrics_b = get_or_compute_metrics(tokenizerB, corpus)
+    metrics_b = get_or_compute_metrics(model_b, tokenizerB)
 
     # Return both model names and their metrics so the frontend can compare them.
     return {
@@ -240,4 +237,7 @@ def tokenize_corpus_endpoint(model_name: str):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    return tokenize_corpus(tokenizer, corpus)
+    result = {}
+    for language, sentences in corpus.items():
+        result[language] = tokenize_corpus(tokenizer, sentences)
+    return result
