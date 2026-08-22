@@ -428,6 +428,7 @@
         width: 100%;
         box-sizing: border-box;
     }
+
 }
 
 /* =====================
@@ -531,4 +532,188 @@
         0 6px 16px rgba(0, 0, 0, 0.07),
         0 2px 5px rgba(0, 0, 0, 0.04);
 }
+
+/* =====================
+    TOKENIZATION RESULT
+======================== */
+
+.text-input-box {
+    width: calc(100% - 40px);
+    max-width: 1000px;
+
+    margin: 0 auto 80px;
+    padding: 32px 36px;
+
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+
+    background: #f8f8f8da;
+
+    border: 1px solid #e2e2e2;
+    border-radius: 16px;
+
+    box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.06),
+        0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.text-input-heading {
+    margin: 0 0 24px;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    letter-spacing: 0.5px;
+
+    color: #222222;
+
+    white-space: nowrap;
+}
+
+/* =================
+    TEXT INPUT AREA
+==================== */
+
+.text-input-area {
+    width: 100%;
+    height: 180px;
+
+    max-height: 180px;
+
+    padding: 18px;
+    box-sizing: border-box;
+
+    resize: none;
+
+    border: 1px solid #d9d9d9;
+    border-radius: 10px;
+
+    background: #ffffff;
+
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.7;
+
+    color: #333333;
+
+    outline: none;
+    overflow-y: auto;
+}
+
+.text-input-area:focus {
+    border-color: #aaaaaa;
+}
+
+.text-input-area::placeholder {
+    color: #999999;
+}
+
+/* ========================
+    TYPED TOKENIZER RESULT
+=========================== */
+
+.typed-tokenization-result {
+    margin-top: 28px;
+}
+
+.typed-result-text {
+
+    width: 100%;
+    min-height: 50px;
+    max-height: 300px;
+
+    padding: 18px;
+    box-sizing: border-box;
+
+    background: #ffffff;
+
+    border: 1px solid #dedede;
+    border-radius: 10px;
+
+    font-size: 14px;
+    line-height: 1.8;
+
+    color: #333333;
+
+    white-space: pre-wrap;
+    word-break: break-word;
+
+    overflow-y: auto;
+}
+
+/* =========================
+    TYPED TOKENIZER METRICS
+============================ */
+
+.typed-tokenization-metrics {
+    width: 100%;
+
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+
+    gap: 16px;
+    margin-top: 18px;
+}
+
+.typed-metric-card {
+    flex: 1;
+
+    min-height: 100px;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    box-sizing: border-box;
+    background: #ffffff;
+
+    border: 1px solid #e2e2e2;
+    border-radius: 12px;
+
+    cursor: default;
+
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+/* Metric name */
+.typed-metric-name {
+    margin-bottom: 8px;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    letter-spacing: 0.5px;
+
+    color: #777777;
+}
+
+/* Metric value */
+.typed-metric-value {
+    font-size: 24px;
+    font-weight: 700;
+
+    color: #111111;
+}
+
+.typed-metric-card:hover {
+    background-color: #fafafa;
+
+    border-color: #bdbdbd;
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 6px 16px rgba(0, 0, 0, 0.07),
+        0 2px 5px rgba(0, 0, 0, 0.04);
+}
+
 

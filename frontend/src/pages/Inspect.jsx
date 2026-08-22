@@ -17,6 +17,17 @@ function Inspect() {
     /* Stores the name of the uploaded corpus file. */
     const [fileName, setFileName] = useState("default");
 
+    /* Stores the text typed by the use */
+    const [inputText, setInputText] = useState("");
+
+    /* Stores the live metric for the text input */
+    const [textMetrics, setTextMetrics] = useState({
+        tokens: 0,
+        words: 0,
+        fertility: 0,
+        characters: 0
+    })
+
     /* reference to the actual file input */
     const fileInputRef = useRef(null);
 
@@ -37,6 +48,41 @@ function Inspect() {
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
+    }
+
+    /* This is a temporary calclulation. The real metrics must come from the backend codes. */
+    function calculateTextMetrics(text) {
+
+        /* Count all characters, including spaces. */
+        const characters = text.length;
+
+        const trimmedText = text.trim();
+
+        /*
+            Count words using whitespace as the separator. An empty input has 0 words.
+        */
+        const words = trimmedText === ""
+            ? 0
+            : trimmedText.split(/\s+/).length;
+
+        /*
+        Temporary token count. Until the backend tokenizer is connected,
+        */
+        const tokens = words;
+
+        /*
+            Fertility is the average number of tokens per word.
+        */
+        const fertility = words === 0
+            ? 0
+            : tokens / words;
+
+        setTextMetrics({
+            tokens,
+            words,
+            fertility,
+            characters
+        });
     }
 
     return (
@@ -237,9 +283,87 @@ function Inspect() {
                             512
                         </span>
                     </div>
-                    
+
                 </div>
  
+            </section>
+
+            {/* Text input box */}
+            <section className="text-input-box">
+
+                <div className="text-input-heading">
+                    Mzansi Explorer • Type Anything
+                </div>
+
+                {/* Text entered by the user */}
+                <textarea
+                    className="text-input-area"
+                    value={inputText}
+                    onChange={(event) => {const text = event.target.value;
+                        setInputText(text);
+                        calculatedTextMetrics(text);
+                    }}
+                    placeholder="Type or paste your text here..."
+                />
+
+                {/*Tokenization result */}
+                <div className="typed-tokenization-result">
+
+                    <div className="typed-result-text">
+                        {inputText || "Your tokenized text will appear here."}
+                    </div>
+                    
+                    {/* Metrics for the typed text */}
+                    <div className="typed-tokenization-metrics">
+                        
+                        {/* Token count */}
+                        <div className="typed-metric-card">
+                            <span className="typed-metric-name">
+                                Tokens
+                            </span>
+
+                            <span className="typed-metric-value">
+                                {textMetrics.tokens}
+                            </span>
+                        </div>
+
+                        {/* Word count */}
+                        <div className="typed-metric-card">
+                            <span className="typed-metric-name">
+                                Words
+                            </span>
+
+                            <span className="typed-metric-value">
+                                {textMetrics.words}
+                            </span>
+                        </div>
+
+                        {/* Fertility */}
+                        <div className="typed-metric-card">
+                            <span className="typed-metric-name">
+                                Fertility
+                            </span>
+
+                            <span className="typed-metric-value">
+                                {textMetrics.fertility.toFixed(2)}
+                            </span>
+                        </div>
+
+                        {/* Character count */}
+                        <div className="typed-metric-card">
+                            <span className="typed-metric-name">
+                                Characters
+                            </span>
+
+                            <span className="typed-metric-value">
+                                {textMetrics.characters}
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+
             </section>
         </>
         
