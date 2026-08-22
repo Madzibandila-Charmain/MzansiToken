@@ -4,7 +4,41 @@
     Date: 21 August 2026
 */
 
+import { useRef, useState } from "react";
+
 function Inspect() {
+
+    /* Stores the currently selected language(Default = English) */
+    const [language, setLanguage] = useState("English");
+
+    /* Stores the currently selected tokenizer(Default = XLM-RoBERTa) */
+    const [tokenizer, setTokenizer] = useState("XLM-RoBERTa");
+
+    /* Stores the name of the uploaded corpus file. */
+    const [fileName, setFileName] = useState("default");
+
+    /* reference to the actual file input */
+    const fileInputRef = useRef(null);
+
+    /* Handled file slection from user computer. */
+    function handleFileChange(event) {
+        const selectedFile = event.target.files[0];
+
+        if (selectedFile) {
+            setFileName(selectedFile.name);
+        }
+    }
+
+    /* Returns the corpus back to the default state */
+    function handleDefault() {
+        setFileName("default");
+
+        /* Clear the actual file selected in the browser. */
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    }
+
     return (
         <>
             <section className="inspect-intro">
@@ -37,12 +71,32 @@ function Inspect() {
                             Tokenizer
                         </label>
 
-                        <select id="tokenizer">
-                            <option value="">Select tokenizer</option>
-                            <option value="tokenizer1">Tokenizer 1</option>
-                            <option value="tokenizer2">Tokenizer 2</option>
-                            <option value="tokenizer3">Tokenizer 3</option>
-                            <option value="tokenizer4">Tokenizer 4</option>
+                        <select 
+                            id="tokenizer"
+                            value={tokenizer}
+                            onChange={(event) => setTokenizer(event.target.value)}
+                        >
+
+                            <option value="XLM-RoBERTa">
+                                XLM-RoBERTa
+                            </option>
+
+                            <option value="mBERTA">
+                                mBERT
+                            </option>
+
+                            <option value="BPE">
+                                BPE
+                            </option>
+
+                            <option value="WordPiece">
+                                WordPiece
+                            </option>
+
+                            <option value="SentencePiece">
+                                SentencePiece
+                            </option>
+
                         </select>
                     </div>
                     
@@ -52,21 +106,87 @@ function Inspect() {
                             Language
                         </label>
 
-                        <select id="language">
-                            <option value="">Select language</option>
-                            <option value="english">English</option>
-                            <option value="isiZulu">isiZulu</option>
-                            <option value="isiXhosa">isiXhosa</option>
-                            <option value="ndebele">Ndebele</option>
-                            <option value="sestwana">Setswana</option>
-                            <option value="sepedi">Sepedi</option>
-                            <option value="xitsonga">Xitsonga</option>
-                            <option value="sesotho">Sesotho</option>
+                        <select 
+                            id="language"
+                            value={language}
+                            onChange={(event) => setLanguage(event.target.value)}
+                        >
+
+                            <option value="english">
+                                English
+                            </option>
+
+                            <option value="isiZulu">
+                                isiZulu
+                            </option>
+
+                            <option value="isiXhosa">
+                                isiXhosa
+                            </option>
+
+                            <option value="ndebele">
+                                Ndebele
+                            </option>
+
+                            <option value="sestwana">
+                                Setswana
+                            </option>
+
+                            <option value="sepedi">
+                                Sepedi
+                            </option>
+
+                            <option value="xitsonga">
+                                Xitsonga
+                            </option>
+
+                            <option value="sesotho">
+                                Sesotho
+                            </option>
                         </select>
                     </div>
 
                 </div>
 
+            </section>
+
+            {/* Corpus tokenization box */}
+            <section className="corpus-box">
+
+                <div className="corpus-heading">
+                    Mzansi Explorer • Corpus Tokenization
+                </div>
+
+                <p className="corpus-label">
+                    {fileName} • {language} • {tokenizer}
+                </p>
+
+                <div className="upload-container">
+                    <input
+                        type="file"
+                        id="corpus-upload"
+                        ref={fileInputRef}
+                        accept=".txt,.pdf"
+                        onChange={handleFileChange}
+                    />
+
+                    <label htmlFor="corpus-upload" className="upload-button">
+                        Upload your corpus(text)
+                    </label>
+
+                    {/* Shows Default button */}
+                    {fileName !== "default" && (
+                        <button
+                            type="button"
+                            className="default-button"
+                            onClick={handleDefault}
+                        >
+                            Default
+                        </button>
+                    )}
+
+                </div>
+ 
             </section>
         </>
         
