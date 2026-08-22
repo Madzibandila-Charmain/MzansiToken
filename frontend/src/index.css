@@ -464,3 +464,71 @@
 
     overflow-y: auto;
 }
+
+/* ======================
+    TOKENIZATION METRICS
+========================= */
+
+/* Container for all metric cards */
+.tokenization-metrics {
+    grid-column: 1 / -1;
+
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+
+    gap: 16px;
+    margin-top: 18px;
+}
+
+.metric-card {
+    min-height: 100px;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    box-sizing: border-box;
+    background: #ffffff;
+
+    border: 1px solid #e2e2e2;
+    border-radius: 12px;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+.metric-name {
+    margin-bottom: 8px;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    letter-spacing: 0.5px;
+    color: #777777;
+}
+
+.metric-value {
+    font-size: 24px;
+    font-weight: 700;
+
+    color: #111111;
+}
+
+.metric-card:hover {
+    background-color: #fafafa;
+    border-color: #bdbdbd;
+
+    transform: translateY(-2px);
+
+    box-shadow: 
+        0 6px 16px rgba(0, 0, 0, 0.07),
+        0 2px 5px rgba(0, 0, 0, 0.04);
+}
+

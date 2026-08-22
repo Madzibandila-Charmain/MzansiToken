@@ -194,6 +194,51 @@ function Inspect() {
                         Hello_Mutalukanyi_This_Is_Just_A_Placeholder_Replace_with_a_State
                     </div>
                 </div>
+
+                {/* Tokenization metrics */}
+                <div className="tokenization-metrics">
+
+                    <div className="metric-card">
+                        <span className="metric-name">
+                            Tokens
+                        </span>
+
+                        <span className="metric-value">
+                            124
+                        </span>
+                    </div>
+
+                    <div className="metric-card">
+                        <span className="metric-name">
+                            Words
+                        </span>
+
+                        <span className="metric-value">
+                            87
+                        </span>
+                    </div>
+
+                    <div className="metric-card">
+                        <span className="metric-name">
+                            Fertility
+                        </span>
+
+                        <span className="metric-value">
+                            1.23
+                        </span>
+                    </div>
+
+                    <div className="metric-card">
+                        <span className="metric-name">
+                            Characters
+                        </span>
+
+                        <span className="metric-value">
+                            512
+                        </span>
+                    </div>
+                    
+                </div>
  
             </section>
         </>
