@@ -1,0 +1,142 @@
+/*
+    Shared styling for the MzansiToken application
+    Author: Madzibandila Charmain
+    Date: 17 August 2026
+*/
+
+/* MzansiToken header */
+.site-header {
+    width: 100%;
+    height: 88px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 55px;
+    background: #ffffff;
+
+    border-bottom: 1px solid #eeeeee;
+
+    box-sizing: border-box;
+}
+
+/* LOGO*/
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+}
+
+.brand-mark {
+    width: 38px;
+    height: 38px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background-color: #111111;
+    color: #ffffff;
+
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+/* LOGO Text */
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.logo-name {
+    font-size: 21px;
+    font-weight: 800;
+
+    letter-spacing: 2.5px;
+
+    color: #111111;
+}
+
+/* Navigation */
+
+.main-nav {
+    display: flex;
+    align-items: center;
+    gap: 38px;
+}
+
+.main-nav a {
+    position: relative;
+
+    text-decoration: none;
+
+    font-size: 14px;
+    font-weight: 500;
+
+    color: #777777;
+
+    transition:
+        color 0.25s ease,
+        transform 0.25s ease;
+}
+
+/* Navigation Hover */
+.main-nav a:hover {
+    color: #111111;
+    transform: translateY(-1px);
+}
+
+/* Active page */
+.main-nav a.active {
+    color: #111111;
+    font-weight: 700;
+}
+
+/*Small line underneath active page */
+.main-nav a.active::after {
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    right: 0;
+
+    bottom: -9px;
+    height: 2px;
+
+    background:#111111;
+
+    border-radius: 10px;
+}
+
+/* Responsive */
+
+@media (max-width: 700px) {
+
+    .site-header {
+        height: auto;
+
+        padding: 22px 25px;
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 20px;
+    }
+
+    .main-nav {
+        width: 100%;
+
+        justify-content: space-between;
+
+        gap: 15px;
+    }
+
+}
