@@ -11,7 +11,29 @@ function Header() {
                     <div className="logo-name">MzansiToken</div>
                 </div>
             </div>
+
+            <nav className="main-nav">
+
+                <NavLink to="/">
+                    Home
+                </NavLink>
+
+                <NavLink to="/inspect">
+                    Inspect
+                </NavLink>
+
+                <NavLink to="/compare">
+                    Compare
+                </NavLink>
+
+                <NavLink to="/rank">
+                    Rank
+                </NavLink>
+
+            </nav>
+            
         </header>
+
     );
 }
 
