@@ -186,6 +186,14 @@ function Inspect() {
                     )}
 
                 </div>
+
+                {/* Tokenization Result */}
+                <div className="tokenization-result">
+
+                    <div className="tokenization-text">
+                        Hello_Mutalukanyi_This_Is_Just_A_Placeholder_Replace_with_a_State
+                    </div>
+                </div>
  
             </section>
         </>
