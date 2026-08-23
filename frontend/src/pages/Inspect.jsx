@@ -166,6 +166,46 @@ function Inspect() {
         }
     }
 
+    //Connects the upload button to the backend
+    async function processUploadedCorpus(
+        file,
+        selectedLanguage,
+        selectedTokenizer
+    ) {
+        try {
+            setLoading(true);
+            setError("");
+
+            const result = await uploadCorpus(
+                file,
+                selectedLanguage,
+                selectedTokenizer
+            );
+
+            setSource("upload")
+            setSelectedFile(file);
+            setFileName(file.name);
+
+            setCorpusTokenizedText(
+                formatTokenizedText (result.tokenized_text)
+            );
+
+            setCorpusMetrics({
+                tokens: result.metrics.tokens ?? 0,
+                fertility: result.metrics.fertility ?? 0,
+                compression: result.metrics.compression ?? 0,
+                token_premium: result.metrics.token_premium
+            });
+        }
+        catch (err) {
+            setError(err.message);
+        }
+        finally {
+            setLoading(false);
+        }
+
+    }
+
     async function handleLanguageChange(event) {
 
         const newLanguage = event.target.value;
@@ -217,22 +257,36 @@ function Inspect() {
     }
 
     /* Handled file slection from user computer. */
-    function handleFileChange(event) {
-        const selectedFile = event.target.files[0];
+    async function handleFileChange(event) {
+        const file = event.target.files[0];
 
-        if (selectedFile) {
-            setFileName(selectedFile.name);
+        if (!file) {
+            return;
         }
+
+        await processUploadedCorpus(
+            file,
+            language,
+            tokenizer
+        );
     }
 
     /* Returns the corpus back to the default state */
-    function handleDefault() {
+    async function handleDefault() {
+
+        setFileName("default");
+        setSelectedFile(null);
         setFileName("default");
 
         /* Clear the actual file selected in the browser. */
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
+
+        await loadDefaultCorpus(
+            language,
+            tokenizer
+        );
     }
 
     return (
