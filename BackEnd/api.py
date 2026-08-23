@@ -297,7 +297,17 @@ def tokenize_corpus_endpoint(model_name: str):
         result[language] = tokenize_corpus(tokenizer, sentences)
     return result
 
+# Endpoint 8: List of languages in the FLORES corpus
+@app.get("/languages")
+def get_languages():
+    """
+    Return the list of languages available in the FLORES dataset.
 
+    React uses this to populate the language dropdown.
+
+    Example response: {"languages": ["English", "isiZulu", "isiXhosa", ...]}
+    """
+    return {"languages": list(corpus.keys())}
 
 
 # ── Mutalu ─────────────────────────────────────────────────────────────────
