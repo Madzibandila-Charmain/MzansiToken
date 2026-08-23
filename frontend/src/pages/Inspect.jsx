@@ -23,9 +23,9 @@ function Inspect() {
     /* Stores the live metric for the text input */
     const [textMetrics, setTextMetrics] = useState({
         tokens: 0,
-        words: 0,
         fertility: 0,
-        characters: 0
+        compression: 0,
+        tokenPremium: 0
     })
 
     /* reference to the actual file input */
@@ -53,9 +53,7 @@ function Inspect() {
     /* This is a temporary calclulation. The real metrics must come from the backend codes. */
     function calculateTextMetrics(text) {
 
-        /* Count all characters, including spaces. */
-        const characters = text.length;
-
+        /* Remove spaces at the beginning and end of the text. */
         const trimmedText = text.trim();
 
         /*
@@ -77,11 +75,40 @@ function Inspect() {
             ? 0
             : tokens / words;
 
+        /*
+            Count the number of UTF-8 bytes in the original text.
+        */
+        const bytes = new TextEncoder().encode(text).length;
+
+        /*
+            Compression = bytes per token.
+        */
+        const compression = tokens === 0
+            ? 0
+            : bytes / tokens;
+
+
+        /*
+            Temporary English token count.
+
+            Until the backend is connected, we use the same
+            placeholder calculation for English.
+        */
+        const englishTokens = tokens;
+
+
+        /*
+            Token premium = language A tokens / English tokens.
+        */
+        const tokenPremium = englishTokens === 0
+            ? 0
+            : tokens / englishTokens;
+
         setTextMetrics({
             tokens,
-            words,
             fertility,
-            characters
+            compression,
+            tokenPremium
         });
     }
 
@@ -212,7 +239,7 @@ function Inspect() {
                         type="file"
                         id="corpus-upload"
                         ref={fileInputRef}
-                        accept=".txt,.pdf"
+                        accept=".txt"
                         onChange={handleFileChange}
                     />
 
@@ -256,16 +283,6 @@ function Inspect() {
 
                     <div className="metric-card">
                         <span className="metric-name">
-                            Words
-                        </span>
-
-                        <span className="metric-value">
-                            87
-                        </span>
-                    </div>
-
-                    <div className="metric-card">
-                        <span className="metric-name">
                             Fertility
                         </span>
 
@@ -276,11 +293,21 @@ function Inspect() {
 
                     <div className="metric-card">
                         <span className="metric-name">
-                            Characters
+                            Compression
                         </span>
 
                         <span className="metric-value">
                             512
+                        </span>
+                    </div>
+
+                    <div className="metric-card">
+                        <span className="metric-name">
+                            Token Premium
+                        </span>
+
+                        <span className="metric-value">
+                            87
                         </span>
                     </div>
 
@@ -327,17 +354,6 @@ function Inspect() {
                             </span>
                         </div>
 
-                        {/* Word count */}
-                        <div className="typed-metric-card">
-                            <span className="typed-metric-name">
-                                Words
-                            </span>
-
-                            <span className="typed-metric-value">
-                                {textMetrics.words}
-                            </span>
-                        </div>
-
                         {/* Fertility */}
                         <div className="typed-metric-card">
                             <span className="typed-metric-name">
@@ -349,14 +365,25 @@ function Inspect() {
                             </span>
                         </div>
 
-                        {/* Character count */}
+                        {/* Compression count */}
                         <div className="typed-metric-card">
                             <span className="typed-metric-name">
-                                Characters
+                                Compression
                             </span>
 
                             <span className="typed-metric-value">
-                                {textMetrics.characters}
+                                {textMetrics.compression.toFixed(2)}
+                            </span>
+                        </div>
+
+                        {/* Token premium */}
+                        <div className="typed-metric-card">
+                            <span className="typed-metric-name">
+                                Token Premium
+                            </span>
+
+                            <span className="typed-metric-value">
+                                {textMetrics.tokenPremium.toFixed(2)}
                             </span>
                         </div>
 
