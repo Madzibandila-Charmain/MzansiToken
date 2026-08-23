@@ -530,7 +530,7 @@ function Inspect() {
                 <div className="typed-tokenization-result">
 
                     <div className="typed-result-text">
-                        {inputText || "Your tokenized text will appear here."}
+                        {typedTokenizedText || "Your tokenized text will appear here."}
                     </div>
                     
                     {/* Metrics for the typed text */}
@@ -576,7 +576,10 @@ function Inspect() {
                             </span>
 
                             <span className="typed-metric-value">
-                                {textMetrics.tokenPremium.toFixed(2)}
+                                {textMetrics.token_premium === null
+                                    ? "N/A"
+                                    : Number(textMetrics.token_premium).toFixed(3)
+                                }
                             </span>
                         </div>
 
