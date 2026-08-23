@@ -78,7 +78,7 @@ function Inspect() {
     */
     useEffect(() => {
 
-        async function loadOptions() {
+        async function initialiseInspect() {
 
             try {
 
@@ -87,7 +87,7 @@ function Inspect() {
 
                 const result = await getOptions();
 
-                setLanguage(result.languages);
+                setLanguages(result.languages);
                 setTokenizers(result.tokenizers);
 
                 const defaultLanguage = 
@@ -99,6 +99,26 @@ function Inspect() {
 
                 setLanguage(defaultLanguage);
                 setTokenizer(defaultTokenizer);
+
+                const defaultResult = 
+                    await getDefaultCorpus(
+                        defaultLanguage,
+                        defaultTokenizer
+                    );
+
+                setCorpusTokenizedText(
+                    formatTokenizedText(
+                        defaultResult.tokenized_text
+                    )
+                );
+
+                setCorpusMetrics({
+                    tokens: defaultResult.metrics.tokens ?? 0,
+                    fertility: defaultResult.metrics.fertility ?? 0,
+                    compression: defaultResult.metrics.compression ?? 0,
+                    token_premium:
+                        defaultResult.metrics.token_premium
+                });
             }
             catch (err) {
                 setError(err.message);
@@ -108,7 +128,7 @@ function Inspect() {
             }
         }
 
-        loadOptions();
+        initialiseInspect();
 
     }, []);
 
@@ -149,7 +169,7 @@ function Inspect() {
     function formatTokenizedText(tokenizedText) {
 
         if (Array.isArray(tokenizedText)) {
-            return tokenizeText.flat().join(" ");
+            return tokenizedText.flat().join(" ");
         }
         return tokenizedText || "";
     }
