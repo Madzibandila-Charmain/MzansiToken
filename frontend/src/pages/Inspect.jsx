@@ -109,7 +109,7 @@ function Inspect() {
         }
 
         loadOptions();
-        
+
     }, []);
 
 
@@ -167,30 +167,15 @@ function Inspect() {
                         <select 
                             id="tokenizer"
                             value={tokenizer}
-                            onChange={(event) => setTokenizer(event.target.value)}
+                            onChange={handleTokenizerChange}
                         >
-
-                            <option value="XLM-RoBERTa">
-                                XLM-RoBERTa
-                            </option>
-
-                            <option value="mBERTA">
-                                mBERT
-                            </option>
-
-                            <option value="BPE">
-                                BPE
-                            </option>
-
-                            <option value="WordPiece">
-                                WordPiece
-                            </option>
-
-                            <option value="SentencePiece">
-                                SentencePiece
-                            </option>
-
+                            {tokenizers.map((item) => (
+                                <option key={item} value={item}>
+                                    {item}
+                                </option>
+                            ))}
                         </select>
+
                     </div>
                     
                     {/* Language dropdown */}
@@ -202,41 +187,16 @@ function Inspect() {
                         <select 
                             id="language"
                             value={language}
-                            onChange={(event) => setLanguage(event.target.value)}
+                            onChange={handleLanguageChange}
                         >
 
-                            <option value="english">
-                                English
-                            </option>
-
-                            <option value="isiZulu">
-                                isiZulu
-                            </option>
-
-                            <option value="isiXhosa">
-                                isiXhosa
-                            </option>
-
-                            <option value="ndebele">
-                                Ndebele
-                            </option>
-
-                            <option value="sestwana">
-                                Setswana
-                            </option>
-
-                            <option value="sepedi">
-                                Sepedi
-                            </option>
-
-                            <option value="xitsonga">
-                                Xitsonga
-                            </option>
-
-                            <option value="sesotho">
-                                Sesotho
-                            </option>
+                            {languages.map((item) => (
+                                <option key={item} value={item}>
+                                    {item}
+                                </option>
+                            ))}
                         </select>
+                        
                     </div>
 
                 </div>
