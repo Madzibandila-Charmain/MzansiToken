@@ -312,7 +312,7 @@ def tokenize_corpus_endpoint(model_name: str):
 
 # Endpoint 8: Dropdown options for INSPECT (languages + tokenizers)
 @app.get("/options")
-def get_options():
+def get_languages():
     """
     Return the dropdown options for the INSPECT view — available
     languages in the dataset and available tokenizers to choose from.
