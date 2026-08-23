@@ -50,68 +50,6 @@ function Inspect() {
         }
     }
 
-    /* This is a temporary calclulation. The real metrics must come from the backend codes. */
-    function calculateTextMetrics(text) {
-
-        /* Remove spaces at the beginning and end of the text. */
-        const trimmedText = text.trim();
-
-        /*
-            Count words using whitespace as the separator. An empty input has 0 words.
-        */
-        const words = trimmedText === ""
-            ? 0
-            : trimmedText.split(/\s+/).length;
-
-        /*
-        Temporary token count. Until the backend tokenizer is connected,
-        */
-        const tokens = words;
-
-        /*
-            Fertility is the average number of tokens per word.
-        */
-        const fertility = words === 0
-            ? 0
-            : tokens / words;
-
-        /*
-            Count the number of UTF-8 bytes in the original text.
-        */
-        const bytes = new TextEncoder().encode(text).length;
-
-        /*
-            Compression = bytes per token.
-        */
-        const compression = tokens === 0
-            ? 0
-            : bytes / tokens;
-
-
-        /*
-            Temporary English token count.
-
-            Until the backend is connected, we use the same
-            placeholder calculation for English.
-        */
-        const englishTokens = tokens;
-
-
-        /*
-            Token premium = language A tokens / English tokens.
-        */
-        const tokenPremium = englishTokens === 0
-            ? 0
-            : tokens / englishTokens;
-
-        setTextMetrics({
-            tokens,
-            fertility,
-            compression,
-            tokenPremium
-        });
-    }
-
     return (
         <>
             <section className="inspect-intro">
