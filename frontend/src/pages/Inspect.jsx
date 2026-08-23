@@ -4,31 +4,73 @@
     Date: 21 August 2026
 */
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import { 
+    getOptions,
+    getDefaultCorpus,
+    uploadCorpus,
+    tokenizeText
+} from "../api/client";
 
 function Inspect() {
 
-    /* Stores the currently selected language(Default = English) */
+    /* English is set as the initial value until backend options are loaded */
     const [language, setLanguage] = useState("English");
 
-    /* Stores the currently selected tokenizer(Default = XLM-RoBERTa) */
-    const [tokenizer, setTokenizer] = useState("XLM-RoBERTa");
+    /*  Selected tokenizer */
+    const [tokenizer, setTokenizer] = useState("");
 
-    /* Stores the name of the uploaded corpus file. */
+    /* Languages provided by the backend. */
+    const [languages, setLanguages] = useState([]);
+
+    /* Tokenizers provided by the backend. */
+    const [tokenizers, setTokenizers] = useState([]);
+
+    /*  Determines whether the user is using the default 
+        corpus or an uploaded corpus.
+    */
+    const [source, setSource] = useState("default");
+
+    /* Stores the actual uploaded File object. */
+    const [selectedFile, setSelectedFile] = useState(null);
+
+    /* Filename displayed to the user. */
     const [fileName, setFileName] = useState("default");
+
+    /* Tokenized result for the corpus section. */
+    const [corpusTokenizedText, setCorpusTokenizedText] = useState("");
+
+    /* Metrics returned by FastAPI for the corpus. */
+    const [corpusMetrics, setCorpusMetrics] = useState({
+        tokens: 0,
+        fertility: 0,
+        compression: 0,
+        token_premium: null
+    });
+
 
     /* Stores the text typed by the use */
     const [inputText, setInputText] = useState("");
 
-    /* Stores the live metric for the text input */
+    /* Tokenized result for the Type Anything section. */
+    const [typedTokenizedText, setTypedTokenizedText] = useState("");
+
+    /* Metrics returned by FastAPI for typed text. */
     const [textMetrics, setTextMetrics] = useState({
         tokens: 0,
         fertility: 0,
         compression: 0,
-        tokenPremium: 0
-    })
+        token_premium: null
+    });
 
-    /* reference to the actual file input */
+    /* Displays whether the frontend is currently waiting for a backend response. */
+    const [loading, setLoading] = useState(false);
+
+    /* Stores an error returned by the backend. */
+    const [error, setError] = useState("");
+
+    /* Reference to the actual file input. */
     const fileInputRef = useRef(null);
 
     /* Handled file slection from user computer. */
