@@ -166,6 +166,48 @@ function Inspect() {
         }
     }
 
+    async function handleLanguageChange(event) {
+
+        const newLanguage = event.target.value;
+
+        setLanguage(newLanguage);
+
+        /* Ensures changing language should load new language's
+            default corpus
+        */
+        if (source === "default"){
+            await loadDefaultCorpus( newLanguage, tokenizer);   
+        }
+        else if (selectedFile) {
+            await processUploadedCorpus(
+                selectedFile,
+                newLanguage,
+                tokenizer
+            );
+        }
+    }
+
+    async function handleTokenizerChange(event) {
+
+        const newTokenizer = event.target.value;
+
+        setTokenizer(newTokenizer);
+
+        if (source === "default") {
+            await loadDefaultCorpus(
+                language,
+                newTokenizer
+            );
+        }
+        else if (selectedFile) {
+            await processUploadedCorpus(
+                selectedFile,
+                language,
+                newTokenizer
+            );
+        }
+    }
+
     function formatTokenizedText(tokenizedText) {
 
         if (Array.isArray(tokenizedText)) {
