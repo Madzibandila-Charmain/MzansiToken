@@ -1,14 +1,22 @@
 """
 api.py - FastAPI backend for MzansiToken
 
-This file is the bridge between Python(backend) and React(frontend).
-FastAPI sets up endpoints that React can call to fetch tokeniser data.
+This file is the bridge between the Python backend and the React frontend.
+FastAPI creates a web server with endpoints (URLs) that React can call
+to get tokenizer data as JSON.
 
-Endpoints:
-    Each endpoint is just a URL the frontend calls.
-    e.g GET /metrics/gpt2 → returns metrics for the gpt2 tokenizer.
+How it works:
+    1. The server starts and loads the FLORES dataset into memory once.
+    2. React calls an endpoint e.g. GET /metrics/gpt2
+    3. FastAPI runs the matching function and sends back the result as JSON.
+
+To run this server:
+    uvicorn api:app --reload --port 8000
+
+Then open http://localhost:8000/docs to see and test all endpoints.
 """
 
+from pathlib import Path
 from flores import load_flores
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,198 +24,241 @@ from metrics import compute_efficiency_metrics
 from tokenizer import load_tokenizer, tokenize_text, tokenize_corpus, get_tokenizer_info
 from qualitative import get_example_sentence, get_random_sentence, get_sentence_count
 
+
+# ── App setup ─────────────────────────────────────────────────────────────────
+
+# Create the FastAPI app. Everything — endpoints, middleware — attaches to this.
 app = FastAPI()
 
-# CORS
-# Without this the browser blocks every request from the React dev server.
-app.add_middleware(CORSMiddleware,
-                   allow_origins=["http://localhost:5173", "http://localhost:3000"],
-                   allow_methods=["GET"],
-                   allow_headers=["*"],)
+# CORS (Cross-Origin Resource Sharing)
+# The React frontend runs on port 3000 or 5173.
+# The backend runs on port 8000.
+# Without this, the browser blocks requests between different ports.
+# This tells the browser: "it is safe to let the frontend talk to this backend."
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
 
+# ── Load the FLORES corpus once at startup ────────────────────────────────────
+
+# Build the path to the dataset relative to this file.
+# This works on any machine regardless of where the project is saved.
+# Path(__file__) = full path to api.py
+# .resolve().parent.parent = two folders up = the project root
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "Datasets" / "FLORES"
+
+# Load all 9 language files into memory when the server starts.
+# We do this once here so every request is fast — no re-reading files on each call.
 print("Loading FLORES corpus...")
-corpus = load_flores("DataSets/FLORES")
+corpus = load_flores(str(DATA_DIR))
 print(f"Corpus ready: {len(corpus)} languages loaded.")
 
-# Caches
+
+# ── Tokenizer cache ───────────────────────────────────────────────────────────
+
+# Downloading a tokenizer from Hugging Face takes a few seconds.
+# This cache stores tokenizers after the first load so repeat requests are instant.
+# Example: if gpt2 is requested twice, we download it once and reuse it.
 _tokenizer_cache = {}
+
 def get_or_load_tokenizer(model_name: str):
+    """Return a cached tokenizer, or load it from Hugging Face if not cached yet."""
     if model_name in _tokenizer_cache:
+        # Already loaded before — return it immediately from memory
         return _tokenizer_cache[model_name]
+    # Not cached yet — load from Hugging Face, store it, then return it
     tokenizer = load_tokenizer(model_name)
     _tokenizer_cache[model_name] = tokenizer
     return tokenizer
 
+
+# ── Metrics cache ─────────────────────────────────────────────────────────────
+
+# Computing metrics means tokenizing 997 sentences across 9 languages — it takes time.
+# This cache stores the results so the same model is never computed twice.
+# Example: if the user loads gpt2 in INSPECT then adds it to RANK,
+# the metrics are computed once and reused.
 _metrics_cache = {}
+
 def get_or_compute_metrics(model_name: str, tokenizer):
+    """Return cached metrics, or compute them if not cached yet."""
     if model_name in _metrics_cache:
+        # Already computed before — return instantly
         return _metrics_cache[model_name]
+    # Not cached yet — compute, store, then return
     result = compute_efficiency_metrics(tokenizer, corpus)
     _metrics_cache[model_name] = result
     return result
 
-# Endpoint 1: Return the efficiency metrics for a tokenizer
+
+# ── Endpoints ─────────────────────────────────────────────────────────────────
+# Each @app.get(...) decorator registers a URL endpoint.
+# When React calls that URL, FastAPI runs the function below it
+# and sends back whatever it returns as JSON automatically.
+
+
+# Endpoint 1: Efficiency metrics for one tokenizer
 @app.get("/metrics/{model_name}")
 def get_metrics(model_name: str):
     """
-    Get efficiency metrics for a tokenizer.
+    Get efficiency metrics for a tokenizer across all 9 languages.
 
-    The frontend call this to fetch stats(token count, fertitliy, compression) 
-    for every languges in the FLORES corpus.
+    React calls this to show the charts in the INSPECT dashboard.
+    Returns token count, fertility, compression, and token premium
+    for every language in the FLORES corpus.
 
-    Returns:
-        dict: mertirc per language
-        e.g {"English": {"token_count": 2543, "fertility":1.399}}    
+    Example call: GET /metrics/gpt2
+    Example response:
+        {
+            "English":  {"token_count": 25741, "fertility": 1.228, ...},
+            "isiZulu":  {"token_count": 61665, "fertility": 4.095, ...}
+        }
     """
     try:
         tokenizer = get_or_load_tokenizer(model_name)
     except ValueError as e:
+        # Model name was invalid — send a clean error to the frontend
         raise HTTPException(status_code=400, detail=str(e))
 
-    result = get_or_compute_metrics(model_name, tokenizer)
-    return result
-    
-# Endpoint 2: Return the tokenizer info
+    return get_or_compute_metrics(model_name, tokenizer)
+
+
+# Endpoint 2: Tokenizer metadata
 @app.get("/tokenizer/{model_name}")
 def get_tokenizer_endpoint(model_name: str):
     """
-    Load a tokenizer and return its info.
+    Load a tokenizer and return its details.
 
-    The frontend uses this to confirm the model exists and
-    grab details like vocab size and model type.
+    React calls this first when the user types a model name and clicks Load.
+    Confirms the model exists and returns its vocab size, type, and class name.
 
-    Returns:
-        dict: tokenizer details
-        Example: {"model_name": "gpt2", "vocab_size": 50257, ...}
+    Example call: GET /tokenizer/gpt2
+    Example response:
+        {"model_name": "gpt2", "vocab_size": 50257, "model_type": "gpt2", ...}
     """
     try:
         tokenizer = get_or_load_tokenizer(model_name)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
     info = get_tokenizer_info(tokenizer)
     info["model_name"] = model_name
     return info
 
-# Endpoint 3: Compare the efficiency metrics of two tokenizers
+
+# Endpoint 3: Compare two tokenizers side by side
 @app.get("/compare/{model_a}/{model_b}")
 def compare_tokenizers(model_a: str, model_b: str):
     """
-    Compare two tokenizers side by side.
+    Get efficiency metrics for two tokenizers at once.
 
-    The frontend calls this to see how two models differ
-    across the FLORES dataset.
+    React calls this for the COMPARE dashboard to show both tokenizers
+    side by side. Each tokenizer is loaded and computed separately
+    so a bad model name tells you exactly which one failed.
 
-    Returns:
-        dict: metrics for both tokenizers
-        Example: {
+    Example call: GET /compare/gpt2/facebook/opt-125m
+    Example response:
+        {
             "tokenizer_a": {"name": "gpt2", "metrics": {...}},
-            "tokenizer_b": {"name": "gemma-2b", "metrics": {...}}
+            "tokenizer_b": {"name": "facebook/opt-125m", "metrics": {...}}
         }
     """
-
-    # Load the first tokenizer, using the cache when it has already been loaded.
+    # Load tokenizer A — report clearly if it fails
     try:
         tokenizerA = get_or_load_tokenizer(model_a)
-    # Return a clear error if the first model name is not supported.
     except ValueError as e:
         raise HTTPException(status_code=400, detail=f"Tokenizer A error: {e}")
 
-    # Load the second tokenizer, using the cache when it has already been loaded.
+    # Load tokenizer B — report clearly if it fails
     try:
         tokenizerB = get_or_load_tokenizer(model_b)
-    # Return a clear error if the second model name is not supported.
     except ValueError as e:
         raise HTTPException(status_code=400, detail=f"Tokenizer B error: {e}")
 
-    # Calculate the efficiency metrics for the first tokenizer across the corpus.
+    # Compute (or reuse cached) metrics for both tokenizers
     metrics_a = get_or_compute_metrics(model_a, tokenizerA)
-    # Calculate the efficiency metrics for the second tokenizer across the corpus.
     metrics_b = get_or_compute_metrics(model_b, tokenizerB)
 
-    # Return both model names and their metrics so the frontend can compare them.
     return {
-        # Store the first tokenizer's name and calculated metrics together.
         "tokenizer_a": {"name": model_a, "metrics": metrics_a},
-        # Store the second tokenizer's name and calculated metrics together.
         "tokenizer_b": {"name": model_b, "metrics": metrics_b}
     }
 
-# Endpoint 4: Qualitative example
+
+# Endpoint 4: Qualitative tokenization example
 @app.get("/example/model/{model_name}")
 def get_example(model_name: str, index: int = -1):
     """
-    Get a tokenization example.
+    Get one FLORES sentence tokenized across all 9 languages.
 
-    The frontend calls this to display how a sentence looks
-    when broken into tokens across all FLORES languages.
+    React calls this for the qualitative examples view — the colour-coded
+    token display like the OpenAI tokenizer demo.
 
-    Args:
-        model_name (str): Hugging Face model name
-        index (int): sentence index (0–996). If -1, pick random.
+    index is optional. If not provided (or -1), a random sentence is picked.
+    If provided (0 to 996), that specific sentence is used.
 
-    Returns:
-        dict: tokenized sentence data
-        Example: {
+    Example call: GET /example/model/gpt2
+    Example call: GET /example/model/gpt2?index=42
+    Example response:
+        {
             "index": 42,
+            "total_sentences": 997,
             "languages": {
                 "English": {"sentence": "...", "tokens": [...], "token_count": 12},
-                "isiZulu": {...}
+                "isiZulu": {"sentence": "...", "tokens": [...], "token_count": 28}
             }
         }
     """
-
-    # Load the requested tokenizer, reusing the in-memory cache when possible.
     try:
         tokenizer = get_or_load_tokenizer(model_name)
-    # Convert an unsupported model name into a client-friendly HTTP error.
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+    # Make sure the index is within range before using it
     total = get_sentence_count(corpus)
     if index >= total:
-        raise HTTPException(status_code=400, detail=f"Index out of range (max {total-1})")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Index out of range — max allowed is {total - 1}"
+        )
 
-    # A negative index means that the caller did not choose a sentence.
     if index < 0:
-        # Select a random sentence and tokenize it in every corpus language.
-        result = get_random_sentence(tokenizer, corpus)
+        # No index given — pick a random sentence
+        return get_random_sentence(tokenizer, corpus)
     else:
-        # Select the requested sentence and tokenize it in every corpus language.
-        result = get_example_sentence(tokenizer, corpus, index)
+        # Specific index given — use that sentence
+        return get_example_sentence(tokenizer, corpus, index)
 
-    # Send the tokenized sentence data back to the frontend as JSON.
-    return result
 
-# Endpoint 5: Sentence count
+# Endpoint 5: Total sentence count
 @app.get("/sentence-count")
 def sentence_count():
     """
-    Count how many sentences are in the FLORES dataset.
+    Return the total number of sentences in the FLORES dataset.
 
-    The frontend (the user-facing part) needs this number so it knows how far the sentence slider can go. In other words,
-    it sets the "max index" for navigation.
+    React uses this to know the valid range for sentence navigation
+    e.g. "Sentence 42 of 997".
 
-    Returns:
-        int: total sentence count
-        Example: If there are 997 sentences, it returns 997.
+    Example response: {"count": 997}
     """
     return {"count": get_sentence_count(corpus)}
 
-# Endpoint 6: Tokenize a single text
+
+# Endpoint 6: Tokenize a single piece of custom text
 @app.get("/tokenize-text/{model_name}")
 def tokenize_text_endpoint(model_name: str, text: str):
     """
-    Break one piece of text into tokens.
+    Split one piece of text into tokens.
 
-    The frontend uses this when a user types custom text and wants to see how the tokenizer splits it.
+    React calls this when the user types something into the text box
+    and wants to see how the tokenizer splits it in real time.
 
-    Args:
-        model_name (str): Hugging Face model name
-        text (str): input text
-
-    Returns:
-        dict: tokens and token count
-        Example: {"tokens": ["Cape", "Town"], "count": 2}
+    Example call: GET /tokenize-text/gpt2?text=Where is Cape Town?
+    Example response: {"tokens": ["Where", "Gis", "GCape", "GTown", "?"], "count": 5}
     """
     try:
         tokenizer = get_or_load_tokenizer(model_name)
@@ -217,26 +268,30 @@ def tokenize_text_endpoint(model_name: str, text: str):
     tokens = tokenize_text(tokenizer, text)
     return {"tokens": tokens, "count": len(tokens)}
 
-# Endpoint 7: Tokenize the whole FLORES corpus
+
+# Endpoint 7: Tokenize the entire FLORES corpus
 @app.get("/tokenize-corpus/{model_name}")
 def tokenize_corpus_endpoint(model_name: str):
     """
-    Tokenize the entire FLORES dataset.
+    Tokenize all sentences in the FLORES dataset for a given tokenizer.
 
-    Useful for debugging or when the frontend wants raw tokenized data for all languages at once.
+    Useful for debugging or if the frontend needs the raw token data
+    for all languages at once rather than metric summaries.
 
-    Args:
-        model_name (str): Hugging Face model name
-
-    Returns:
-        dict: tokenized corpus data
-        Example: {"English": [["Cape", "Town"], ...], "isiZulu": [...], ...}
+    Example call: GET /tokenize-corpus/gpt2
+    Example response:
+        {
+            "English": [["Where", "Gis", ...], [...], ...],
+            "isiZulu": [["I", "kh", "aya", ...], [...], ...]
+        }
     """
     try:
         tokenizer = get_or_load_tokenizer(model_name)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+    # tokenize_corpus() takes a list of sentences, not the whole corpus dict.
+    # So we loop through each language and tokenize its sentences separately.
     result = {}
     for language, sentences in corpus.items():
         result[language] = tokenize_corpus(tokenizer, sentences)
