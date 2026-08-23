@@ -73,6 +73,46 @@ function Inspect() {
     /* Reference to the actual file input. */
     const fileInputRef = useRef(null);
 
+    /*  Load languages and tokenizers from the FastAPI 
+        backend when the page loads. 
+    */
+    useEffect(() => {
+
+        async function loadOptions() {
+
+            try {
+
+                setLoading(true);
+                setError("");
+
+                const result = await getOptions();
+
+                setLanguage(result.languages);
+                setTokenizers(result.tokenizers);
+
+                const defaultLanguage = 
+                    result.defaults?.language || "English";
+
+                const defaultTokenizer = 
+                    result.defaults?.tokenizer || 
+                    result.tokenizers[0];
+
+                setLanguage(defaultLanguage);
+                setTokenizer(defaultTokenizer);
+            }
+            catch (err) {
+                setError(err.message);
+            }
+            finally {
+                setLoading(false);
+            }
+        }
+
+        loadOptions();
+        
+    }, []);
+
+
     /* Handled file slection from user computer. */
     function handleFileChange(event) {
         const selectedFile = event.target.files[0];
@@ -372,8 +412,7 @@ function Inspect() {
                 </div>
 
             </section>
-        </>
-        
+        </>   
     );
 }
 
