@@ -94,6 +94,19 @@ def get_or_compute_metrics(model_name: str, tokenizer):
     _metrics_cache[model_name] = result
     return result
 
+# List of tokenizers offered in the INSPECT dropdown, curated and verified to load cleanly via check_tokenizers.py.
+SUPPORTED_TOKENIZERS = [
+    "gpt2",
+    "openai-community/gpt2-large",
+    "EleutherAI/gpt-neox-20b",
+    "mistralai/Mistral-7B-v0.1",
+    "bert-base-uncased",
+    "bert-base-multilingual-cased",
+    "xlm-roberta-base",
+    "facebook/nllb-200-distilled-600M",
+    "tiiuae/falcon-7b",
+]
+
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 # Each @app.get(...) decorator registers a URL endpoint.
@@ -297,17 +310,25 @@ def tokenize_corpus_endpoint(model_name: str):
         result[language] = tokenize_corpus(tokenizer, sentences)
     return result
 
-# Endpoint 8: List of languages in the FLORES corpus
-@app.get("/languages")
-def get_languages():
+# Endpoint 8: Dropdown options for INSPECT (languages + tokenizers)
+@app.get("/options")
+def get_options():
     """
-    Return the list of languages available in the FLORES dataset.
+    Return the dropdown options for the INSPECT view — available
+    languages in the dataset and available tokenizers to choose from.
 
-    React uses this to populate the language dropdown.
+    React calls this once when INSPECT loads to populate both dropdowns.
 
-    Example response: {"languages": ["English", "isiZulu", "isiXhosa", ...]}
+    Example response:
+        {
+            "languages": ["English", "isiZulu", "isiXhosa", ...],
+            "tokenizers": ["gpt2", "bert-base-uncased", ...]
+        }
     """
-    return {"languages": list(corpus.keys())}
+    return {
+        "languages": list(corpus.keys()),
+        "tokenizers": SUPPORTED_TOKENIZERS
+    }
 
 
 # ── Mutalu ─────────────────────────────────────────────────────────────────
