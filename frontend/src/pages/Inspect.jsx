@@ -112,6 +112,47 @@ function Inspect() {
 
     }, []);
 
+    /* Loads default Corpus */
+    async function loadDefaultCorpus(
+        selectedLanguage = language,
+        selectedTokenizer = tokenizer
+    ){
+        try {
+
+            setLoading(true);
+            setError("");
+
+            const result = await getDefaultCorpus(
+                selectedLanguage,
+                selectedTokenizer
+            );
+
+            setCorpusTokenizedText(
+                formatTokenizedText(result.tokenized_text)
+            );
+
+            setCorpusMetrics({
+                tokens: result.metrics.tokens ?? 0,
+                fertility: result.metrics.fertility ?? 0,
+                compression: result.metrics.compression ?? 0,
+                token_premium: result.metrics.token_premium
+            });
+        }
+        catch (err) {
+            setError(err.message);
+        }
+        finally {
+            setLoading(false);
+        }
+    }
+
+    function formatTokenizedText(tokenizedText) {
+
+        if (Array.isArray(tokenizedText)) {
+            return tokenizeText.flat().join(" ");
+        }
+        return tokenizedText || "";
+    }
 
     /* Handled file slection from user computer. */
     function handleFileChange(event) {
@@ -196,7 +237,7 @@ function Inspect() {
                                 </option>
                             ))}
                         </select>
-                        
+
                     </div>
 
                 </div>
