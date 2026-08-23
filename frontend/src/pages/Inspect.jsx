@@ -132,6 +132,62 @@ function Inspect() {
 
     }, []);
 
+    //The second useEffect
+    useEffect(() => {
+
+        if (!inputText.trim()) {
+            setTypedTokenizedText("");
+
+            setTextMetrics({
+                tokens: 0,
+                fertility: 0,
+                compression: 0,
+                token_premium: null
+            });
+            return;
+        }
+
+        const timeoutId = setTimeout(
+            async () => {
+
+                try {
+                    setLoading(true);
+                    setError("");
+
+                    const result = await tokenizeText(
+                        inputText,
+                        language,
+                        tokenizer
+                    );
+
+                    setTypedTokenizedText(
+                        formatTokenizedText(
+                            result.tokenized_text
+                        )
+                    );
+
+                    setTextMetrics({
+                        tokens: result.metrics.tokens ?? 0,
+                        fertility: result.metrics.fertility ?? 0,
+                        compression: result.metrics.compression ?? 0,
+                        token_premium:
+                            result.metrics.token_premium
+                    });
+
+                } 
+                catch (err) {
+                    setError(err.message);
+                } 
+                finally {
+                    setLoading(false);
+                }
+            },
+            400
+        );
+        return () => clearTimeout(timeoutId);
+
+    }, [inputText, language, tokenizer]);
+
     /* Loads default Corpus */
     async function loadDefaultCorpus(
         selectedLanguage = language,
@@ -401,7 +457,7 @@ function Inspect() {
                 <div className="tokenization-result">
 
                     <div className="tokenization-text">
-                        Hello_Mutalukanyi_This_Is_Just_A_Placeholder_Replace_with_a_State
+                        {corpusTokenizedText}
                     </div>
                 </div>
 
@@ -414,7 +470,7 @@ function Inspect() {
                         </span>
 
                         <span className="metric-value">
-                            124
+                            {corpusMetrics.tokens}
                         </span>
                     </div>
 
@@ -424,7 +480,7 @@ function Inspect() {
                         </span>
 
                         <span className="metric-value">
-                            1.23
+                            {Number(corpusMetrics.fertility).toFixed(2)}
                         </span>
                     </div>
 
@@ -434,7 +490,7 @@ function Inspect() {
                         </span>
 
                         <span className="metric-value">
-                            512
+                            {Number(corpusMetrics.compression).toFixed(2)}
                         </span>
                     </div>
 
@@ -444,7 +500,10 @@ function Inspect() {
                         </span>
 
                         <span className="metric-value">
-                            87
+                            {corpusMetrics.token_premium === null
+                                ? "N/A"
+                                : Number(corpusMetrics.token_premium).toFixed(3)
+                            }
                         </span>
                     </div>
 
@@ -463,10 +522,7 @@ function Inspect() {
                 <textarea
                     className="text-input-area"
                     value={inputText}
-                    onChange={(event) => {const text = event.target.value;
-                        setInputText(text);
-                        calculatedTextMetrics(text);
-                    }}
+                    onChange={(event) => setInputText(event.target.value)}
                     placeholder="Type or paste your text here..."
                 />
 
