@@ -44,7 +44,16 @@ def load_tokenizer(model_name: str) -> PreTrainedTokenizer | PreTrainedTokenizer
     try:
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=False)
 
-    except OSError:
+    except OSError as e:
+        # Covers 2 cases: Model name exist on Hugging face 
+        #                 Model exists but is gated (requires HF login and accepted terms)
+        error_str = str(e).lower()
+        if "401" in error_str or "403" in error_str or "gated" in error_str or "access" in error_str:
+            raise ValueError(
+                f"Model '{model_name}' is a gated model — you need to accept "
+                f"its terms at https://huggingface.co/{model_name} and set an HF_TOKEN."
+            )
+    
         raise ValueError(
             f"Model '{model_name}' not found on Hugging Face. "
             f"Check the model name at https://huggingface.co/models"
