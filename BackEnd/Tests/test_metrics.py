@@ -10,16 +10,19 @@ from metrics import (token_count, fertility, compression, token_premium, compute
 # token_count() TESTS
 
 def test_token_count_basic():
+    # Two sentences, each with 2 tokens → total = 4
+    
     tokenized = [["Hello", "world"], ["Cape", "Town"]]
-    # 2 tokens + 2 tokens = 4
     assert token_count(tokenized) == 4
- 
- 
+
+
 def test_token_count_empty_list():
+    # No sentences at all → total tokens = 0
     assert token_count([]) == 0
- 
- 
+
+
 def test_token_count_sentences_with_no_tokens():
+    # Sentences exist but each is empty → total tokens = 0
     tokenized = [[], [], []]
     assert token_count(tokenized) == 0
 
@@ -29,116 +32,94 @@ def test_token_count_sentences_with_no_tokens():
 
 def test_compression_hand_calculated():
     """
-    "Hello world" = 11 ASCII chars = 11 bytes
-    "Cape Town"   = 9 ASCII chars  = 9 bytes
+    "Hello world" → 11 bytes
+    "Cape Town"   → 9 bytes
     Total bytes = 20
-    Tokenized: 4 tokens total (as in fertility test above)
+    Tokenized = 4 tokens
     compression = 20 / 4 = 5.0
     """
     sentences = ["Hello world", "Cape Town"]
     tokenized = [["Hello", "world"], ["Cape", "Town"]]
- 
-    assert compression(tokenized, sentences) == 5.0
-
-
-def test_compression_zero_token_returns_zero():
-    sentences = [["Hello"]]
-    tokenized = [[]]
-    assert compression(tokenized, sentences) == 0
-
-
-def test_compression_mutiple_characters():
-    sentences = ["café"]
-    tokenized = [["café"]]
- 
-    assert compression(tokenized, sentences) == 5.0
-
-
-# fertility() TESTS
-# Formula: fertility = total_tokens / total_words
-
-def test_fertitlty_hand_calculated():
-    """
-    Sentences: "Hello world" (2 words), "Cape Town" (2 words)
-    Total words = 4
-    Tokenized:  ["Hello", "world"], ["Cape", "Town"] -> 4 tokens total
-    fertility = 4 / 4 = 1.0
-    """
-    sentences = ["Hello world", "Cape Town"]
-    tokenized = [["Hello", "world"], ["Cape", "Town"]]
-
-    assert fertility(tokenized, sentences) == 1.0
-
-
-def test_fertility_subword_splitting():
-    sentences = [""]
-    tokenized = [[]]
-
-    assert fertility(tokenized, sentences) == 0.0
-
-
-def test_fertility_rounds_to_three_decimals():
-    sentences = ["one two three"]
-    tokenized = [["a", "b", "c", "d"]]
-
-    assert fertility(tokenized, sentences) == 1.333
-
-
-def test_compression_hand_calculated():
-    sentences = ["Hello world", "Cape Town"]
-    tokenized = [["Hello", "world"], ["Cape", "Town"]]
- 
     assert compression(tokenized, sentences) == 5.0
 
 
 def test_compression_zero_tokens_returns_zero():
+    # If there are no tokens, compression should safely return 0
     sentences = ["Hello"]
     tokenized = [[]]
- 
     assert compression(tokenized, sentences) == 0.0
 
 
 def test_compression_multibyte_characters():
     """
     "é" is a multi-byte UTF-8 character (2 bytes), not 1.
-    This confirms compression counts real UTF-8 bytes, not character
-    count — important since your project specifically compares
-    languages where character-to-byte ratios differ.
-    "café" = c(1) a(1) f(1) é(2) = 5 bytes
-    Tokenized as a single token: 1 token
+    "café" has 5 bytes in UTF‑8:
+      c(1) + a(1) + f(1) + é(2) = 5
+    Tokenized = 1 token
     compression = 5 / 1 = 5.0
     """
     sentences = ["café"]
     tokenized = [["café"]]
- 
     assert compression(tokenized, sentences) == 5.0
+
+
+# fertility() TESTS
+# Formula: fertility = total_tokens / total_words
+
+def test_fertility_hand_calculated():
+    """
+    Sentences: "Hello world" (2 words), "Cape Town" (2 words)
+    Total words = 4
+    Tokenized = 4 tokens
+    fertility = 4 / 4 = 1.0
+    """
+    sentences = ["Hello world", "Cape Town"]
+    tokenized = [["Hello", "world"], ["Cape", "Town"]]
+    assert fertility(tokenized, sentences) == 1.0
+
+
+def test_fertility_subword_splitting():
+    # Empty sentence → 0 words, 0 tokens → fertility = 0.0
+    sentences = [""]
+    tokenized = [[]]
+    assert fertility(tokenized, sentences) == 0.0
+
+
+def test_fertility_rounds_to_three_decimals():
+    # 4 tokens / 3 words = 1.333 (rounded to 3 decimals)
+    sentences = ["one two three"]
+    tokenized = [["a", "b", "c", "d"]]
+    assert fertility(tokenized, sentences) == 1.333
 
 
 # token_premium() tests
 # Formula: token_premium = lang_token_count / eng_token_count
 
-def  test_token_premium_english_baseline_is_one():
+def test_token_premium_english_baseline_is_one():
+    # English compared to itself → always 1.0
     assert token_premium(100, 100) == 1.0
 
 
 def test_token_premium_hand_calculated():
     """
-    isiZulu needing 2x more tokens than English:
-    lang_token_count = 200, eng_token_count = 100
+    isiZulu uses 200 tokens vs English 100 tokens
     token_premium = 200 / 100 = 2.0
     """
-    assert token_premium(200, 100)
+    assert token_premium(200, 100) == 2.0
 
 
 def test_token_premium_none_when_english_missing():
+    # If English count is missing, return None
     assert token_premium(200, None) is None
 
 
 def test_token_premium_none_when_english_zero():
+    # If English has 0 tokens, return None (avoid divide by zero)
     assert token_premium(200, 0) is None
 
 
 def test_token_premium_rounds_to_three_decimals():
+    # 100 / 3 = 33.333 (rounded to 3 decimals)
     assert token_premium(100, 3) == 33.333
 
 
@@ -196,7 +177,7 @@ def test_compute_efficiency_metrics_english_premium_is_baseline():
 
 def test_compute_efficiency_metrics_hand_calculated_values():
     """
-    Check: metrics match simple hand‑calculated values.
+    Check: metrics match simple hand-calculated values.
 
     English: "Hello world"
       - token_count = 2
