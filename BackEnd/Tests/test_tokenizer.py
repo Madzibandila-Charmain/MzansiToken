@@ -175,4 +175,18 @@ def test_tokenize_corpus_preserves_order():
         ["third"],
     ]
  
-  
+
+def test_tokenize_corpus_calls_tokenizer_for_each_sentence():
+    tokenizer = Mock()
+    tokenizer.tokenize.side_effect = [
+        ["Hello"],
+        ["World"],
+        ["Again"],
+    ]
+ 
+    tokenize_corpus(
+        tokenizer,
+        ["Hello", "World", "Again"]
+    )
+ 
+    assert tokenizer.tokenize.call_count == 3  
