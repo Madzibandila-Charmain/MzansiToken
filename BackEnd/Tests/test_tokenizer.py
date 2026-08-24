@@ -217,3 +217,15 @@ def test_get_tokenizer_info_unknown_model_type():
     assert result["vocab_size"] == 100
     assert result["model_type"] == "unknown"
     assert result["class"] == "FakeTokenizer"
+
+
+def test_get_tokenizer_info_contains_required_keys():
+    tokenizer = Mock()
+    tokenizer.vocab_size = 100
+    tokenizer.model_type = "test"
+ 
+    result = get_tokenizer_info(tokenizer)
+ 
+    assert "vocab_size" in result
+    assert "model_type" in result
+    assert "class" in result
