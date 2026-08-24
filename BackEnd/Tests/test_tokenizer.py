@@ -204,3 +204,16 @@ def test_get_tokenizer_info():
     assert result["vocab_size"] == 50257
     assert result["model_type"] == "gpt2"
     assert result["class"] == "Mock"
+
+
+def test_get_tokenizer_info_unknown_model_type():
+    class FakeTokenizer:
+        vocab_size = 100
+ 
+    tokenizer = FakeTokenizer()
+ 
+    result = get_tokenizer_info(tokenizer)
+ 
+    assert result["vocab_size"] == 100
+    assert result["model_type"] == "unknown"
+    assert result["class"] == "FakeTokenizer"
