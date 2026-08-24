@@ -141,4 +141,13 @@ def test_tokenize_corpus_empty_list():
  
     assert result == []
     tokenizer.tokenize.assert_not_called()
+
+
+def test_tokenize_corpus_single_sentence():
+    tokenizer = Mock()
+    tokenizer.tokenize.return_value = ["Hello"]
+ 
+    result = tokenize_corpus(tokenizer, ["Hello"])
+ 
+    assert result == [["Hello"]]
  
