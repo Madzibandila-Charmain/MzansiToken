@@ -91,3 +91,12 @@ def test_tokenize_text_punctuation():
     result = tokenize_text(tokenizer, "Hello!")
  
     assert result == ["Hello", "!"]
+
+
+def test_tokenize_text_unicode():
+    tokenizer = Mock()
+    tokenizer.tokenize.return_value = ["é", "clair"]
+ 
+    result = tokenize_text(tokenizer, "éclair")
+ 
+    assert result == ["é", "clair"]
