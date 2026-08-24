@@ -230,3 +230,20 @@ def test_compute_efficiency_metrics_hand_calculated_values():
         "compression": 7.5,
         "token_premium": 1.0,
     }
+
+
+def test_compute_efficiency_metrics_missing_english_returns_none_premium():
+    """
+    Edge case: if English is missing, token_premium should be None.
+    This prevents the code from crashing or making up fake values.
+    """
+    tokenizer = _mock_tokenizer_word_level()
+    corpus = {
+        "isiZulu": ["Sawubona mhlaba"],
+        "isiXhosa": ["Molo ehlabathini"],
+    }
+
+    result = compute_efficiency_metrics(tokenizer, corpus)
+
+    assert result["isiZulu"]["token_premium"] is None
+    assert result["isiXhosa"]["token_premium"] is None
