@@ -132,4 +132,13 @@ def test_tokenize_corpus_multiple_sentences():
         ["Hello"],
         ["How", "are", "you"],
     ]
+
+
+def test_tokenize_corpus_empty_list():
+    tokenizer = Mock()
+ 
+    result = tokenize_corpus(tokenizer, [])
+ 
+    assert result == []
+    tokenizer.tokenize.assert_not_called()
  
