@@ -81,3 +81,10 @@ def test_fertility_rounds_to_three_decimals():
     tokenized = [["a", "b", "c", "d"]]
 
     assert fertility(tokenized, sentences) == 1.333
+
+
+def test_compression_hand_calculated():
+    sentences = ["Hello world", "Cape Town"]
+    tokenized = [["Hello", "world"], ["Cape", "Town"]]
+ 
+    assert compression(tokenized, sentences) == 5.0
