@@ -134,3 +134,7 @@ def test_token_premium_none_when_english_missing():
     assert token_premium(200, None) is None
 
 
+def test_token_premium_none_when_english_zero():
+    assert token_premium(200, 0) is None
+
+
