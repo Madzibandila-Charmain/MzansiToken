@@ -229,3 +229,10 @@ def test_get_tokenizer_info_contains_required_keys():
     assert "vocab_size" in result
     assert "model_type" in result
     assert "class" in result
+
+# Input Validation test - load_tokenizer()
+
+def test_load_tokenizer_empty_name():
+    with pytest.raises(ValueError, match="Model name cannot be empty"):
+        load_tokenizer("")
+
