@@ -74,3 +74,10 @@ def test_fertility_subword_splitting():
     tokenized = [[]]
 
     assert fertility(tokenized, sentences) == 0.0
+
+
+def test_fertility_rounds_to_three_decimals():
+    sentences = ["one two three"]
+    tokenized = [["a", "b", "c", "d"]]
+
+    assert fertility(tokenized, sentences) == 1.333
