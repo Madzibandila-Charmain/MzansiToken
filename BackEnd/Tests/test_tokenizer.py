@@ -192,6 +192,15 @@ def test_tokenize_corpus_calls_tokenizer_for_each_sentence():
     assert tokenizer.tokenize.call_count == 3  
 
 
+def test_tokenize_corpus_handles_empty_sentence():
+    tokenizer = Mock()
+    tokenizer.tokenize.return_value = []
+
+    result = tokenize_corpus(tokenizer, [""])
+
+    assert result == [[]]
+
+
 # get_tokenizer_info() TESTS
 
 def test_get_tokenizer_info():
