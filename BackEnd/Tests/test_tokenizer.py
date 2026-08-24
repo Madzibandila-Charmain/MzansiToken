@@ -289,3 +289,11 @@ def test_load_tokenizer_rejects_non_tokenizer_object():
             load_tokenizer("some-image-model")
 
 
+def test_load_tokenizer_gated_model_raises_specific_error():
+    gated_error = OSError("403 Client Error: Forbidden. Cannot access gated repo for url ...")
+ 
+    with patch("tokenizer.AutoTokenizer.from_pretrained", side_effect=gated_error):
+        with pytest.raises(ValueError, match="gated model"):
+            load_tokenizer("google/gemma-2b")
+
+
