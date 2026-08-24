@@ -280,3 +280,12 @@ def test_load_tokenizer_invalid_name_raises_valueerror():
         with pytest.raises(ValueError, match="not found on Hugging Face"):
             load_tokenizer("this-model-does-not-exist-xyz-123")
 
+
+def test_load_tokenizer_rejects_non_tokenizer_object():
+    not_a_tokenizer = Mock()
+
+    with patch("tokenizer.AutoTokenizer.from_pretrained", return_value=not_a_tokenizer):
+        with pytest.raises(ValueError, match="did not return a valid tokenizer"):
+            load_tokenizer("some-image-model")
+
+
