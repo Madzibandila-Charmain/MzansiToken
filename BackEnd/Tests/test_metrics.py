@@ -192,3 +192,41 @@ def test_compute_efficiency_metrics_english_premium_is_baseline():
     result = compute_efficiency_metrics(tokenizer, corpus)
 
     assert result["English"]["token_premium"] == 1.0
+
+
+def test_compute_efficiency_metrics_hand_calculated_values():
+    """
+    Check: metrics match simple hand‑calculated values.
+
+    English: "Hello world"
+      - token_count = 2
+      - fertility   = 2 tokens / 2 words = 1.0
+      - compression = 11 characters / 2 tokens = 5.5
+      - token_premium = 2 / 2 = 1.0
+
+    isiZulu: "Sawubona mhlaba"
+      - token_count = 2
+      - fertility   = 2 / 2 = 1.0
+      - compression = 15 characters / 2 tokens = 7.5
+      - token_premium = 2 / 2 (English baseline) = 1.0
+    """
+    tokenizer = _mock_tokenizer_word_level()
+    corpus = {
+        "English": ["Hello world"],
+        "isiZulu": ["Sawubona mhlaba"],
+    }
+
+    result = compute_efficiency_metrics(tokenizer, corpus)
+
+    assert result["English"] == {
+        "token_count": 2,
+        "fertility": 1.0,
+        "compression": 5.5,
+        "token_premium": 1.0,
+    }
+    assert result["isiZulu"] == {
+        "token_count": 2,
+        "fertility": 1.0,
+        "compression": 7.5,
+        "token_premium": 1.0,
+    }
