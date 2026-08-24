@@ -36,3 +36,13 @@ def test_tokenize_text_empty_string():
     assert result == []
     tokenizer.tokenize.assert_not_called()
 
+
+def test_tokenize_text_whitespace():
+    tokenizer = Mock()
+
+    result = tokenize_text(tokenizer, "   ")
+
+    assert result == []
+    tokenizer.tokenize.assert_not_called()
+
+    
