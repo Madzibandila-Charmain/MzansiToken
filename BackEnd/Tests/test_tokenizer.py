@@ -297,3 +297,9 @@ def test_load_tokenizer_gated_model_raises_specific_error():
             load_tokenizer("google/gemma-2b")
 
 
+def test_load_tokenizer_genuinely_missing_model_raises_not_found_error():
+    not_found_error = OSError("404 Client Error: Repository Not Found for url ...")
+ 
+    with patch("tokenizer.AutoTokenizer.from_pretrained", side_effect=not_found_error):
+        with pytest.raises(ValueError, match="not found on Hugging Face"):
+            load_tokenizer("this-model-does-not-exist-xyz-123")
