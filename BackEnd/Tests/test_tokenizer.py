@@ -241,3 +241,9 @@ def test_load_tokenizer_whitespace_name():
     with pytest.raises(ValueError, match="Model name cannot be empty"):
         load_tokenizer("   ")
 
+
+def test_load_tokenizer_newline_name():
+    with pytest.raises(ValueError, match="Model name cannot be empty"):
+        load_tokenizer("\n")
+
+
