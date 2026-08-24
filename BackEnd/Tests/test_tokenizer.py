@@ -250,3 +250,15 @@ def test_load_tokenizer_newline_name():
 def test_load_tokenizer_none_name():
     with pytest.raises(ValueError, match="Model name cannot be empty"):
         load_tokenizer(None)
+
+
+# Success paths for load_tokenizer()
+
+def test_load_tokenizer_valid_name():
+    fake_tokenizer = Mock(spec=PreTrainedTokenizerFast)
+    fake_tokenizer.vocab_size = 20257
+
+    with patch("tokenizer.AutoTokenizer.from_pretrained", return_value=fake_tokenizer):
+        result = load_tokenizer("gpt2")
+
+    assert result.vocab_size == 50257
