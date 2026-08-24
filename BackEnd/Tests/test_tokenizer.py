@@ -82,3 +82,12 @@ def test_tokenize_text_returns_tokenizer_result():
     result = tokenize_text(tokenizer, "This is a test")
  
     assert result == expected
+
+
+def test_tokenize_text_punctuation():
+    tokenizer = Mock()
+    tokenizer.tokenize.return_value = ["Hello", "!"]
+ 
+    result = tokenize_text(tokenizer, "Hello!")
+ 
+    assert result == ["Hello", "!"]
