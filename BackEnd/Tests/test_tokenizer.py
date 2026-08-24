@@ -150,4 +150,29 @@ def test_tokenize_corpus_single_sentence():
     result = tokenize_corpus(tokenizer, ["Hello"])
  
     assert result == [["Hello"]]
+
+
+def test_tokenize_corpus_preserves_order():
+    tokenizer = Mock()
  
+    tokenizer.tokenize.side_effect = [
+        ["first"],
+        ["second"],
+        ["third"],
+    ]
+ 
+    sentences = [
+        "First",
+        "Second",
+        "Third",
+    ]
+ 
+    result = tokenize_corpus(tokenizer, sentences)
+ 
+    assert result == [
+        ["first"],
+        ["second"],
+        ["third"],
+    ]
+ 
+  
