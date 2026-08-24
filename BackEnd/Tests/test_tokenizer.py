@@ -26,3 +26,13 @@ def test_tokenize_text_normal_sentence():
 
     assert result == ["Hello", "world"]
     tokenizer.tokenize.assert_called_once_with("Hello world")
+
+
+def test_tokenize_text_empty_string():
+    tokenizer = Mock()
+
+    result = tokenize_text(tokenizer, "")
+
+    assert result == []
+    tokenizer.tokenize.assert_not_called()
+
