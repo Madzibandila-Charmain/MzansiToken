@@ -53,3 +53,14 @@ def test_tokenize_text_newline():
  
     assert result == []
     tokenizer.tokenize.assert_not_called()
+
+    
+def test_tokenize_text_tabs():
+    tokenizer = Mock()
+ 
+    result = tokenize_text(tokenizer, "\t\t")
+ 
+    assert result == []
+    tokenizer.tokenize.assert_not_called()
+ 
+ 
