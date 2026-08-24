@@ -39,3 +39,16 @@ def test_compression_hand_calculated():
     tokenized = [["Hello", "world"], ["Cape", "Town"]]
  
     assert compression(tokenized, sentences) == 5.0
+
+
+def test_compression_zero_token_returns_zero():
+    sentences = [["Hello"]]
+    tokenized = [[]]
+    assert compression(tokenized, sentences) == 0
+
+
+def test_compression_mutiple_characters():
+    sentences = ["café"]
+    tokenized = [["café"]]
+ 
+    assert compression(tokenized, sentences) == 5.0
