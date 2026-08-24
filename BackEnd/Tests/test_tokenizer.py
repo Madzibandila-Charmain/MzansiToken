@@ -190,3 +190,17 @@ def test_tokenize_corpus_calls_tokenizer_for_each_sentence():
     )
  
     assert tokenizer.tokenize.call_count == 3  
+
+
+# get_tokenizer_info() TESTS
+
+def test_get_tokenizer_info():
+    tokenizer = Mock()
+    tokenizer.vocab_size = 50257
+    tokenizer.model_type = "gpt2"
+ 
+    result = get_tokenizer_info(tokenizer)
+ 
+    assert result["vocab_size"] == 50257
+    assert result["model_type"] == "gpt2"
+    assert result["class"] == "Mock"
