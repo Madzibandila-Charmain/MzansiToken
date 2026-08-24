@@ -11,7 +11,6 @@ from pathlib import Path
 # Maps human-readable language names to their FLORES filename codes.
 # These are the 9 South African languages in the project scope.
 LANGUAGES = {
-    "Afrikaans": "afr_Latn",
     "English":   "eng_Latn",
     "Sepedi":    "nso_Latn",
     "Sesotho":   "sot_Latn",
