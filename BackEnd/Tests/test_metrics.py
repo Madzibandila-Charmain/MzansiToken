@@ -138,3 +138,5 @@ def test_token_premium_none_when_english_zero():
     assert token_premium(200, 0) is None
 
 
+def test_token_premium_rounds_to_three_decimals():
+    assert token_premium(100, 3) == 33.333
