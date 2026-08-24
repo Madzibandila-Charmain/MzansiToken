@@ -154,3 +154,26 @@ def _mock_tokenizer_word_level():
     tokenizer = Mock()
     tokenizer.tokenize.side_effect = lambda text: text.split()
     return tokenizer
+
+
+def test_compute_efficiency_metrics_all_languages_present():
+    """
+    Check: every language in the input corpus gets results.
+    We expect each language to have all four metrics:
+    token_count, fertility, compression, and token_premium.
+    """
+    tokenizer = _mock_tokenizer_word_level()
+    corpus = {
+        "English": ["Hello world"],
+        "isiZulu": ["Sawubona mhlaba"],
+    }
+
+    result = compute_efficiency_metrics(tokenizer, corpus)
+
+    # Make sure both languages are present
+    assert set(result.keys()) == {"English", "isiZulu"}
+    # Make sure each language has all four metrics
+    for language in result:
+        assert set(result[language].keys()) == {
+            "token_count", "fertility", "compression", "token_premium"
+        }
