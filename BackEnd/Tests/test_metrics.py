@@ -119,3 +119,12 @@ def test_compression_multibyte_characters():
 
 def  test_token_premium_english_baseline_is_one():
     assert token_premium(100, 100) == 1.0
+
+
+def test_token_premium_hand_calculated():
+    """
+    isiZulu needing 2x more tokens than English:
+    lang_token_count = 200, eng_token_count = 100
+    token_premium = 200 / 100 = 2.0
+    """
+    assert token_premium(200, 100)
