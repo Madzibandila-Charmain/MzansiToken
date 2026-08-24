@@ -22,3 +22,20 @@ def test_token_count_empty_list():
 def test_token_count_sentences_with_no_tokens():
     tokenized = [[], [], []]
     assert token_count(tokenized) == 0
+
+
+# compression() TESTS
+# Formula: compression = total_bytes / total_tokens
+
+def test_compression_hand_calculated():
+    """
+    "Hello world" = 11 ASCII chars = 11 bytes
+    "Cape Town"   = 9 ASCII chars  = 9 bytes
+    Total bytes = 20
+    Tokenized: 4 tokens total (as in fertility test above)
+    compression = 20 / 4 = 5.0
+    """
+    sentences = ["Hello world", "Cape Town"]
+    tokenized = [["Hello", "world"], ["Cape", "Town"]]
+ 
+    assert compression(tokenized, sentences) == 5.0
