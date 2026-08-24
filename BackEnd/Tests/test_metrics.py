@@ -95,3 +95,19 @@ def test_compression_zero_tokens_returns_zero():
     tokenized = [[]]
  
     assert compression(tokenized, sentences) == 0.0
+
+
+def test_compression_multibyte_characters():
+    """
+    "é" is a multi-byte UTF-8 character (2 bytes), not 1.
+    This confirms compression counts real UTF-8 bytes, not character
+    count — important since your project specifically compares
+    languages where character-to-byte ratios differ.
+    "café" = c(1) a(1) f(1) é(2) = 5 bytes
+    Tokenized as a single token: 1 token
+    compression = 5 / 1 = 5.0
+    """
+    sentences = ["café"]
+    tokenized = [["café"]]
+ 
+    assert compression(tokenized, sentences) == 5.0
