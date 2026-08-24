@@ -53,6 +53,7 @@ def test_compression_mutiple_characters():
  
     assert compression(tokenized, sentences) == 5.0
 
+
 # fertility() TESTS
 # Formula: fertility = total_tokens / total_words
 
@@ -111,3 +112,10 @@ def test_compression_multibyte_characters():
     tokenized = [["café"]]
  
     assert compression(tokenized, sentences) == 5.0
+
+
+# token_premium() tests
+# Formula: token_premium = lang_token_count / eng_token_count
+
+def  test_token_premium_english_baseline_is_one():
+    assert token_premium(100, 100) == 1.0
