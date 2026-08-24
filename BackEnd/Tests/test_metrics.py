@@ -140,3 +140,17 @@ def test_token_premium_none_when_english_zero():
 
 def test_token_premium_rounds_to_three_decimals():
     assert token_premium(100, 3) == 33.333
+
+
+# compute_efficiency_metrics() tests
+# Requires a mocked tokenizer since it calls tokenize_corpus() internally.
+
+def _mock_tokenizer_word_level():
+    """
+    Helper function: creates a fake tokenizer.
+    Instead of using a real tokenizer, this one just splits text
+    by spaces. That way, we always know exactly what the output will be.
+    """
+    tokenizer = Mock()
+    tokenizer.tokenize.side_effect = lambda text: text.split()
+    return tokenizer
