@@ -177,3 +177,18 @@ def test_compute_efficiency_metrics_all_languages_present():
         assert set(result[language].keys()) == {
             "token_count", "fertility", "compression", "token_premium"
         }
+
+
+def test_compute_efficiency_metrics_english_premium_is_baseline():
+    """
+    Check: English should always have a token_premium of 1.0.
+    This means English is the baseline language for comparison.
+    """
+    tokenizer = _mock_tokenizer_word_level()
+    corpus = {
+        "English": ["Hello world"],
+        "isiZulu": ["Sawubona mhlaba wonke"],
+    }
+    result = compute_efficiency_metrics(tokenizer, corpus)
+
+    assert result["English"]["token_premium"] == 1.0
