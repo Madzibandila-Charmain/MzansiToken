@@ -52,3 +52,16 @@ def test_compression_mutiple_characters():
     tokenized = [["café"]]
  
     assert compression(tokenized, sentences) == 5.0
+
+
+def test_fertitlty_hand_calculated():
+    """
+    Sentences: "Hello world" (2 words), "Cape Town" (2 words)
+    Total words = 4
+    Tokenized:  ["Hello", "world"], ["Cape", "Town"] -> 4 tokens total
+    fertility = 4 / 4 = 1.0
+    """
+    sentences = ["Hello world", "Cape Town"]
+    tokenized = [["Hello", "world"], ["Cape", "Town"]]
+
+    assert fertility(tokenized, sentences) == 1.0
