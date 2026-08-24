@@ -262,3 +262,15 @@ def test_load_tokenizer_valid_name():
         result = load_tokenizer("gpt2")
 
     assert result.vocab_size == 50257
+
+
+def test_load_tokenizer_strips_whitespace():
+    fake_tokenizer = Mock(spec=PreTrainedTokenizerFast)
+
+    with patch("tokenizer.AutoTokenizer.from_pretrained", return_value=fake_tokenizer) as mock_load:
+        load_tokenizer("  gpt2  ")
+
+    mock_load.assert_called_once_with("gpt2", trust_remote_code=False)
+
+
+# Failure paths for load_tokenizer()
