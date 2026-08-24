@@ -45,4 +45,11 @@ def test_tokenize_text_whitespace():
     assert result == []
     tokenizer.tokenize.assert_not_called()
 
-    
+
+def test_tokenize_text_newline():
+    tokenizer = Mock()
+ 
+    result = tokenize_text(tokenizer, "\n\n")
+ 
+    assert result == []
+    tokenizer.tokenize.assert_not_called()
