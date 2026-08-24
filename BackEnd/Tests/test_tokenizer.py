@@ -54,7 +54,7 @@ def test_tokenize_text_newline():
     assert result == []
     tokenizer.tokenize.assert_not_called()
 
-    
+
 def test_tokenize_text_tabs():
     tokenizer = Mock()
  
@@ -62,5 +62,14 @@ def test_tokenize_text_tabs():
  
     assert result == []
     tokenizer.tokenize.assert_not_called()
+ 
+
+def test_tokenize_text_calls_tokenizer():
+    tokenizer = Mock()
+    tokenizer.tokenize.return_value = ["Hello"]
+ 
+    tokenize_text(tokenizer, "Hello")
+ 
+    tokenizer.tokenize.assert_called_once_with("Hello")
  
  
