@@ -100,3 +100,12 @@ def test_tokenize_text_unicode():
     result = tokenize_text(tokenizer, "éclair")
  
     assert result == ["é", "clair"]
+
+
+def test_tokenize_text_zulu():
+    tokenizer = Mock()
+    tokenizer.tokenize.return_value = ["Ikhaya", "lami"]
+ 
+    result = tokenize_text(tokenizer, "Ikhaya lami")
+ 
+    assert result == ["Ikhaya", "lami"]
