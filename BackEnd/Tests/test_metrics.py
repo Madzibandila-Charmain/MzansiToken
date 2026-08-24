@@ -128,3 +128,9 @@ def test_token_premium_hand_calculated():
     token_premium = 200 / 100 = 2.0
     """
     assert token_premium(200, 100)
+
+
+def test_token_premium_none_when_english_missing():
+    assert token_premium(200, None) is None
+
+
