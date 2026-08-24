@@ -72,4 +72,13 @@ def test_tokenize_text_calls_tokenizer():
  
     tokenizer.tokenize.assert_called_once_with("Hello")
  
+
+def test_tokenize_text_returns_tokenizer_result():
+    tokenizer = Mock()
  
+    expected = ["This", "is", "a", "test"]
+    tokenizer.tokenize.return_value = expected
+ 
+    result = tokenize_text(tokenizer, "This is a test")
+ 
+    assert result == expected
