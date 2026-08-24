@@ -274,3 +274,9 @@ def test_load_tokenizer_strips_whitespace():
 
 
 # Failure paths for load_tokenizer()
+
+def test_load_tokenizer_invalid_name_raises_valueerror():
+    with patch("tokenizer.AutoTokenizer.from_pretrained", side_effect=OSError("not found")):
+        with pytest.raises(ValueError, match="not found on Hugging Face"):
+            load_tokenizer("this-model-does-not-exist-xyz-123")
+
