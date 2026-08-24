@@ -109,3 +109,27 @@ def test_tokenize_text_zulu():
     result = tokenize_text(tokenizer, "Ikhaya lami")
  
     assert result == ["Ikhaya", "lami"]
+
+
+# tokenize_corpus() TESTS
+ 
+def test_tokenize_corpus_multiple_sentences():
+    tokenizer = Mock()
+ 
+    tokenizer.tokenize.side_effect = [
+        ["Hello"],
+        ["How", "are", "you"],
+    ]
+ 
+    sentences = [
+        "Hello",
+        "How are you",
+    ]
+ 
+    result = tokenize_corpus(tokenizer, sentences)
+ 
+    assert result == [
+        ["Hello"],
+        ["How", "are", "you"],
+    ]
+ 
