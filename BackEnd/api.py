@@ -456,3 +456,43 @@ async def inspect_upload(
         "tokenized_text": tokenized,
         "metrics": metrics
     }
+
+# Endpoint 11: Tokenize typed text with full metrics
+@app.post("/tokenize-text")
+def tokenize_text_post(request: TokenizeTextRequest):
+    """
+    Tokenize text typed by the user and return full efficiency metrics.
+
+    React sends: {"text": "...", "language": "isiZulu", "tokenizer": "gpt2"}
+
+    Note: this is a separate POST endpoint from the existing GET
+    /tokenize-text/{model_name} (Endpoint 6), which only returns raw
+    tokens without metrics. That one stays as-is for any other caller
+    that still needs the simpler response.
+    """
+    text = request.text
+    language = request.language
+    model_name = request.tokenizer
+
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="Text cannot be empty.")
+
+    if language not in corpus:
+        raise HTTPException(status_code=400, detail=f"Unsupported language: {language}")
+
+    validate_tokenizer(model_name)
+
+    try:
+        tokenizer = get_or_load_tokenizer(model_name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    tokens = tokenize_text(tokenizer, text)
+    metrics = calculate_efficiency_metrics_one_language(tokenizer, model_name, language, [text])
+
+    return {
+        "language": language,
+        "tokenizer": model_name,
+        "tokenized_text": tokens,
+        "metrics": metrics
+    }
