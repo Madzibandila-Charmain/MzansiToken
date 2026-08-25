@@ -124,6 +124,11 @@ SUPPORTED_TOKENIZERS = [
     "tiiuae/falcon-7b",
 ]
 
+# Helper function to validate tokenizer loaded
+def validate_tokenizer(model_name: str):
+    # Reject any tokenizer not in the SUPPORTED_TOKENIZERS list
+    if model_name not in SUPPORTED_TOKENIZERS:
+        raise HTTPException(status_code=400, detail=f"Unsupported tokenizer: {model_name}")
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 # Each @app.get(...) decorator registers a URL endpoint.
