@@ -1,7 +1,5 @@
 
 
-
-
 def tokenize_NCHLT(tokenizer, nchlt_data, delimeter="_") -> list[tuple[str, str]]:
     """
         Run tokenizer through the NCHLT dataset to get its predicted segmentations for analysis
@@ -23,32 +21,13 @@ def tokenize_NCHLT(tokenizer, nchlt_data, delimeter="_") -> list[tuple[str, str]
         # convert list of tokens to tokenized string
         cleaned = []
         for token in tokens:
-            t = t.replace("##", "")   # WordPiece (BERT)
-            t = t.replace("▁", "")    # SentencePiece (T5, Llama)
-            t = t.replace("Ġ", "")    # BPE byte-level (GPT-2)
+            token = token.replace("##", "")   # WordPiece (BERT)
+            token = token.replace("▁", "")    # SentencePiece (T5, Llama)
+            token = token.replace("Ġ", "")    # BPE byte-level (GPT-2)
             if token:
                 cleaned.append(token)
         tokenized_str = delimeter.join(cleaned)
 
-        results.append(surf, tokenized_str)
+        results.append((surf, tokenized_str))
 
     return results
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
-
