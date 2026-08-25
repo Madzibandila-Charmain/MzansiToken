@@ -358,5 +358,44 @@ def get_languages():
         "tokenizers": SUPPORTED_TOKENIZERS
     }
 
+# Endpoint 9: Load a languages default FLORES corpus
+@app.post("/inspect/default")
+def inspect_default(request: InspectRequest):
+    """
+    Load the selected language's default FLORES corpus, tokenized, with metrics for that language.
 
-# ── Mutalu ─────────────────────────────────────────────────────────────────
+    React sends: {"language": "isiZulu", "tokenizer": "gpt2"}
+
+    Example response:
+        {
+            "language": "isiZulu",
+            "tokenizer": "gpt2",
+            "tokenized_text": [["token", "list", ...], ...],
+            "metrics": {"token_count": ..., "fertility": ..., "compression": ..., "token_premium": ...}
+        }
+    """
+    language = request.language
+    model_name = request.tokenizer
+
+    # Validate language exists in the FLORES corpus
+    if language not in corpus:
+        raise HTTPException(status_code=400, detail=f"Unsupported language: {language}")
+
+    # Validate tokenizer is one of the displayed options
+    validate_tokenizer(model_name)
+
+    try:
+        tokenizer = get_or_load_tokenizer(model_name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    sentences = corpus[language]
+    tokenized = tokenize_corpus(tokenizer, sentences)
+    metrics = calculate_efficiency_metrics_one_language(tokenizer, model_name, language, sentences)
+
+    return {
+        "language": language,
+        "tokenizer": model_name,
+        "tokenized_text": tokenized,
+        "metrics": metrics
+    }
