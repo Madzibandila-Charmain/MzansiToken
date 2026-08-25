@@ -135,7 +135,7 @@ function Inspect() {
     //The second useEffect
     useEffect(() => {
 
-        if (!inputText.trim()) {
+        if (!inputText.trim() || !tokenizer) {
             setTypedTokenizedText("");
 
             setTextMetrics({
@@ -332,7 +332,7 @@ function Inspect() {
 
         setFileName("default");
         setSelectedFile(null);
-        setFileName("default");
+        setSource("default");
 
         /* Clear the actual file selected in the browser. */
         if (fileInputRef.current) {
@@ -502,7 +502,7 @@ function Inspect() {
                         <span className="metric-value">
                             {corpusMetrics.token_premium === null
                                 ? "N/A"
-                                : Number(corpusMetrics.token_premium).toFixed(3)
+                                : Number(corpusMetrics.token_premium).toFixed(2)
                             }
                         </span>
                     </div>
@@ -578,7 +578,7 @@ function Inspect() {
                             <span className="typed-metric-value">
                                 {textMetrics.token_premium === null
                                     ? "N/A"
-                                    : Number(textMetrics.token_premium).toFixed(3)
+                                    : Number(textMetrics.token_premium).toFixed(2)
                                 }
                             </span>
                         </div>
