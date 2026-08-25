@@ -23,7 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from qualitative import get_example_sentence, get_random_sentence, get_sentence_count
 from tokenizer import load_tokenizer, tokenize_text, tokenize_corpus, get_tokenizer_info
-from metrics import compute_efficiency_metrics, token_count, fertility, compression, token_premium
+from metrics import compute_efficiency_metrics, calculate_efficiency_metrics_one_language
 
 # ── App setup ─────────────────────────────────────────────────────────────────
 
@@ -55,7 +55,7 @@ class TokenizeTextRequest(BaseModel):
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://localhost:3000"],
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
