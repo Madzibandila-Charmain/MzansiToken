@@ -399,3 +399,60 @@ def inspect_default(request: InspectRequest):
         "tokenized_text": tokenized,
         "metrics": metrics
     }
+
+# Endpoint 10: Process an uploaded corpus
+@app.post("/inspect/upload")
+async def inspect_upload(
+    file: UploadFile = File(...),
+    language: str = Form(...),
+    tokenizer: str = Form(...)
+):
+    """
+    Tokenize a user-uploaded .txt file and compute its metrics.
+
+    React sends multipart/form-data: file, language, tokenizer.
+
+    Example response:
+        {
+            "filename": "myfile.txt",
+            "language": "isiZulu",
+            "tokenizer": "gpt2",
+            "tokenized_text": [[...], ...],
+            "metrics": {"token_count": ..., "fertility": ..., "compression": ..., "token_premium": ...}
+        }
+    """
+    if not file.filename or not file.filename.lower().endswith(".txt"):
+        raise HTTPException(status_code=400, detail="Only .txt files are supported.")
+
+    if language not in corpus:
+        raise HTTPException(status_code=400, detail=f"Unsupported language: {language}")
+
+    validate_tokenizer(tokenizer)
+
+    try:
+        tokenizer_model = get_or_load_tokenizer(tokenizer)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    try:
+        contents = await file.read()
+        text = contents.decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="The uploaded file must be UTF-8 encoded.")
+
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="The uploaded file is empty.")
+
+    # Split into non-blank lines, same convention as load_flores()
+    sentences = [line.strip() for line in text.splitlines() if line.strip()]
+
+    tokenized = tokenize_corpus(tokenizer_model, sentences)
+    metrics = calculate_efficiency_metrics_one_language(tokenizer_model, tokenizer, language, sentences)
+
+    return {
+        "filename": file.filename,
+        "language": language,
+        "tokenizer": tokenizer,
+        "tokenized_text": tokenized,
+        "metrics": metrics
+    }
