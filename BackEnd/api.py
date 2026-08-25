@@ -30,6 +30,23 @@ from metrics import compute_efficiency_metrics, token_count, fertility, compress
 # Create the FastAPI app. Everything — endpoints, middleware — attaches to this.
 app = FastAPI()
 
+# ── Request models ────────────────────────────────────────────────────────────
+
+# Pydantic models define the JSON shape React sends in a POST body.
+# FastAPI uses these to validate incoming requests automatically.
+
+class InspectRequest(BaseModel):
+    """Data sent by React when loading a default FLORES corpus."""
+    language: str
+    tokenizer: str
+
+
+class TokenizeTextRequest(BaseModel):
+    """Data sent by React when the user types custom text."""
+    text: str
+    language: str
+    tokenizer: str
+
 # CORS (Cross-Origin Resource Sharing)
 # The React frontend runs on port 3000 or 5173.
 # The backend runs on port 8000.
