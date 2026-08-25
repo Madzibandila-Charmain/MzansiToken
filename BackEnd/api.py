@@ -113,6 +113,12 @@ SUPPORTED_TOKENIZERS = [
 # When React calls that URL, FastAPI runs the function below it
 # and sends back whatever it returns as JSON automatically.
 
+# Endpoint 0: API health check
+@app.get("/")
+def root():
+    """Confirm that the MzansiToken API is running."""
+    return {"message": "MzansiToken API is running"}
+
 
 # Endpoint 1: Efficiency metrics for one tokenizer
 @app.get("/metrics/{model_name}")
