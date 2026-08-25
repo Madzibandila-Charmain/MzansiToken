@@ -194,6 +194,52 @@ def compute_efficiency_metrics(tokenizer, corpus: dict[str, list[str]]) -> dict[
     # Return the full results dictionary
     return results
 
+def calculate_efficiency_metrics_one_language(tokenizer, model_name: str, language: str, sentences: list[str],
+                               metrics_cache: dict, corpus: dict[str, list[str]]):
+    """
+    Calculate the four efficiency metrics for one language:
+    - token_count
+    - fertility
+    - compression
+    - token_premium
+
+    Token premium compares a language to English. To avoid re‑doing
+    work, we check if English's token count is already stored in the
+    metrics cache. If not, we compute it once and reuse it.
+    """
+
+    # Step 1: Tokenize the sentences for this language
+    tokenized_sentences = tokenize_corpus(tokenizer, sentences)
+
+    # Calculate the three basic metrics
+    lang_token_count = token_count(tokenized_sentences)       # How many tokens total?
+    lang_fertility = fertility(tokenized_sentences, sentences) # Tokens per word
+    lang_compression = compression(tokenized_sentences, sentences) # Bytes per token
+
+    # Figure out English's token count (needed for token_premium)
+    if language == "English":
+        # If we're analyzing English itself, just use its own count
+        english_token_count = lang_token_count
+    elif model_name in metrics_cache:
+        # If we've already computed metrics for this tokenizer, reuse English's token count from the cache
+        english_token_count = metrics_cache[model_name]["English"]["token_count"]
+    else:
+        # Otherwise, compute English's token count from scratch
+        english_sentences = corpus.get("English", [])
+        english_tokenized = tokenize_corpus(tokenizer, english_sentences)
+        english_token_count = token_count(english_tokenized)
+
+    # Compute token premium (language tokens / English tokens)
+    premium = token_premium(lang_token_count, english_token_count)
+
+    # Return all four metrics in a dictionary
+    return {
+        "token_count": lang_token_count,
+        "fertility": lang_fertility,
+        "compression": lang_compression,
+        "token_premium": premium
+    }
+
 # Quick test 
 if __name__ == "__main__":
     import sys
