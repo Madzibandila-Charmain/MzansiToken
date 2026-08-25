@@ -28,6 +28,7 @@ def tokenize_NCHLT(tokenizer, nchlt_data, delimeter="_") -> list[tuple[str, str]
                 cleaned.append(token)
         tokenized_str = delimeter.join(cleaned)
 
+        # Add to list
         results.append((surf, tokenized_str))
 
     return results
