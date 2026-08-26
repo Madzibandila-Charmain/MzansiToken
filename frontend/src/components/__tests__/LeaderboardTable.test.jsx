@@ -1,0 +1,2 @@
+import LeaderboardTable from "../LeaderboardTable";
+
