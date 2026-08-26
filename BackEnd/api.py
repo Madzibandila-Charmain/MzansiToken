@@ -25,6 +25,9 @@ from qualitative import get_example_sentence, get_random_sentence, get_sentence_
 from tokenizer import load_tokenizer, tokenize_text, tokenize_corpus, get_tokenizer_info
 from metrics import compute_efficiency_metrics, calculate_efficiency_metrics_one_language
 
+
+
+
 # ── App setup ─────────────────────────────────────────────────────────────────
 
 # Create the FastAPI app. Everything — endpoints, middleware — attaches to this.
@@ -143,7 +146,7 @@ def root():
 
 
 # Endpoint 1: Efficiency metrics for one tokenizer
-@app.get("/metrics/{model_name}")
+@app.get("/metrics/{model_name:path}")
 def get_metrics(model_name: str):
     """
     Get efficiency metrics for a tokenizer across all 9 languages.
@@ -169,7 +172,7 @@ def get_metrics(model_name: str):
 
 
 # Endpoint 2: Tokenizer metadata
-@app.get("/tokenizer/{model_name}")
+@app.get("/tokenizer/{model_name:path}")
 def get_tokenizer_endpoint(model_name: str):
     """
     Load a tokenizer and return its details.
@@ -192,7 +195,7 @@ def get_tokenizer_endpoint(model_name: str):
 
 
 # Endpoint 3: Compare two tokenizers side by side
-@app.get("/compare/{model_a}/{model_b}")
+@app.get("/compare")
 def compare_tokenizers(model_a: str, model_b: str):
     """
     Get efficiency metrics for two tokenizers at once.
@@ -231,7 +234,7 @@ def compare_tokenizers(model_a: str, model_b: str):
 
 
 # Endpoint 4: Qualitative tokenization example
-@app.get("/example/model/{model_name}")
+@app.get("/example/model/{model_name:path}")
 def get_example(model_name: str, index: int = -1):
     """
     Get one FLORES sentence tokenized across all 9 languages.
@@ -290,7 +293,7 @@ def sentence_count():
 
 
 # Endpoint 6: Tokenize a single piece of custom text
-@app.get("/tokenize-text/{model_name}")
+@app.get("/tokenize-text/{model_name:path}")
 def tokenize_text_endpoint(model_name: str, text: str):
     """
     Split one piece of text into tokens.
@@ -311,7 +314,7 @@ def tokenize_text_endpoint(model_name: str, text: str):
 
 
 # Endpoint 7: Tokenize the entire FLORES corpus
-@app.get("/tokenize-corpus/{model_name}")
+@app.get("/tokenize-corpus/{model_name:path}")
 def tokenize_corpus_endpoint(model_name: str):
     """
     Tokenize all sentences in the FLORES dataset for a given tokenizer.
