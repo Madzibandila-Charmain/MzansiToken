@@ -1,5 +1,10 @@
+import { use } from "react";
+import { useState } from "react";
+
 
 function LeaderboardTable(){
+    const [sort, setSort] = useState({keyToSort: "tokenPremium", direction: "desc"});
+
     const headers = [
         {
             id: 1,
@@ -80,20 +85,53 @@ function LeaderboardTable(){
     },
     ];
 
+    /**
+     * Function that will set the sort according to which header is clicked
+     * @param {*} header 
+     */
+    function handleHeaderClick(header) {
+        setSort({
+            keyToSort: header.KEY,
+            direction:
+                // If the we clicked is the key thats being sorted
+                header.KEY === sort.keyToSort ?
+                    //Invert the direction
+                    sort.direction === "asc" ?
+                        "desc"
+                    : "asc"
+                //Else make it descending by default
+                :"desc"
+
+        })
+    }
+
+    /**
+     * Function that will sort an array of the data according to the sort thats set
+     * @param {*} arrayToSort 
+     */
+    function getSortedArray(arrayToSort){
+        if (sort.direction === "asc"){
+            // Sort alpha numerically in asc order
+            return arrayToSort.sort((a, b) => (a[sort.keyToSort] > b[sort.keyToSort] ? 1 : -1))
+        }
+        // Sort appha numerically in desc order
+        return arrayToSort.sort((a, b) => (a[sort.keyToSort] > b[sort.keyToSort] ? -1 : 1))
+    }
+
 
     return (
         <table>
             <thead>
                 <tr>
                     {headers.map((header, index) => (
-                        <th key={index}>
+                        <th key={index} onClick={() => handleHeaderClick(header)}>
                             <span>{header.LABEL}</span>
                         </th>
                     ))}
                 </tr>
             </thead>
             <tbody>
-                    {data.map((row, index) => (
+                    {getSortedArray(data).map((row, index) => (
                         <tr key={index}>
                             {headers.map((header, index) => {
                                 return (
