@@ -24,6 +24,19 @@ Usage:
 from flores import load_flores, LANGUAGES
 from tokenizer import load_tokenizer, tokenize_corpus
 
+
+_english_baseline_cache = {}  # model_name -> english token_count
+
+def get_english_baseline(model_name, tokenizer, corpus):
+    """Return cached English token count for this model, computing it once if needed."""
+    if model_name in _english_baseline_cache:
+        return _english_baseline_cache[model_name]
+    english_sentences = corpus.get("English", [])
+    english_tokenized = tokenize_corpus(tokenizer, english_sentences)
+    count = token_count(english_tokenized)
+    _english_baseline_cache[model_name] = count
+    return count
+
 # Metric 1:  Tockn Count
 def token_count(tokenized_sentences: list[list[str]]) -> int:
     """
@@ -214,13 +227,9 @@ def calculate_efficiency_metrics_one_language(tokenized_sentences, sentences, mo
 
     if language == "English":
         english_token_count = lang_token_count
-    elif model_name in metrics_cache:
-        english_token_count = metrics_cache[model_name]["English"]["token_count"]
     else:
-        english_sentences = corpus.get("English", [])
-        english_tokenized = tokenize_corpus(tokenizer, english_sentences)
-        english_token_count = token_count(english_tokenized)
-
+        english_token_count = get_english_baseline(model_name, tokenizer, corpus)
+        
     premium = token_premium(lang_token_count, english_token_count)
 
     return {
