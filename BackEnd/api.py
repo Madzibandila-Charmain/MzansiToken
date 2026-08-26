@@ -391,7 +391,7 @@ def inspect_default(request: InspectRequest):
 
     sentences = corpus[language]
     tokenized = tokenize_corpus(tokenizer, sentences)
-    metrics = calculate_efficiency_metrics_one_language(tokenizer, model_name, language, sentences, _metrics_cache, corpus)
+    metrics = calculate_efficiency_metrics_one_language(tokenized, sentences, model_name, language, tokenizer, _metrics_cache, corpus)
     return {
         "language": language,
         "tokenizer": model_name,
@@ -446,7 +446,7 @@ async def inspect_upload(
     sentences = [line.strip() for line in text.splitlines() if line.strip()]
 
     tokenized = tokenize_corpus(tokenizer_model, sentences)
-    metrics = calculate_efficiency_metrics_one_language(tokenizer_model, tokenizer, language, sentences, _metrics_cache, corpus)
+    metrics = calculate_efficiency_metrics_one_language(tokenized, sentences, tokenizer, language, tokenizer_model, _metrics_cache, corpus)
 
     return {
         "filename": file.filename,
@@ -487,7 +487,7 @@ def tokenize_text_post(request: TokenizeTextRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
     tokens = tokenize_text(tokenizer, text)
-    metrics = calculate_efficiency_metrics_one_language(tokenizer, model_name, language, [text], _metrics_cache, corpus)
+    metrics = calculate_efficiency_metrics_one_language(tokens, [text], model_name, language, tokenizer, _metrics_cache, corpus)
     return {
         "language": language,
         "tokenizer": model_name,
