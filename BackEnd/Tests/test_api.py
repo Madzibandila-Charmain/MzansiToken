@@ -37,3 +37,8 @@ def test_get_options():
     assert len(data["languages"]) == 8
     assert data["tokenizers"] == api.SUPPORTED_TOKENIZERS
 
+
+def test_sentence_count():
+    response = client.get("/sentence-count")
+    assert response.status_code == 200
+    assert response.json()["count"] == 3
