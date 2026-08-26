@@ -487,7 +487,7 @@ def tokenize_text_post(request: TokenizeTextRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
     tokens = tokenize_text(tokenizer, text)
-    metrics = calculate_efficiency_metrics_one_language(tokens, [text], model_name, language, tokenizer, _metrics_cache, corpus)
+    metrics = calculate_efficiency_metrics_one_language([tokens], [text], model_name, language, tokenizer, _metrics_cache, corpus)
     return {
         "language": language,
         "tokenizer": model_name,
