@@ -20,3 +20,20 @@ def _mock_tokenizer():
     tokenizer.model_type = "test-model"
     return tokenizer
 
+
+# Basic Health 
+def test_root():
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.json()["message"] == "MzansiToken API is running"
+
+
+def test_get_options():
+    response = client.get("/options")
+    assert response.status_code == 200
+    data = response.json()
+    assert "languages" in data
+    assert "tokenizers" in data
+    assert len(data["languages"]) == 8
+    assert data["tokenizers"] == api.SUPPORTED_TOKENIZERS
+
