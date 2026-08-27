@@ -13,56 +13,50 @@ import {
     tokenizeText
 } from "../api/client";
 
+import { useAppState } from "../context/AppStateContext";
+
 function Inspect() {
 
-    /* English is set as the initial value until backend options are loaded */
-    const [language, setLanguage] = useState("English");
+    /* Shared application state. These values are stored in AppStateContext so they remain unchanged when the user moves between different pages. */ 
+    const { 
+        language, 
+        setLanguage,
 
-    /*  Selected tokenizer */
-    const [tokenizer, setTokenizer] = useState([]);
+        tokenizer, 
+        setTokenizer, 
+
+        source, 
+        setSource, 
+        
+        selectedFile, 
+        setSelectedFile, 
+        
+        fileName, 
+        setFileName,
+
+        inputText, 
+        setInputText, 
+        
+        corpusTokenizedText, 
+        setCorpusTokenizedText, 
+        
+        corpusMetrics, 
+        setCorpusMetrics, 
+        
+        typedTokenizedText, 
+        setTypedTokenizedText, 
+        
+        textMetrics, 
+        setTextMetrics, 
+        
+        inspectInitialised, 
+        setInspectInitialised } = useAppState();
 
     /* Languages provided by the backend. */
     const [languages, setLanguages] = useState([]);
 
     /* Tokenizers provided by the backend. */
     const [tokenizers, setTokenizers] = useState([]);
-
-    /*  Determines whether the user is using the default 
-        corpus or an uploaded corpus.
-    */
-    const [source, setSource] = useState("default");
-
-    /* Stores the actual uploaded File object. */
-    const [selectedFile, setSelectedFile] = useState(null);
-
-    /* Filename displayed to the user. */
-    const [fileName, setFileName] = useState("default");
-
-    /* Tokenized result for the corpus section. */
-    const [corpusTokenizedText, setCorpusTokenizedText] = useState([]);
-
-    /* Metrics returned by FastAPI for the corpus. */
-    const [corpusMetrics, setCorpusMetrics] = useState({
-        tokens: 0,
-        fertility: 0,
-        compression: 0,
-        token_premium: 0
-    });
-
-
-    /* Stores the text typed by the use */
-    const [inputText, setInputText] = useState("");
-
-    /* Tokenized result for the Type Anything section. */
-    const [typedTokenizedText, setTypedTokenizedText] = useState([]);
-
-    /* Metrics returned by FastAPI for typed text. */
-    const [textMetrics, setTextMetrics] = useState({
-        tokens: 0,
-        fertility: 0,
-        compression: 0,
-        token_premium: 0
-    });
 
     /* Displays whether the frontend is currently waiting for a backend response. */
     const [loading, setLoading] = useState(false);
@@ -94,53 +88,53 @@ function Inspect() {
                 setLanguages(result.languages);
                 setTokenizers(result.tokenizers);
 
-                const defaultLanguage =
-                    result.defaults?.language || "English";
+                if (!inspectInitialised) { 
 
-                const defaultTokenizer =
-                    result.defaults?.tokenizer ||
-                    result.tokenizers[0];
+                    const defaultLanguage = 
+                        result.defaults?.language || "English"; 
 
-                setLanguage(defaultLanguage);
-                setTokenizer(defaultTokenizer);
-
-                const defaultResult = 
-                    await getDefaultCorpus(
-                    defaultLanguage,
-                    defaultTokenizer
-                );
-
-                setCorpusTokenizedText(
-                    formatTokenizedText(
-                        defaultResult.tokenized_text
-                    )
-                );
-
-                setCorpusMetrics({
-                    tokens: defaultResult.metrics.token_count ?? 0,
-                    fertility: defaultResult.metrics.fertility ?? 0,
-                    compression: defaultResult.metrics.compression ?? 0,
-                    token_premium:
-                        defaultResult.metrics.token_premium
-                });
-            }
-            catch (err) {
-                setError(err.message);
-            }
-            finally {
-                setLoading(false);
-            }
-        }
-
-        initialiseInspect();
-
-    }, []);
+                    const defaultTokenizer = 
+                        result.defaults?.tokenizer || result.tokenizers[0]; 
+                        
+                    setLanguage(defaultLanguage); 
+                    setTokenizer(defaultTokenizer); 
+                    
+                    const defaultResult = 
+                        await getDefaultCorpus( defaultLanguage, defaultTokenizer ); 
+                        
+                    setCorpusTokenizedText( formatTokenizedText( defaultResult.tokenized_text ) ); 
+                    
+                    setCorpusMetrics({ 
+                        tokens: defaultResult.metrics.token_count ?? 0, 
+                        fertility: defaultResult.metrics.fertility ?? 0, 
+                        compression: defaultResult.metrics.compression ?? 0, 
+                        token_premium: defaultResult.metrics.token_premium ?? null 
+                    }); 
+                    setInspectInitialised(true); 
+                } 
+            } 
+            catch (err) { 
+                setError(err.message); 
+            } 
+            finally { 
+                setLoading(false); 
+            } 
+        } initialiseInspect(); 
+    }, [ 
+        inspectInitialised, 
+        setLanguage, 
+        setTokenizer, 
+        setCorpusTokenizedText, 
+        setCorpusMetrics, 
+        setInspectInitialised 
+    ]);
 
     //The second useEffect
     useEffect(() => {
 
         if (!inputText.trim() || !tokenizer) {
-            setTypedTokenizedText("");
+
+            setTypedTokenizedText([]);
 
             setTextMetrics({
                 tokens: 0,
@@ -189,7 +183,12 @@ function Inspect() {
         );
         return () => clearTimeout(timeoutId);
 
-    }, [inputText, language, tokenizer]);
+    }, [inputText, 
+        language, 
+        tokenizer, 
+        setTypedTokenizedText, 
+        setTextMetrics
+    ]);
 
     /* Loads default Corpus */
     async function loadDefaultCorpus(
@@ -219,6 +218,7 @@ function Inspect() {
         }
         catch (err) {
             setError(err.message);
+            throw err;
         }
         finally {
             setLoading(false);
@@ -258,6 +258,7 @@ function Inspect() {
         }
         catch (err) {
             setError(err.message);
+            throw err;
         }
         finally {
             setLoading(false);
