@@ -382,19 +382,40 @@ function Inspect() {
     /* Returns the corpus back to the default state */
     async function handleDefault() {
 
-        setFileName("default");
-        setSelectedFile(null);
-        setSource("default");
-
-        /* Clear the actual file selected in the browser. */
-        if (fileInputRef.current) {
-            fileInputRef.current.value = "";
+        if (selectionLoading) {
+            return;
         }
 
-        await loadDefaultCorpus(
-            language,
-            tokenizer
-        );
+        setSelectionLoading(true);
+        setSelectionType("default");
+        setSelectionStatus("Loading default corpus...");
+        setError("");
+
+        try {
+
+            await loadDefaultCorpus(language, tokenizer);
+
+            setFileName("default");
+            setSelectedFile(null);
+            setSource("default");
+
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
+
+            setSelectionStatus("Default corpus ready");
+
+        }
+        catch (err) {
+
+            setError(err.message);
+            setSelectionStatus("Default corpus failed");
+
+        }
+        finally {
+
+            setSelectionLoading(false);
+        }
     }
     
     // Cycles through the 8 CSS colors for the tokens
@@ -403,18 +424,30 @@ function Inspect() {
             return "Your tokenized text will appear here.";
         }
 
-        return tokens.map((token, index) => {
-            const colourIndex = index % 8;
+        const visibleTokens = tokens.slice(0, 1000);
 
-            return (
-                <span
-                    key={`${index}-${token}`}
-                    className={`token-pill token-colour-${colourIndex}`}
-                >
-                    {token}
-                </span>
-            );
-        });
+        return (
+           <>
+                {visibleTokens.map((token, index) => {
+                    const colourIndex = index % 8;
+
+                    return (
+                        <span
+                            key={`${index}-${token}`}
+                            className={`token-pill token-colour-${colourIndex}`}
+                        >
+                            {token}
+                        </span>
+                    );
+                })}
+
+                {tokens.length > 1000 && (
+                    <span className="token-limit-message">
+                        Showing the first 1,000 tokens of {tokens.length.toLocaleString()}.
+                    </span>
+                )}
+            </> 
+        );
     }
 
     return (
@@ -519,6 +552,7 @@ function Inspect() {
                         ref={fileInputRef}
                         accept=".txt"
                         onChange={handleFileChange}
+                        disabled={selectionLoading}
                     />
 
                     <label htmlFor="corpus-upload" className="upload-button">
@@ -531,6 +565,7 @@ function Inspect() {
                             type="button"
                             className="default-button"
                             onClick={handleDefault}
+                            disabled={selectionLoading}
                         >
                             Default
                         </button>
