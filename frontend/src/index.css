@@ -210,6 +210,10 @@
     box-shadow: 
         0 4px 12px rgba(0, 0, 0, 0.06),
         0 1px 3px rgba(0, 0, 0, 0.04);
+
+    display: flex;
+    align-items: flex-end;
+    gap: 28px;
 }
 
 .inspect-filters {
@@ -259,6 +263,13 @@
 
 .filter-group select:focus {
     border-color: #aaaaaa;
+}
+
+.filter-group select:disabled {
+    background-color: #f5f5f5;
+    color: #888888;
+    cursor: not-allowed;
+    opacity: 0.8;
 }
 
 @media (max-width: 700px) {
@@ -460,10 +471,11 @@
 
     color: #333333;
 
-    white-space: pre-wrap;
-    word-break: break-word;
+    white-space: normal;
+    word-break: normal;
 
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 /* ======================
@@ -619,7 +631,6 @@
 }
 
 .typed-result-text {
-
     width: 100%;
     min-height: 50px;
     max-height: 300px;
@@ -637,10 +648,11 @@
 
     color: #333333;
 
-    white-space: pre-wrap;
-    word-break: break-word;
+    white-space: normal;
+    word-break: normal;
 
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 /* =========================
@@ -716,4 +728,166 @@
         0 2px 5px rgba(0, 0, 0, 0.04);
 }
 
+/* ==========================
+   TOKEN VISUALISATION
+========================== */
 
+.token-pill {
+    display: inline-block;
+
+    padding: 4px 8px;
+    margin: 3px 2px;
+
+    border-radius: 7px;
+
+    border: 1px solid rgba(0, 0, 0, 0.10);
+
+    font-size: 14px;
+    line-height: 1.5;
+
+    color: #333333;
+
+    white-space: pre;
+}
+
+/* Small visual separation when a new word begins */
+.token-new-word {
+    margin-left: 6px;
+}
+
+/* ==========================
+   TOKEN COLOUR PALETTE
+========================== */
+
+/* Token colour 1 */
+.token-colour-0 {
+    background: #fde2e2;
+}
+
+/* Token colour 2 */
+.token-colour-1 {
+    background: #e2f0cb;
+}
+
+/* Token colour 3 */
+.token-colour-2 {
+    background: #d9eaf7;
+}
+
+/* Token colour 4 */
+.token-colour-3 {
+    background: #fcecc9;
+}
+
+/* Token colour 5 */
+.token-colour-4 {
+    background: #e8def8;
+}
+
+/* Token colour 6 */
+.token-colour-5 {
+    background: #d9f2e6;
+}
+
+/* Token colour 7 */
+.token-colour-6 {
+    background: #f8d8e8;
+}
+
+/* Token colour 8 */
+.token-colour-7 {
+    background: #dfe3f5;
+}
+
+
+/* Placeholder text */
+.token-placeholder {
+    color: #999999;
+    font-size: 14px;
+}
+
+
+/* Loading text */
+.token-loading {
+    color: #777777;
+    font-size: 14px;
+    font-style: italic;
+}
+
+/* ==========================
+   ERROR
+   ========================== */
+
+.inspect-error {
+    width: calc(100% - 40px);
+    max-width: 1000px;
+
+    margin: -50px auto 30px;
+
+    padding: 12px 16px;
+
+    box-sizing: border-box;
+
+    border: 1px solid #e5caca;
+    border-radius: 8px;
+
+    background: #fff5f5;
+
+    color: #a33;
+
+    font-size: 14px;
+}
+
+/* ==========================
+   TOKENIZER / LANGUAGE STATUS
+========================== */
+
+.selection-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    height: 44px;
+
+    white-space: nowrap;
+
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+
+    border-radius: 50%;
+
+    flex-shrink: 0;
+}
+
+.selection-status.is-loading {
+    color: #777777;
+}
+
+.selection-status.is-loading .status-dot {
+    background: #e0a11a;
+    animation: status-pulse 1.2s ease-in-out infinite;
+}
+
+.selection-status.is-ready {
+    color: #4f7d5a;
+}
+
+.selection-status.is-ready .status-dot {
+    background: #5b9b68;
+}
+
+@keyframes status-pulse {
+    0%,
+    100% {
+        opacity: 0.45;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
