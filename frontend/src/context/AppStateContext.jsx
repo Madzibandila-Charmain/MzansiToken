@@ -21,6 +21,27 @@ export function AppStateProvider({ children }) {
     const [selectedFile, setSelectedFile] = useState(null);
     const [fileName, setFileName] = useState("default");
 
+    // User typed text
+    const [inputText, setInputText] = useState("");
+
+    // Corpus tokenization
+    const [corpusTokenizedText, setCorpusTokenizedText] = useState([]);
+    const [corpusMetrics, setCorpusMetrics] = useState({
+        tokens: 0,
+        fertility: 0,
+        compression: 0,
+        token_premium: null
+    });
+
+    // Typed text tokenization
+    const [typedTokenizedText, setTypedTokenizedText] = useState([]);
+    const [textMetrics, setTextMetrics] = useState({
+        tokens: 0,
+        fertility: 0,
+        compression: 0,
+        token_premium: null
+    });
+
     // Prevent Inspect from reinitialising the state
     const [inspectInitialised, setInspectInitialised] = useState(false);
 
@@ -41,7 +62,24 @@ export function AppStateProvider({ children }) {
 
                 fileName,
                 setFileName,
-                
+
+                inputText,
+                setInputText,
+
+                corpusTokenizedText,
+                setCorpusTokenizedText,
+
+                corpusMetrics,
+                setCorpusMetrics,
+
+                typedTokenizedText,
+                setTypedTokenizedText,
+
+                textMetrics,
+                setTextMetrics,
+
+                inspectInitialised,
+                setInspectInitialised
             }}
         >
             {children}
