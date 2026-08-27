@@ -1,0 +1,164 @@
+.compare-page {
+    min-height: 100vh;
+    padding: 50px 8%;
+    
+    color: #171717;
+}
+
+.compare-header {
+    width: 100%;
+}
+
+.compare-eyebrow {
+    margin: 0 0 24px 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: #777;
+}
+
+.compare-header h1 {
+    margin: 0;
+    font-size: clamp(3rem, 6vw, 3rem);
+    line-height: 0.3;
+    font-weight: 700;
+    letter-spacing: -0.06em;
+}
+
+.compare-bottom-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 30px;
+    margin-top: 10px;
+}
+
+.compare-subtitle {
+    margin: 2;
+    font-size: 0.95rem;
+    line-height: 1.2;
+    color: #777;
+}
+
+/* Customize */
+
+.customize-button {
+    flex-shrink: 0;
+    padding: 13px 24px;
+    border: 1px solid #171717;
+    border-radius: 30px;
+    background: #171717;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.customize-button:hover {
+    background: transparent;
+    color: #171717;
+}
+
+/* Customization panel */
+
+.customize-panel {
+    margin-top: 60px;
+    padding: 35px;
+    border: 1px solid #dedad4;
+    border-radius: 20px;
+    background: #fffdf9;
+    max-width: 1000px;
+}
+
+.customize-section {
+    margin-bottom: 35px;
+}
+
+.customize-section:last-of-type {
+    margin-bottom: 25px;
+}
+
+.customize-section h2 {
+    margin: 0 0 18px 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+/* Round selection buttons */
+
+.round-options {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+.round-option {
+    width: 100%;
+    padding: 13px 18px;
+    border: 1px solid #d5d0c9;
+    border-radius: 12px;
+    background: transparent;
+    color: #333;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.15s ease;
+}
+
+.round-option:hover {
+    border-color: #171717;
+    transform: translateY(-1px);
+}
+
+/* Selected button */
+
+.round-option.selected {
+    background: #171717;
+    border-color: #171717;
+    color: white;
+}
+
+/* Selection summary */
+
+.selection-summary {
+    display: flex;
+    gap: 12px;
+    padding-top: 20px;
+    border-top: 1px solid #dedad4;
+}
+
+.selection-summary span {
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: #eeeae4;
+    font-size: 0.8rem;
+    color: #555;
+}
+
+/* Mobile */
+
+@media (max-width: 700px) {
+
+    .compare-page {
+        padding: 80px 6%;
+    }
+
+    .compare-bottom-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .customize-button {
+        align-self: flex-start;
+    }
+
+    .customize-panel {
+        padding: 25px;
+    }
+}
