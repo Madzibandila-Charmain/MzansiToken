@@ -14,8 +14,8 @@ Usage:
 """
 
 import random
-from flores import load_flores, LANGUAGES
-from tokenizer import load_tokenizer, tokenize_text
+from app.services.flores import load_flores, LANGUAGES
+from app.services.tokenizer import load_tokenizer, tokenize_text
 
 def get_example_sentence(tokenizer, corpus: dict[str, list[str]], index: int) -> dict:
     """
