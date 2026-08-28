@@ -13,7 +13,7 @@ from unittest.mock import Mock, patch
  
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
  
-from tokenizer import (load_tokenizer, tokenize_text, tokenize_corpus, get_tokenizer_info,tokenize_NCHLT)
+from app.services.tokenizer import (load_tokenizer, tokenize_text, tokenize_corpus, get_tokenizer_info, tokenize_NCHLT)
 from transformers import PreTrainedTokenizerFast
 
 # tokenize_text() TESTS
