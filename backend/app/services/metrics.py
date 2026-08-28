@@ -21,8 +21,8 @@ Usage:
     from metrics import compute_efficiency_metrics
 """
 
-from flores import load_flores, LANGUAGES
-from tokenizer import load_tokenizer, tokenize_corpus
+from app.services.flores import load_flores, LANGUAGES
+from app.services.tokenizer import load_tokenizer, tokenize_corpus
 
 
 _english_baseline_cache = {}  # model_name -> english token_count
