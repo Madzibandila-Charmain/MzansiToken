@@ -1,5 +1,5 @@
 # Dataset files (large, fetched via code)
-DataSets/
+datasets/
 
 # Python
 __pycache__/
