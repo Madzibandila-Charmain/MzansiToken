@@ -267,7 +267,7 @@ def test_load_tokenizer_valid_name():
     fake_tokenizer = Mock(spec=PreTrainedTokenizerFast)
     fake_tokenizer.vocab_size = 50257
 
-    with patch("tokenizer.AutoTokenizer.from_pretrained", return_value=fake_tokenizer):
+    with patch("app.services.tokenizer.AutoTokenizer.from_pretrained", return_value=fake_tokenizer):
         result = load_tokenizer("gpt2")
 
     assert result.vocab_size == 50257
@@ -276,7 +276,7 @@ def test_load_tokenizer_valid_name():
 def test_load_tokenizer_strips_whitespace():
     fake_tokenizer = Mock(spec=PreTrainedTokenizerFast)
 
-    with patch("tokenizer.AutoTokenizer.from_pretrained", return_value=fake_tokenizer) as mock_load:
+    with patch("app.services.tokenizer.AutoTokenizer.from_pretrained", return_value=fake_tokenizer) as mock_load:
         load_tokenizer("  gpt2  ")
 
     mock_load.assert_called_once_with("gpt2", trust_remote_code=False)
@@ -285,7 +285,7 @@ def test_load_tokenizer_strips_whitespace():
 # Failure paths for load_tokenizer()
 
 def test_load_tokenizer_invalid_name_raises_valueerror():
-    with patch("tokenizer.AutoTokenizer.from_pretrained", side_effect=OSError("not found")):
+    with patch("app.services.tokenizer.AutoTokenizer.from_pretrained", side_effect=OSError("not found")):
         with pytest.raises(ValueError, match="not found on Hugging Face"):
             load_tokenizer("this-model-does-not-exist-xyz-123")
 
@@ -293,7 +293,7 @@ def test_load_tokenizer_invalid_name_raises_valueerror():
 def test_load_tokenizer_rejects_non_tokenizer_object():
     not_a_tokenizer = Mock()
 
-    with patch("tokenizer.AutoTokenizer.from_pretrained", return_value=not_a_tokenizer):
+    with patch("app.services.tokenizer.AutoTokenizer.from_pretrained", return_value=not_a_tokenizer):
         with pytest.raises(ValueError, match="did not return a valid tokenizer"):
             load_tokenizer("some-image-model")
 
@@ -301,7 +301,7 @@ def test_load_tokenizer_rejects_non_tokenizer_object():
 def test_load_tokenizer_gated_model_raises_specific_error():
     gated_error = OSError("403 Client Error: Forbidden. Cannot access gated repo for url ...")
  
-    with patch("tokenizer.AutoTokenizer.from_pretrained", side_effect=gated_error):
+    with patch("app.services.tokenizer.AutoTokenizer.from_pretrained", side_effect=gated_error):
         with pytest.raises(ValueError, match="gated model"):
             load_tokenizer("google/gemma-2b")
 
@@ -309,7 +309,7 @@ def test_load_tokenizer_gated_model_raises_specific_error():
 def test_load_tokenizer_genuinely_missing_model_raises_not_found_error():
     not_found_error = OSError("404 Client Error: Repository Not Found for url ...")
  
-    with patch("tokenizer.AutoTokenizer.from_pretrained", side_effect=not_found_error):
+    with patch("app.services.tokenizer.AutoTokenizer.from_pretrained", side_effect=not_found_error):
         with pytest.raises(ValueError, match="not found on Hugging Face"):
             load_tokenizer("this-model-does-not-exist-xyz-123")
 
