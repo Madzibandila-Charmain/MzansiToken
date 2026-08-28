@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
  
-from metrics import (token_count, fertility, compression, token_premium, compute_efficiency_metrics,)
+from app.services.metrics import (token_count, fertility, compression, token_premium, compute_efficiency_metrics,)
 
 # token_count() TESTS
 
