@@ -8,7 +8,8 @@ Routes:
 
 from fastapi import APIRouter, HTTPException
 
-from app.services.state import get_or_compute_metrics, get_or_load_tokenizer
+from app.services.flores_state import get_or_compute_metrics
+from app.services.tokenizer_state import get_or_load_tokenizer
 
 router = APIRouter(tags=["metrics"])
 
