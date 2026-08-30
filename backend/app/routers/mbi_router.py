@@ -10,6 +10,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
+from app.schemas.mbi_schemas import MBIComparisonResult, MBIComparisonTokenizerResult, MBIResult, MBIMetrics
 from app.services.NCHLT_dataset_service import load_nchlt_data
 from app.services.morphology_service import aggregate_results, compare_boundaries, to_boundary_vector
 from app.services.tokenizer import tokenize_NCHLT
@@ -21,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parents[3]
 NCHLT_DIR = BASE_DIR / "datasets" / "NCHLT"
 
 
-def _compute_mbi_for_language(model_name: str, language: str) -> dict:
+def _compute_mbi_for_language(model_name: str, language: str) -> MBIResult:
     """Compute morphological boundary identification metrics for one tokenizer and language."""
     if not language or not language.strip():
         raise HTTPException(status_code=400, detail="Language cannot be empty.")
@@ -50,19 +51,19 @@ def _compute_mbi_for_language(model_name: str, language: str) -> dict:
         word_results.append(compare_boundaries(predicted_vector, gold_vector))
 
     metrics = aggregate_results(word_results)
-    return {
-        "model_name": model_name,
-        "language": language,
-        "words_evaluated": len(word_results),
-        "metrics": {
-            "precision": metrics.precision,
-            "recall": metrics.recall,
-            "f1": metrics.f1,
-        },
-    }
+    return MBIResult(
+        model_name=model_name,
+        language=language,
+        words_evaluated=len(word_results),
+        metrics=MBIMetrics(
+            precision=metrics.precision,
+            recall=metrics.recall,
+            f1=metrics.f1,
+        ),
+    )
 
 
-@router.get("/mbi/{model_name:path}")
+@router.get("/mbi/{model_name:path}", response_model=MBIResult)
 def get_mbi(model_name: str, language: str):
     """
     Morphological boundary identification metrics for a tokenizer on one language.
@@ -79,7 +80,7 @@ def get_mbi(model_name: str, language: str):
     return _compute_mbi_for_language(model_name, language)
 
 
-@router.get("/compare_mbi")
+@router.get("/compare_mbi", response_model=MBIComparisonResult)
 def compare_mbi(model_a: str, model_b: str, language: str):
     """
     Compare the morphology scores of two tokenizers on the same NCHLT language.
@@ -89,17 +90,17 @@ def compare_mbi(model_a: str, model_b: str, language: str):
     result_a = _compute_mbi_for_language(model_a, language)
     result_b = _compute_mbi_for_language(model_b, language)
 
-    return {
-        "language": language,
-        "tokenizer_a": {
-            "name": model_a,
-            "metrics": result_a["metrics"],
-            "words_evaluated": result_a["words_evaluated"],
-        },
-        "tokenizer_b": {
-            "name": model_b,
-            "metrics": result_b["metrics"],
-            "words_evaluated": result_b["words_evaluated"],
-        },
-    }
+    return MBIComparisonResult(
+        language=language,
+        tokenizer_a=MBIComparisonTokenizerResult(
+            name=model_a,
+            metrics=result_a.metrics,
+            words_evaluated=result_a.words_evaluated,
+        ),
+        tokenizer_b=MBIComparisonTokenizerResult(
+            name=model_b,
+            metrics=result_b.metrics,
+            words_evaluated=result_b.words_evaluated,
+        ),
+    )
 
