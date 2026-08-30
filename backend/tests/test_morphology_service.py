@@ -38,6 +38,11 @@ def test_to_boundary_vector_custom_delimeter():
     assert get_vector(result) == [0, 0, 1, 0]
 
 
+def test_to_boundary_vector_ignores_stray_delimiters():
+    result = to_boundary_vector("is", "_i_s_")
+    assert get_vector(result) == [1]
+
+
 # -----------------------------compare_boundaries Test---------------------------------
 
 # Basic correctness test
