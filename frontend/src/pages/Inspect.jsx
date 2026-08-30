@@ -10,7 +10,8 @@ import {
     getOptions,
     getDefaultCorpus,
     uploadCorpus,
-    tokenizeText
+    tokenizeText,
+    getMBI
 } from "../api/client";
 
 import { useAppState } from "../context/AppStateContext";
@@ -73,6 +74,8 @@ function Inspect() {
 
     const [loading, setLoading] = useState(false);
 
+    const [mbiLoading, setMbiLoading] = useState(false);
+
     const [selectionLoading, setSelectionLoading] = useState(false);
 
     const [selectionStatus, setSelectionStatus] = useState("");
@@ -82,6 +85,14 @@ function Inspect() {
     /* Stores an error returned by the backend. */
 
     const [error, setError] = useState("");
+
+    const [mbiError, setMbiError] = useState("");
+
+    const [mbiMetrics, setMbiMetrics] = useState({
+        precision: 0,
+        recall: 0,
+        f1: 0
+    });
 
     /* Reference to the actual file input. */
 
@@ -144,6 +155,11 @@ function Inspect() {
 
                     }); 
 
+                    await loadMbiMetrics(
+                        defaultLanguage,
+                        defaultTokenizer
+                    );
+
                     setInspectInitialised(true); 
 
                 } 
@@ -176,6 +192,44 @@ function Inspect() {
         setInspectInitialised 
 
     ]);
+
+    async function loadMbiMetrics(
+        selectedLanguage = language,
+        selectedTokenizer = tokenizer
+    ) {
+
+        try {
+
+            setMbiLoading(true);
+            setMbiError("");
+
+            const result = await getMBI(
+                selectedTokenizer,
+                selectedLanguage
+            );
+
+            setMbiMetrics({
+                precision:
+                    result.metrics.precision ?? 0,
+                recall:
+                    result.metrics.recall ?? 0,
+                f1:
+                    result.metrics.f1 ?? 0
+            });
+
+        } catch (err) {
+
+            setMbiError(err.message);
+
+            throw err;
+
+        } finally {
+
+            setMbiLoading(false);
+
+        }
+
+    }
 
     //The second useEffect
 
@@ -314,6 +368,11 @@ function Inspect() {
 
             });
 
+            await loadMbiMetrics(
+                selectedLanguage,
+                selectedTokenizer
+            );
+
         }
 
         catch (err) {
@@ -449,6 +508,11 @@ function Inspect() {
 
                 );
 
+                await loadMbiMetrics(
+                    newLanguage,
+                    tokenizer
+                );
+
             }
 
             setSelectionStatus("Language ready");
@@ -510,6 +574,11 @@ function Inspect() {
                     language,
                     newTokenizer
 
+                );
+
+                await loadMbiMetrics(
+                    language,
+                    newTokenizer
                 );
 
             }
@@ -946,7 +1015,11 @@ function Inspect() {
                             </span>
 
                             <span className="metric-value">
-                                0.00
+                                {mbiLoading
+                                    ? "N/A"
+                                    : Number(
+                                        mbiMetrics.precision
+                                    ).toFixed(2)}
                             </span>
 
                         </div>
@@ -958,7 +1031,11 @@ function Inspect() {
                             </span>
 
                             <span className="metric-value">
-                                0.00
+                                {mbiLoading
+                                    ? "N/A"
+                                    : Number(
+                                        mbiMetrics.f1
+                                    ).toFixed(2)}
                             </span>
 
                         </div>
@@ -970,12 +1047,24 @@ function Inspect() {
                             </span>
 
                             <span className="metric-value">
-                                0.00
+                                {mbiLoading
+                                    ? "N/A"
+                                    : Number(
+                                        mbiMetrics.recall
+                                    ).toFixed(2)}
                             </span>
 
                         </div>
 
                     </div>
+
+                    {mbiError && (
+
+                        <div className="inspect-error">
+                            {mbiError}
+                        </div>
+
+                    )}
 
                 </div>
 
