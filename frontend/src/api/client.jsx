@@ -234,6 +234,63 @@ export async function getTokenizerInfo(
 }
 
 
+/*
+ * MBI METRICS
+ */
+
+export async function getMBI(
+    tokenizer,
+    language,
+    signal
+) {
+
+    const params = new URLSearchParams({
+        language,
+    });
+
+    const response = await fetch(
+        `${API_BASE_URL}/mbi/${encodeURIComponent(
+            tokenizer
+        )}?${params.toString()}`,
+        {
+            signal,
+        }
+    );
+
+    return handleResponse(
+        response,
+        "Failed to load MBI metrics."
+    );
+}
+
+
+export async function compareMBI(
+    tokenizerA,
+    tokenizerB,
+    language,
+    signal
+) {
+
+    const params = new URLSearchParams({
+        model_a: tokenizerA,
+        model_b: tokenizerB,
+        language,
+    });
+
+    const response = await fetch(
+        `${API_BASE_URL}/compare_mbi?${params.toString()}`,
+        {
+            signal,
+        }
+    );
+
+    return handleResponse(
+        response,
+        "Failed to compare MBI metrics."
+    );
+}
+
+
 export async function getExample(
     tokenizer,
     index = -1,
