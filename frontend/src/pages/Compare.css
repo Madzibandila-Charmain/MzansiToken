@@ -816,6 +816,314 @@
 
 }
 
+/*
+    TYPE ANYTHING
+*/
+
+/* Main Type Anything box */
+
+.compare-text-input-box {
+
+    width: 100%;
+    max-width: 1200px;
+
+    margin: 0 auto 80px;
+
+    padding: 30px 36px 36px;
+
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+
+    background: #f8f8f8da;
+
+    border: 1px solid #e2e2e2;
+
+    border-radius: 16px;
+
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.06),
+        0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+
+/*
+    TYPE ANYTHING HEADING
+*/
+
+.compare-text-input-heading {
+
+    margin: 0 0 24px;
+
+    font-size: 14px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.5px;
+
+    color: #222222;
+
+    white-space: nowrap;
+}
+
+
+/*
+    TEXT INPUT AREA
+*/
+
+.compare-text-input-area {
+
+    width: 100%;
+
+    height: 120px;
+
+    max-height: 180px;
+
+    padding: 18px;
+
+    box-sizing: border-box;
+
+    resize: none;
+
+    border: 1px solid #d9d9d9;
+
+    border-radius: 10px;
+
+    background: #ffffff;
+
+    font-family: inherit;
+
+    font-size: 14px;
+
+    line-height: 1.7;
+
+    color: #333333;
+
+    outline: none;
+
+    overflow-y: auto;
+}
+
+.compare-text-input-area:focus {
+
+    border-color: #aaaaaa;
+}
+
+.compare-text-input-area::placeholder {
+
+    color: #999999;
+}
+
+
+/*
+    TWO TYPED TEXT DISPLAYS
+*/
+
+.compare-typed-results {
+
+    width: 100%;
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, 1fr);
+
+    gap: 28px;
+
+    margin-top: 28px;
+}
+
+
+/*
+    TYPED TOKENIZER PANEL
+*/
+
+.compare-typed-panel {
+
+    width: 100%;
+
+    min-width: 0;
+
+    display: flex;
+
+    flex-direction: column;
+}
+
+
+/*
+    TYPED PANEL HEADING
+*/
+
+.compare-typed-panel-heading {
+
+    margin-bottom: 9px;
+
+    font-size: 14px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.5px;
+
+    color: #222222;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+}
+
+
+/*
+    TYPED TOKENIZATION RESULT
+*/
+
+.compare-typed-tokenization-result {
+
+    width: 100%;
+}
+
+
+/*
+    TYPED TOKENIZED TEXT
+*/
+
+.compare-typed-result-text {
+
+    width: 100%;
+
+    height: 200px;
+
+    padding: 18px;
+
+    box-sizing: border-box;
+
+    background: #ffffff;
+
+    border: 1px solid #dedede;
+
+    border-radius: 10px;
+
+    font-size: 14px;
+
+    line-height: 1.8;
+
+    color: #333333;
+
+    white-space: normal;
+
+    word-break: normal;
+
+    overflow-y: auto;
+
+    overflow-x: hidden;
+}
+
+
+/*
+    TYPED TEXT METRICS
+*/
+
+.compare-typed-metrics {
+
+    width: 100%;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, 1fr);
+
+    gap: 12px;
+
+    margin-top: 18px;
+}
+
+
+/*
+    TYPED METRIC CARD
+*/
+
+.compare-typed-metric-card {
+
+    min-height: 90px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    box-sizing: border-box;
+
+    background: #ffffff;
+
+    border: 1px solid #e2e2e2;
+
+    border-radius: 12px;
+
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+
+/*
+    TYPED METRIC CARD HOVER
+*/
+
+.compare-typed-metric-card:hover {
+
+    background-color: #fafafa;
+
+    border-color: #bdbdbd;
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 6px 16px rgba(0, 0, 0, 0.07),
+        0 2px 5px rgba(0, 0, 0, 0.04);
+}
+
+
+/*
+    TYPED METRIC NAME
+*/
+
+.compare-typed-metric-name {
+
+    margin-bottom: 8px;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.5px;
+
+    color: #777777;
+
+    text-align: center;
+}
+
+
+/*
+    TYPED METRIC VALUE
+*/
+
+.compare-typed-metric-value {
+
+    font-size: 24px;
+
+    font-weight: 700;
+
+    color: #111111;
+}
+
 
 /*
     ERROR
@@ -1005,6 +1313,31 @@
 
         grid-template-columns: 1fr;
 
+    }
+
+    .compare-typed-metrics {
+
+        grid-template-columns: 1fr;
+    }
+
+}
+
+/*
+    TYPE ANYTHING RESPONSIVE
+*/
+
+@media (max-width: 800px) {
+
+    .compare-typed-results {
+
+        grid-template-columns: 1fr;
+
+        gap: 32px;
+    }
+
+    .compare-text-input-box {
+
+        padding: 28px 24px;
     }
 
 }

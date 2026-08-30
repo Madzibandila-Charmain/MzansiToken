@@ -11,7 +11,8 @@ import "./Compare.css";
 import {
     getOptions,
     getDefaultCorpus,
-    uploadCorpus
+    uploadCorpus,
+    tokenizeText
 } from "../api/client";
 
 function Compare() {
@@ -36,6 +37,30 @@ function Compare() {
     /* Tokenized corpus for each tokenizer. */
     const [tokenizerOneTokens, setTokenizerOneTokens] = useState([]);
     const [tokenizerTwoTokens, setTokenizerTwoTokens] = useState([]);
+
+    /* Tokenized text entered by the user for each tokenizer. */
+    const [inputText, setInputText] = useState("");
+
+    const [typedTokenizerOneTokens, setTypedTokenizerOneTokens] = useState([]);
+
+    const [typedTokenizerTwoTokens, setTypedTokenizerTwoTokens] = useState([]);
+
+    /* Metrics for typed text for each tokenizer. */
+    const [typedTokenizerOneMetrics, setTypedTokenizerOneMetrics] =
+        useState({
+            tokens: 0,
+            fertility: 0,
+            compression: 0,
+            token_premium: 0
+        });
+
+    const [typedTokenizerTwoMetrics, setTypedTokenizerTwoMetrics] =
+        useState({
+            tokens: 0,
+            fertility: 0,
+            compression: 0,
+            token_premium: 0
+        });
 
     /* Metrics for each tokenizer. */
     const [tokenizerOneMetrics, setTokenizerOneMetrics] = useState({
@@ -144,6 +169,111 @@ function Compare() {
         );
 
     }, [language, tokenizerOne, tokenizerTwo]);
+
+    /*
+        Tokenizes text entered by the user using both
+        comparison tokenizers.
+
+        A short delay prevents a backend request from being
+        sent for every individual keystroke.
+    */
+    useEffect(() => {
+
+        if (
+            !inputText.trim() ||
+            !tokenizerOne ||
+            !tokenizerTwo ||
+            !language
+        ) {
+            setTypedTokenizerOneTokens([]);
+            setTypedTokenizerTwoTokens([]);
+
+            setTypedTokenizerOneMetrics({
+                tokens: 0,
+                fertility: 0,
+                compression: 0,
+                token_premium: 0
+            });
+
+            setTypedTokenizerTwoMetrics({
+                tokens: 0,
+                fertility: 0,
+                compression: 0,
+                token_premium: 0
+            });
+
+            return;
+        }
+
+        const timeoutId = setTimeout(async () => {
+
+            try {
+
+                setError("");
+
+                const [
+                    resultOne,
+                    resultTwo
+                ] = await Promise.all([
+
+                    tokenizeText(
+                        inputText,
+                        language,
+                        tokenizerOne
+                    ),
+
+                    tokenizeText(
+                        inputText,
+                        language,
+                        tokenizerTwo
+                    )
+
+                ]);
+
+                setTypedTokenizerOneTokens(
+                    formatTokenizedText(
+                        resultOne.tokenized_text
+                    )
+                );
+
+                setTypedTokenizerTwoTokens(
+                    formatTokenizedText(
+                        resultTwo.tokenized_text
+                    )
+                );
+
+                /*
+                    Token Premium for typed text is always zero.
+                */
+                const typedMetricsOne = formatMetrics(resultOne);
+                const typedMetricsTwo = formatMetrics(resultTwo);
+
+                setTypedTokenizerOneMetrics({
+                    ...typedMetricsOne,
+                    token_premium: 0
+                });
+
+                setTypedTokenizerTwoMetrics({
+                    ...typedMetricsTwo,
+                    token_premium: 0
+                });
+
+            } catch (err) {
+
+                setError(err.message);
+
+            }
+
+        }, 400);
+
+        return () => clearTimeout(timeoutId);
+
+    }, [
+        inputText,
+        language,
+        tokenizerOne,
+        tokenizerTwo
+    ]);
 
     /*
         Toggle selected metrics.
@@ -1028,6 +1158,139 @@ function Compare() {
                                                 tokenizerTwoMetrics
                                             )}
 
+                                        </span>
+
+                                    </div>
+
+                                ))}
+
+                            </div>
+
+                        )}
+
+                    </div>
+
+                </div>
+
+            </section>
+
+            {/* Type Anything */}
+            <section className="compare-text-input-box">
+
+                <div className="compare-text-input-heading">
+                    Mzansi Explorer • Type Anything
+                </div>
+
+                {/* Text entered by the user */}
+                <textarea
+                    className="compare-text-input-area"
+                    value={inputText}
+                    onChange={(event) =>
+                        setInputText(event.target.value)
+                    }
+                    placeholder="Type or paste your text here..."
+                />
+
+                {/* Two typed-text tokenizer displays */}
+                <div className="compare-typed-results">
+
+                    {/* TOKENIZER 1 */}
+                    <div className="compare-typed-panel">
+
+                        <div className="compare-typed-panel-heading">
+                            {tokenizerOne || "Tokenizer 1"}
+                        </div>
+
+                        <div className="compare-typed-tokenization-result">
+
+                            <div className="compare-typed-result-text">
+
+                                {inputText.trim()
+                                    ? renderTokens(
+                                        typedTokenizerOneTokens
+                                    )
+                                    : "Your tokenized text will appear here."}
+
+                            </div>
+
+                        </div>
+
+                        {/* Tokenizer 1 metrics */}
+                        {metrics.length > 0 && (
+
+                            <div className="compare-typed-metrics">
+
+                                {metrics.map((metric) => (
+
+                                    <div
+                                        className="compare-typed-metric-card"
+                                        key={metric}
+                                    >
+
+                                        <span className="compare-typed-metric-name">
+                                            {metric}
+                                        </span>
+
+                                        <span className="compare-typed-metric-value">
+                                            {getMetricValue(
+                                                metric,
+                                                typedTokenizerOneMetrics
+                                            )}
+                                        </span>
+
+                                    </div>
+
+                                ))}
+
+                            </div>
+
+                        )}
+
+                    </div>
+
+
+                    {/* TOKENIZER 2 */}
+                    <div className="compare-typed-panel">
+
+                        <div className="compare-typed-panel-heading">
+                            {tokenizerTwo || "Tokenizer 2"}
+                        </div>
+
+                        <div className="compare-typed-tokenization-result">
+
+                            <div className="compare-typed-result-text">
+
+                                {inputText.trim()
+                                    ? renderTokens(
+                                        typedTokenizerTwoTokens
+                                    )
+                                    : "Your tokenized text will appear here."}
+
+                            </div>
+
+                        </div>
+
+                        {/* Tokenizer 2 metrics */}
+                        {metrics.length > 0 && (
+
+                            <div className="compare-typed-metrics">
+
+                                {metrics.map((metric) => (
+
+                                    <div
+                                        className="compare-typed-metric-card"
+                                        key={metric}
+                                    >
+
+                                        <span className="compare-typed-metric-name">
+                                            {metric}
+                                        </span>
+
+                                        <span className="compare-typed-metric-value">
+                                            {getMetricValue(
+                                                metric,
+                                                typedTokenizerTwoMetrics
+                                            )}
                                         </span>
 
                                     </div>
