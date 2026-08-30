@@ -15,37 +15,60 @@ import {
     tokenizeText
 } from "../api/client";
 
+import { useAppState } from "../context/AppStateContext";
+
 function Compare() {
+
+    const {
+        compareLanguage,
+        setCompareLanguage,
+        compareTokenizerOne,
+        setCompareTokenizerOne,
+        compareTokenizerTwo,
+        setCompareTokenizerTwo,
+        compareSource,
+        setCompareSource,
+        compareSelectedFile,
+        setCompareSelectedFile,
+        compareFileName,
+        setCompareFileName,
+        compareMetrics,
+        setCompareMetrics,
+        compareInitialised,
+        setCompareInitialised
+    } = useAppState();
+
+    /*
+        Type Anything text is kept locally to Compare.
+
+        This prevents the Compare text box from sharing
+        its value with the Inspect text box.
+    */
+    const [inputText, setInputText] = useState("");
 
     const [showCustomize, setShowCustomize] = useState(false);
 
-    const [language, setLanguage] = useState("isiZulu");
-
-    /* Tokenizers used by the two comparison panels. */
-    const [tokenizerOne, setTokenizerOne] = useState("");
-    const [tokenizerTwo, setTokenizerTwo] = useState("");
-
-    /* Languages and tokenizers provided by the backend. */
+    /*
+        Languages and tokenizers provided by the backend.
+    */
     const [languages, setLanguages] = useState([]);
     const [tokenizers, setTokenizers] = useState([]);
 
-    /* Corpus state. */
-    const [source, setSource] = useState("default");
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [fileName, setFileName] = useState("default");
-
-    /* Tokenized corpus for each tokenizer. */
+    /*
+        Tokenized corpus for each tokenizer.
+    */
     const [tokenizerOneTokens, setTokenizerOneTokens] = useState([]);
     const [tokenizerTwoTokens, setTokenizerTwoTokens] = useState([]);
 
-    /* Tokenized text entered by the user for each tokenizer. */
-    const [inputText, setInputText] = useState("");
-
+    /*
+        Tokenized text entered by the user for each tokenizer.
+    */
     const [typedTokenizerOneTokens, setTypedTokenizerOneTokens] = useState([]);
-
     const [typedTokenizerTwoTokens, setTypedTokenizerTwoTokens] = useState([]);
 
-    /* Metrics for typed text for each tokenizer. */
+    /*
+        Metrics for typed text for each tokenizer.
+    */
     const [typedTokenizerOneMetrics, setTypedTokenizerOneMetrics] =
         useState({
             tokens: 0,
@@ -62,38 +85,36 @@ function Compare() {
             token_premium: 0
         });
 
-    /* Metrics for each tokenizer. */
+    /*
+        Metrics for each tokenizer.
+    */
     const [tokenizerOneMetrics, setTokenizerOneMetrics] = useState({
         tokens: 0,
         fertility: 0,
         compression: 0,
-        token_premium: null
+        token_premium: 0
     });
 
     const [tokenizerTwoMetrics, setTokenizerTwoMetrics] = useState({
         tokens: 0,
         fertility: 0,
         compression: 0,
-        token_premium: null
+        token_premium: 0
     });
 
-    /* Loading / status state. */
+    /*
+        Loading / status state.
+    */
     const [loading, setLoading] = useState(false);
     const [selectionLoading, setSelectionLoading] = useState(false);
     const [selectionStatus, setSelectionStatus] = useState("");
     const [selectionType, setSelectionType] = useState("");
     const [error, setError] = useState("");
 
-    /* File input reference. */
+    /*
+        File input reference.
+    */
     const fileInputRef = useRef(null);
-
-    /* Metrics selected through Customize. */
-    const [metrics, setMetrics] = useState([
-        "Token Count",
-        "Fertility",
-        "Compression",
-        "Token Premium"
-    ]);
 
     const availableMetrics = [
         "Token Count",
@@ -120,23 +141,46 @@ function Compare() {
                 setTokenizers(result.tokenizers || []);
 
                 const defaultLanguage =
-                    result.defaults?.language || "English";
+                    result.defaults?.language || "isiZulu";
 
                 const defaultTokenizer =
                     result.defaults?.tokenizer ||
                     result.tokenizers?.[0] ||
                     "";
 
-                setLanguage(defaultLanguage);
-                setTokenizerOne(defaultTokenizer);
+                /*
+                    Initialise Compare selections only once.
+                    The selections are stored in AppStateContext,
+                    so navigating away from Compare does not reset them.
+                */
+                if (!compareInitialised) {
 
-                /* Use a different tokenizer for panel 2 when possible. */
-                const secondTokenizer =
-                    result.tokenizers?.find(
-                        (item) => item !== defaultTokenizer
-                    ) || defaultTokenizer;
+                    if (!compareLanguage) {
+                        setCompareLanguage(defaultLanguage);
+                    }
 
-                setTokenizerTwo(secondTokenizer);
+                    if (!compareTokenizerOne) {
+
+                        setCompareTokenizerOne(
+                            defaultTokenizer
+                        );
+
+                        /*
+                            Use a different tokenizer for panel 2 when possible.
+                        */
+                        const secondTokenizer =
+                            result.tokenizers?.find(
+                                (item) =>
+                                    item !== defaultTokenizer
+                            ) || defaultTokenizer;
+
+                        setCompareTokenizerTwo(
+                            secondTokenizer
+                        );
+                    }
+
+                    setCompareInitialised(true);
+                }
 
             } catch (err) {
 
@@ -151,29 +195,44 @@ function Compare() {
 
         initialiseCompare();
 
-    }, []);
+    }, [
+        compareInitialised,
+        compareLanguage,
+        compareTokenizerOne,
+        setCompareLanguage,
+        setCompareTokenizerOne,
+        setCompareTokenizerTwo,
+        setCompareInitialised
+    ]);
 
     /*
         Load the default corpus for both tokenizers.
     */
     useEffect(() => {
 
-        if (!tokenizerOne || !tokenizerTwo || !language) {
+        if (
+            !compareTokenizerOne ||
+            !compareTokenizerTwo ||
+            !compareLanguage
+        ) {
             return;
         }
 
         loadDefaultCorpus(
-            language,
-            tokenizerOne,
-            tokenizerTwo
+            compareLanguage,
+            compareTokenizerOne,
+            compareTokenizerTwo
         );
 
-    }, [language, tokenizerOne, tokenizerTwo]);
+    }, [
+        compareLanguage,
+        compareTokenizerOne,
+        compareTokenizerTwo
+    ]);
 
     /*
         Tokenizes text entered by the user using both
         comparison tokenizers.
-
         A short delay prevents a backend request from being
         sent for every individual keystroke.
     */
@@ -181,10 +240,11 @@ function Compare() {
 
         if (
             !inputText.trim() ||
-            !tokenizerOne ||
-            !tokenizerTwo ||
-            !language
+            !compareTokenizerOne ||
+            !compareTokenizerTwo ||
+            !compareLanguage
         ) {
+
             setTypedTokenizerOneTokens([]);
             setTypedTokenizerTwoTokens([]);
 
@@ -218,14 +278,14 @@ function Compare() {
 
                     tokenizeText(
                         inputText,
-                        language,
-                        tokenizerOne
+                        compareLanguage,
+                        compareTokenizerOne
                     ),
 
                     tokenizeText(
                         inputText,
-                        language,
-                        tokenizerTwo
+                        compareLanguage,
+                        compareTokenizerTwo
                     )
 
                 ]);
@@ -245,8 +305,11 @@ function Compare() {
                 /*
                     Token Premium for typed text is always zero.
                 */
-                const typedMetricsOne = formatMetrics(resultOne);
-                const typedMetricsTwo = formatMetrics(resultTwo);
+                const typedMetricsOne =
+                    formatMetrics(resultOne);
+
+                const typedMetricsTwo =
+                    formatMetrics(resultTwo);
 
                 setTypedTokenizerOneMetrics({
                     ...typedMetricsOne,
@@ -270,9 +333,9 @@ function Compare() {
 
     }, [
         inputText,
-        language,
-        tokenizerOne,
-        tokenizerTwo
+        compareLanguage,
+        compareTokenizerOne,
+        compareTokenizerTwo
     ]);
 
     /*
@@ -280,7 +343,7 @@ function Compare() {
     */
     function handleMetricChange(metric) {
 
-        setMetrics((currentMetrics) => {
+        setCompareMetrics((currentMetrics) => {
 
             if (currentMetrics.includes(metric)) {
 
@@ -293,6 +356,7 @@ function Compare() {
             return [...currentMetrics, metric];
 
         });
+
     }
 
     /*
@@ -301,9 +365,7 @@ function Compare() {
     function formatTokenizedText(tokenizedText) {
 
         if (Array.isArray(tokenizedText)) {
-
             return tokenizedText.flat();
-
         }
 
         if (typeof tokenizedText === "string") {
@@ -332,29 +394,39 @@ function Compare() {
         const visibleTokens = tokens.slice(0, 1000);
 
         return (
+
             <>
+
                 {visibleTokens.map((token, index) => {
 
                     const colourIndex = index % 8;
 
                     return (
+
                         <span
                             key={`${index}-${token}`}
                             className={`token-pill token-colour-${colourIndex}`}
                         >
                             {token}
                         </span>
+
                     );
 
                 })}
 
                 {tokens.length > 1000 && (
+
                     <span className="token-limit-message">
+
                         Showing the first 1,000 tokens of{" "}
                         {tokens.length.toLocaleString()}.
+
                     </span>
+
                 )}
+
             </>
+
         );
 
     }
@@ -365,11 +437,19 @@ function Compare() {
     function formatMetrics(result) {
 
         return {
-            tokens: result?.metrics?.token_count ?? 0,
-            fertility: result?.metrics?.fertility ?? 0,
-            compression: result?.metrics?.compression ?? 0,
+
+            tokens:
+                result?.metrics?.token_count ?? 0,
+
+            fertility:
+                result?.metrics?.fertility ?? 0,
+
+            compression:
+                result?.metrics?.compression ?? 0,
+
             token_premium:
-                result?.metrics?.token_premium ?? null
+                result?.metrics?.token_premium ?? 0
+
         };
 
     }
@@ -378,9 +458,9 @@ function Compare() {
         Loads the default corpus through both tokenizers.
     */
     async function loadDefaultCorpus(
-        selectedLanguage = language,
-        selectedTokenizerOne = tokenizerOne,
-        selectedTokenizerTwo = tokenizerTwo
+        selectedLanguage = compareLanguage,
+        selectedTokenizerOne = compareTokenizerOne,
+        selectedTokenizerTwo = compareTokenizerTwo
     ) {
 
         try {
@@ -388,20 +468,22 @@ function Compare() {
             setLoading(true);
             setError("");
 
-            const [resultOne, resultTwo] =
-                await Promise.all([
+            const [
+                resultOne,
+                resultTwo
+            ] = await Promise.all([
 
-                    getDefaultCorpus(
-                        selectedLanguage,
-                        selectedTokenizerOne
-                    ),
+                getDefaultCorpus(
+                    selectedLanguage,
+                    selectedTokenizerOne
+                ),
 
-                    getDefaultCorpus(
-                        selectedLanguage,
-                        selectedTokenizerTwo
-                    )
+                getDefaultCorpus(
+                    selectedLanguage,
+                    selectedTokenizerTwo
+                )
 
-                ]);
+            ]);
 
             setTokenizerOneTokens(
                 formatTokenizedText(
@@ -423,9 +505,9 @@ function Compare() {
                 formatMetrics(resultTwo)
             );
 
-            setSource("default");
-            setSelectedFile(null);
-            setFileName("default");
+            setCompareSource("default");
+            setCompareSelectedFile(null);
+            setCompareFileName("default");
 
         } catch (err) {
 
@@ -454,26 +536,28 @@ function Compare() {
             setLoading(true);
             setError("");
 
-            const [resultOne, resultTwo] =
-                await Promise.all([
+            const [
+                resultOne,
+                resultTwo
+            ] = await Promise.all([
 
-                    uploadCorpus(
-                        file,
-                        selectedLanguage,
-                        selectedTokenizerOne
-                    ),
+                uploadCorpus(
+                    file,
+                    selectedLanguage,
+                    selectedTokenizerOne
+                ),
 
-                    uploadCorpus(
-                        file,
-                        selectedLanguage,
-                        selectedTokenizerTwo
-                    )
+                uploadCorpus(
+                    file,
+                    selectedLanguage,
+                    selectedTokenizerTwo
+                )
 
-                ]);
+            ]);
 
-            setSource("upload");
-            setSelectedFile(file);
-            setFileName(file.name);
+            setCompareSource("upload");
+            setCompareSelectedFile(file);
+            setCompareFileName(file.name);
 
             setTokenizerOneTokens(
                 formatTokenizedText(
@@ -520,9 +604,9 @@ function Compare() {
 
         await processUploadedCorpus(
             file,
-            language,
-            tokenizerOne,
-            tokenizerTwo
+            compareLanguage,
+            compareTokenizerOne,
+            compareTokenizerTwo
         );
 
     }
@@ -537,8 +621,7 @@ function Compare() {
             return;
         }
 
-        setLanguage(newLanguage);
-
+        setCompareLanguage(newLanguage);
         setSelectionLoading(true);
         setSelectionType("language");
         setSelectionStatus("Loading language...");
@@ -547,21 +630,21 @@ function Compare() {
 
             setError("");
 
-            if (source === "default") {
+            if (compareSource === "default") {
 
                 await loadDefaultCorpus(
                     newLanguage,
-                    tokenizerOne,
-                    tokenizerTwo
+                    compareTokenizerOne,
+                    compareTokenizerTwo
                 );
 
-            } else if (selectedFile) {
+            } else if (compareSelectedFile) {
 
                 await processUploadedCorpus(
-                    selectedFile,
+                    compareSelectedFile,
                     newLanguage,
-                    tokenizerOne,
-                    tokenizerTwo
+                    compareTokenizerOne,
+                    compareTokenizerTwo
                 );
 
             }
@@ -592,8 +675,7 @@ function Compare() {
 
         const newTokenizer = event.target.value;
 
-        setTokenizerOne(newTokenizer);
-
+        setCompareTokenizerOne(newTokenizer);
         setSelectionLoading(true);
         setSelectionType("tokenizer");
         setSelectionStatus("Loading tokenizer 1...");
@@ -602,12 +684,13 @@ function Compare() {
 
             setError("");
 
-            if (source === "default") {
+            if (compareSource === "default") {
 
-                const result = await getDefaultCorpus(
-                    language,
-                    newTokenizer
-                );
+                const result =
+                    await getDefaultCorpus(
+                        compareLanguage,
+                        newTokenizer
+                    );
 
                 setTokenizerOneTokens(
                     formatTokenizedText(
@@ -619,13 +702,14 @@ function Compare() {
                     formatMetrics(result)
                 );
 
-            } else if (selectedFile) {
+            } else if (compareSelectedFile) {
 
-                const result = await uploadCorpus(
-                    selectedFile,
-                    language,
-                    newTokenizer
-                );
+                const result =
+                    await uploadCorpus(
+                        compareSelectedFile,
+                        compareLanguage,
+                        newTokenizer
+                    );
 
                 setTokenizerOneTokens(
                     formatTokenizedText(
@@ -665,8 +749,7 @@ function Compare() {
 
         const newTokenizer = event.target.value;
 
-        setTokenizerTwo(newTokenizer);
-
+        setCompareTokenizerTwo(newTokenizer);
         setSelectionLoading(true);
         setSelectionType("tokenizer");
         setSelectionStatus("Loading tokenizer 2...");
@@ -675,12 +758,13 @@ function Compare() {
 
             setError("");
 
-            if (source === "default") {
+            if (compareSource === "default") {
 
-                const result = await getDefaultCorpus(
-                    language,
-                    newTokenizer
-                );
+                const result =
+                    await getDefaultCorpus(
+                        compareLanguage,
+                        newTokenizer
+                    );
 
                 setTokenizerTwoTokens(
                     formatTokenizedText(
@@ -692,13 +776,14 @@ function Compare() {
                     formatMetrics(result)
                 );
 
-            } else if (selectedFile) {
+            } else if (compareSelectedFile) {
 
-                const result = await uploadCorpus(
-                    selectedFile,
-                    language,
-                    newTokenizer
-                );
+                const result =
+                    await uploadCorpus(
+                        compareSelectedFile,
+                        compareLanguage,
+                        newTokenizer
+                    );
 
                 setTokenizerTwoTokens(
                     formatTokenizedText(
@@ -744,14 +829,14 @@ function Compare() {
         try {
 
             await loadDefaultCorpus(
-                language,
-                tokenizerOne,
-                tokenizerTwo
+                compareLanguage,
+                compareTokenizerOne,
+                compareTokenizerTwo
             );
 
-            setFileName("default");
-            setSelectedFile(null);
-            setSource("default");
+            setCompareFileName("default");
+            setCompareSelectedFile(null);
+            setCompareSource("default");
 
             if (fileInputRef.current) {
                 fileInputRef.current.value = "";
@@ -780,33 +865,26 @@ function Compare() {
         switch (metric) {
 
             case "Token Count":
-
                 return tokenizerMetrics.tokens;
 
             case "Fertility":
-
                 return Number(
                     tokenizerMetrics.fertility
                 ).toFixed(2);
 
             case "Compression":
-
                 return Number(
                     tokenizerMetrics.compression
                 ).toFixed(2);
 
             case "Token Premium":
-
-                return tokenizerMetrics.token_premium === null ||
-                    tokenizerMetrics.token_premium === undefined
-                    ? "N/A"
-                    : Number(
-                        tokenizerMetrics.token_premium
-                    ).toFixed(2);
+                return Number(
+                    tokenizerMetrics.token_premium ?? 0
+                ).toFixed(2);
 
             default:
+                return "0";
 
-                return "N/A";
         }
 
     }
@@ -863,7 +941,7 @@ function Compare() {
                                 <button
                                     key={item}
                                     className={`round-option ${
-                                        language === item
+                                        compareLanguage === item
                                             ? "selected"
                                             : ""
                                     }`}
@@ -892,7 +970,7 @@ function Compare() {
                                 <button
                                     key={metric}
                                     className={`round-option ${
-                                        metrics.includes(metric)
+                                        compareMetrics.includes(metric)
                                             ? "selected"
                                             : ""
                                     }`}
@@ -911,10 +989,10 @@ function Compare() {
 
                     <div className="selection-summary">
 
-                        <span>{language}</span>
+                        <span>{compareLanguage}</span>
 
                         <span>
-                            {metrics.length} metrics selected
+                            {compareMetrics.length} metrics selected
                         </span>
 
                     </div>
@@ -941,10 +1019,8 @@ function Compare() {
                     Mzansi Explorer • Corpus Tokenization
                 </div>
 
-
-
                 <p className="compare-corpus-label">
-                    {fileName} • {language}
+                    {compareFileName} • {compareLanguage}
                 </p>
 
                 <div className="compare-upload-container">
@@ -967,7 +1043,7 @@ function Compare() {
                         Upload your corpus(text)
                     </label>
 
-                    {fileName !== "default" && (
+                    {compareFileName !== "default" && (
 
                         <button
                             type="button"
@@ -981,8 +1057,6 @@ function Compare() {
                         </button>
 
                     )}
-
-                    
 
                 </div>
 
@@ -1022,7 +1096,7 @@ function Compare() {
 
                         <select
                             className="compare-tokenizer-select"
-                            value={tokenizerOne}
+                            value={compareTokenizerOne}
                             onChange={handleTokenizerOneChange}
                             disabled={
                                 selectionLoading || loading
@@ -1057,11 +1131,11 @@ function Compare() {
 
                         </div>
 
-                        {metrics.length > 0 && (
+                        {compareMetrics.length > 0 && (
 
                             <div className="compare-tokenization-metrics">
 
-                                {metrics.map((metric) => (
+                                {compareMetrics.map((metric) => (
 
                                     <div
                                         className="compare-metric-card"
@@ -1101,7 +1175,7 @@ function Compare() {
 
                         <select
                             className="compare-tokenizer-select"
-                            value={tokenizerTwo}
+                            value={compareTokenizerTwo}
                             onChange={handleTokenizerTwoChange}
                             disabled={
                                 selectionLoading || loading
@@ -1136,11 +1210,11 @@ function Compare() {
 
                         </div>
 
-                        {metrics.length > 0 && (
+                        {compareMetrics.length > 0 && (
 
                             <div className="compare-tokenization-metrics">
 
-                                {metrics.map((metric) => (
+                                {compareMetrics.map((metric) => (
 
                                     <div
                                         className="compare-metric-card"
@@ -1175,6 +1249,7 @@ function Compare() {
             </section>
 
             {/* Type Anything */}
+
             <section className="compare-text-input-box">
 
                 <div className="compare-text-input-heading">
@@ -1182,6 +1257,7 @@ function Compare() {
                 </div>
 
                 {/* Text entered by the user */}
+
                 <textarea
                     className="compare-text-input-area"
                     value={inputText}
@@ -1192,13 +1268,15 @@ function Compare() {
                 />
 
                 {/* Two typed-text tokenizer displays */}
+
                 <div className="compare-typed-results">
 
                     {/* TOKENIZER 1 */}
+
                     <div className="compare-typed-panel">
 
                         <div className="compare-typed-panel-heading">
-                            {tokenizerOne || "Tokenizer 1"}
+                            {compareTokenizerOne || "Tokenizer 1"}
                         </div>
 
                         <div className="compare-typed-tokenization-result">
@@ -1216,11 +1294,12 @@ function Compare() {
                         </div>
 
                         {/* Tokenizer 1 metrics */}
-                        {metrics.length > 0 && (
+
+                        {compareMetrics.length > 0 && (
 
                             <div className="compare-typed-metrics">
 
-                                {metrics.map((metric) => (
+                                {compareMetrics.map((metric) => (
 
                                     <div
                                         className="compare-typed-metric-card"
@@ -1232,10 +1311,12 @@ function Compare() {
                                         </span>
 
                                         <span className="compare-typed-metric-value">
+
                                             {getMetricValue(
                                                 metric,
                                                 typedTokenizerOneMetrics
                                             )}
+
                                         </span>
 
                                     </div>
@@ -1248,12 +1329,12 @@ function Compare() {
 
                     </div>
 
-
                     {/* TOKENIZER 2 */}
+
                     <div className="compare-typed-panel">
 
                         <div className="compare-typed-panel-heading">
-                            {tokenizerTwo || "Tokenizer 2"}
+                            {compareTokenizerTwo || "Tokenizer 2"}
                         </div>
 
                         <div className="compare-typed-tokenization-result">
@@ -1271,11 +1352,12 @@ function Compare() {
                         </div>
 
                         {/* Tokenizer 2 metrics */}
-                        {metrics.length > 0 && (
+
+                        {compareMetrics.length > 0 && (
 
                             <div className="compare-typed-metrics">
 
-                                {metrics.map((metric) => (
+                                {compareMetrics.map((metric) => (
 
                                     <div
                                         className="compare-typed-metric-card"
@@ -1287,10 +1369,12 @@ function Compare() {
                                         </span>
 
                                         <span className="compare-typed-metric-value">
+
                                             {getMetricValue(
                                                 metric,
                                                 typedTokenizerTwoMetrics
                                             )}
+
                                         </span>
 
                                     </div>
