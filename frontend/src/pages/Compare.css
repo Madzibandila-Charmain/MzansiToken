@@ -566,6 +566,18 @@
 
 }
 
+.compare-selection-status.is-error {
+
+    color: #a33;
+
+}
+
+.compare-selection-status.is-error .compare-status-dot {
+
+    background: #c74848;
+
+}
+
 @keyframes compare-status-pulse {
 
     0%,

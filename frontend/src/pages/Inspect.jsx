@@ -1073,7 +1073,7 @@ function Inspect() {
 
                     {mbiUnavailable && (
 
-                        <div className="selection-status is-ready">
+                        <div className="selection-status is-error">
                             <span className="status-dot"></span>
                             <span>{mbiUnavailable}</span>
                         </div>

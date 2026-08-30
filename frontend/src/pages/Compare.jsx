@@ -592,6 +592,20 @@ function Compare() {
 
     }
 
+    function getMbiMetricDisplay(value) {
+
+        if (mbiUnavailable) {
+            return "N/A";
+        }
+
+        if (mbiLoading) {
+            return "Loading...";
+        }
+
+        return formatMbiMetric(value);
+
+    }
+
     /*
         Loads the default corpus through both tokenizers.
     */
@@ -1393,7 +1407,7 @@ function Compare() {
 
                     {mbiUnavailable && (
 
-                        <div className="compare-selection-status is-ready">
+                        <div className="compare-selection-status is-error">
 
                             <span className="compare-status-dot"></span>
 
@@ -1426,33 +1440,27 @@ function Compare() {
                                 <div className="compare-metric-card">
                                     <span className="compare-metric-name">Precision</span>
                                     <span className="compare-metric-value">
-                                        {mbiLoading
-                                            ? "Loading..."
-                                            : formatMbiMetric(
-                                                mbiComparison.tokenizerA.precision
-                                            )}
+                                        {getMbiMetricDisplay(
+                                            mbiComparison.tokenizerA.precision
+                                        )}
                                     </span>
                                 </div>
 
                                 <div className="compare-metric-card">
                                     <span className="compare-metric-name">Recall</span>
                                     <span className="compare-metric-value">
-                                        {mbiLoading
-                                            ? "Loading..."
-                                            : formatMbiMetric(
-                                                mbiComparison.tokenizerA.recall
-                                            )}
+                                        {getMbiMetricDisplay(
+                                            mbiComparison.tokenizerA.recall
+                                        )}
                                     </span>
                                 </div>
 
                                 <div className="compare-metric-card">
                                     <span className="compare-metric-name">F1</span>
                                     <span className="compare-metric-value">
-                                        {mbiLoading
-                                            ? "Loading..."
-                                            : formatMbiMetric(
-                                                mbiComparison.tokenizerA.f1
-                                            )}
+                                        {getMbiMetricDisplay(
+                                            mbiComparison.tokenizerA.f1
+                                        )}
                                     </span>
                                 </div>
 
@@ -1471,33 +1479,27 @@ function Compare() {
                                 <div className="compare-metric-card">
                                     <span className="compare-metric-name">Precision</span>
                                     <span className="compare-metric-value">
-                                        {mbiLoading
-                                            ? "Loading..."
-                                            : formatMbiMetric(
-                                                mbiComparison.tokenizerB.precision
-                                            )}
+                                        {getMbiMetricDisplay(
+                                            mbiComparison.tokenizerB.precision
+                                        )}
                                     </span>
                                 </div>
 
                                 <div className="compare-metric-card">
                                     <span className="compare-metric-name">Recall</span>
                                     <span className="compare-metric-value">
-                                        {mbiLoading
-                                            ? "Loading..."
-                                            : formatMbiMetric(
-                                                mbiComparison.tokenizerB.recall
-                                            )}
+                                        {getMbiMetricDisplay(
+                                            mbiComparison.tokenizerB.recall
+                                        )}
                                     </span>
                                 </div>
 
                                 <div className="compare-metric-card">
                                     <span className="compare-metric-name">F1</span>
                                     <span className="compare-metric-value">
-                                        {mbiLoading
-                                            ? "Loading..."
-                                            : formatMbiMetric(
-                                                mbiComparison.tokenizerB.f1
-                                            )}
+                                        {getMbiMetricDisplay(
+                                            mbiComparison.tokenizerB.f1
+                                        )}
                                     </span>
                                 </div>
 
