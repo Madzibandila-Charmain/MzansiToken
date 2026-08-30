@@ -3,7 +3,7 @@ leaderboard_service.py - All services required for leaderboard persistance
 
 """
 
-from db import METRIC_COLUMN_MAP, ALLOWED_SORT_COLUMNS, get_connection
+from db import ALLOWED_SORT_COLUMNS, METRIC_COLUMN_MAP, get_connection, perform_backup
 
 # ---------------------------------------------------------------------------
 # Write operations
@@ -39,7 +39,18 @@ def add_tokenizer(name: str, metrics: dict) -> int:
                 "INSERT INTO metrics (tokenizer_id) VALUES (?);",
                 (tokenizer_id,),
             )
+        perform_backup()
         return tokenizer_id
+
+
+def upsert_tokenizer(name: str, metrics: dict) -> int:
+    """Create a tokenizer if it does not exist, otherwise update its metrics."""
+    existing = get_tokenizer_by_name(name)
+    if existing:
+        update_metrics(existing["id"], metrics)
+        return existing["id"]
+
+    return add_tokenizer(name, metrics)
  
  
 def update_metrics(tokenizer_id: int, metrics: dict) -> None:
@@ -57,12 +68,14 @@ def update_metrics(tokenizer_id: int, metrics: dict) -> None:
             f"WHERE tokenizer_id = ?;",
             (*values, tokenizer_id),
         )
+        perform_backup()
  
  
 def remove_tokenizer(tokenizer_id: int) -> None:
     """Removing the tokenizer cascades to its metrics row (ON DELETE CASCADE)."""
     with get_connection() as conn:
         conn.execute("DELETE FROM tokenizers WHERE id = ?;", (tokenizer_id,))
+        perform_backup()
  
  
 # ---------------------------------------------------------------------------
