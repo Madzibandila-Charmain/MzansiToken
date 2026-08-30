@@ -82,7 +82,7 @@ def remove_tokenizer(tokenizer_id: int) -> None:
 # Read operations
 # ---------------------------------------------------------------------------
  
-def get_leaderboard(sort_by: str = "compression_ratio", descending: bool = True) -> list[dict]:
+def get_leaderboard(sort_by: str = "overall_score", descending: bool = True) -> list[dict]:
     """
     Return all tokenizers ranked by the requested metric.
     `sort_by` is looked up in ALLOWED_SORT_COLUMNS — anything not in that
