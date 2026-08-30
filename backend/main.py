@@ -14,8 +14,8 @@ from app.routers.tokenizer_router import router as tokenizer_router
 from app.routers.metrics_router import router as metrics_router
 from app.routers.inspect_router import router as inspect_router
 from app.routers.example_router import router as example_router
-
 from app.routers.mbi_router import router as mbi_router
+from app.routers.rank_router import router as rank_router
 
 app = FastAPI(title="MzansiToken API")
 
@@ -45,3 +45,4 @@ app.include_router(metrics_router)
 app.include_router(inspect_router)
 app.include_router(example_router)
 app.include_router(mbi_router)
+app.include_router(rank_router)

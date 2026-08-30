@@ -80,6 +80,7 @@ def test_all_routes_are_registered():
     assert expected <= paths
 
 
+#── Morphology endpoint test ─────────────────────
 def test_morphology_metrics_endpoint_returns_values():
     response = client.get("/mbi/gpt2", params={"language": "isiZulu"})
     assert response.status_code == 200
