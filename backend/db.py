@@ -6,11 +6,15 @@ import os
 import sqlite3
 from pathlib import Path
 from contextlib import contextmanager
+import time
 
-DB_DIR = Path(__file__).resolve().parent / "data"
+DB_DIR = Path(__file__).parent / "data"
 DB_DIR.mkdir(exist_ok=True)
 
 DB_PATH = DB_DIR / "leaderboard.db"
+
+BACKUP_DIR = Path(__file__).parent / "data/backups"
+MAX_BACKUPS_TO_KEEP = 24 
 
 METRIC_COLUMN_MAP = {
     "token_count": "token_count",
@@ -58,6 +62,32 @@ CREATE TABLE IF NOT EXISTS metrics (
     FOREIGN KEY (tokenizer_id) REFERENCES tokenizers(id) ON DELETE CASCADE
 );
 """
+
+
+# Database backup functionality
+def perform_backup() -> Path:
+    BACKUP_DIR.mkdir(exist_ok=True, mode=0o700)
+ 
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    backup_path = BACKUP_DIR / f"leaderboard-{timestamp}.db"
+ 
+    source = sqlite3.connect(DB_PATH)
+    dest = sqlite3.connect(backup_path)
+    try:
+        source.backup(dest)  # atomic, WAL-aware online backup
+    finally:
+        dest.close()
+        source.close()
+ 
+    backup_path.chmod(0o600)
+    _rotate_old_backups()
+    return backup_path
+
+def _rotate_old_backups() -> None:
+    backups = sorted(BACKUP_DIR.glob("leaderboard-*.db"), key=lambda p: p.stat().st_mtime)
+    while len(backups) > MAX_BACKUPS_TO_KEEP:
+        oldest = backups.pop(0)
+        oldest.unlink()
 
 
 @contextmanager
