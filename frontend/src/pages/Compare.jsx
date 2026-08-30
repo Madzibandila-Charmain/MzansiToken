@@ -12,7 +12,8 @@ import {
     getOptions,
     getDefaultCorpus,
     uploadCorpus,
-    tokenizeText
+    tokenizeText,
+    compareMBI
 } from "../api/client";
 
 import { useAppState } from "../context/AppStateContext";
@@ -84,6 +85,27 @@ function Compare() {
             compression: 0,
             token_premium: 0
         });
+
+    const [mbiLoading, setMbiLoading] = useState(false);
+
+    const [mbiError, setMbiError] = useState("");
+
+    const [mbiUnavailable, setMbiUnavailable] = useState("");
+
+    const [mbiComparison, setMbiComparison] = useState({
+        tokenizerA: {
+            precision: 0,
+            recall: 0,
+            f1: 0,
+            words_evaluated: 0
+        },
+        tokenizerB: {
+            precision: 0,
+            recall: 0,
+            f1: 0,
+            words_evaluated: 0
+        }
+    });
 
     /*
         Metrics for each tokenizer.
@@ -203,6 +225,116 @@ function Compare() {
         setCompareTokenizerOne,
         setCompareTokenizerTwo,
         setCompareInitialised
+    ]);
+
+    useEffect(() => {
+
+        if (
+            !compareInitialised ||
+            !compareLanguage ||
+            !compareTokenizerOne ||
+            !compareTokenizerTwo
+        ) {
+            return;
+        }
+
+        let cancelled = false;
+
+        async function loadMbiComparison() {
+
+            try {
+
+                setMbiLoading(true);
+                setMbiError("");
+                setMbiUnavailable("");
+
+                const result = await compareMBI(
+                    compareTokenizerOne,
+                    compareTokenizerTwo,
+                    compareLanguage
+                );
+
+                if (cancelled) {
+                    return;
+                }
+
+                setMbiComparison({
+                    tokenizerA: {
+                        precision:
+                            result.tokenizer_a.metrics.precision ?? 0,
+                        recall:
+                            result.tokenizer_a.metrics.recall ?? 0,
+                        f1:
+                            result.tokenizer_a.metrics.f1 ?? 0,
+                        words_evaluated:
+                            result.tokenizer_a.words_evaluated ?? 0
+                    },
+                    tokenizerB: {
+                        precision:
+                            result.tokenizer_b.metrics.precision ?? 0,
+                        recall:
+                            result.tokenizer_b.metrics.recall ?? 0,
+                        f1:
+                            result.tokenizer_b.metrics.f1 ?? 0,
+                        words_evaluated:
+                            result.tokenizer_b.words_evaluated ?? 0
+                    }
+                });
+
+            } catch (err) {
+
+                if (err.message?.includes("Unsupported language")) {
+
+                    if (!cancelled) {
+                        setMbiComparison({
+                            tokenizerA: {
+                                precision: 0,
+                                recall: 0,
+                                f1: 0,
+                                words_evaluated: 0
+                            },
+                            tokenizerB: {
+                                precision: 0,
+                                recall: 0,
+                                f1: 0,
+                                words_evaluated: 0
+                            }
+                        });
+
+                        setMbiUnavailable(
+                            `${compareLanguage} does not have MBI metrics.`
+                        );
+                    }
+
+                    return;
+
+                }
+
+                if (!cancelled) {
+                    setMbiError(err.message);
+                }
+
+            } finally {
+
+                if (!cancelled) {
+                    setMbiLoading(false);
+                }
+
+            }
+
+        }
+
+        loadMbiComparison();
+
+        return () => {
+            cancelled = true;
+        };
+
+    }, [
+        compareInitialised,
+        compareLanguage,
+        compareTokenizerOne,
+        compareTokenizerTwo
     ]);
 
     /*
@@ -451,6 +583,12 @@ function Compare() {
                 result?.metrics?.token_premium ?? 0
 
         };
+
+    }
+
+    function formatMbiMetric(value) {
+
+        return Number(value ?? 0).toFixed(2);
 
     }
 
@@ -1241,6 +1379,131 @@ function Compare() {
                             </div>
 
                         )}
+
+                    </div>
+
+                </div>
+
+                <div className="compare-mbi-summary">
+
+                    <div className="compare-panel-heading">
+                        MBI comparison
+                    </div>
+
+
+                    {mbiUnavailable && (
+
+                        <div className="compare-selection-status is-ready">
+
+                            <span className="compare-status-dot"></span>
+
+                            <span>
+                                {mbiUnavailable}
+                            </span>
+
+                        </div>
+
+                    )}
+
+                    {mbiError && (
+
+                        <div className="compare-error">
+                            {mbiError}
+                        </div>
+
+                    )}
+
+                    <div className="compare-tokenization-results">
+
+                        <div className="compare-tokenization-panel">
+
+                            <div className="compare-panel-heading">
+                                {compareTokenizerOne || "Tokenizer 1"}
+                            </div>
+
+                            <div className="compare-tokenization-metrics">
+
+                                <div className="compare-metric-card">
+                                    <span className="compare-metric-name">Precision</span>
+                                    <span className="compare-metric-value">
+                                        {mbiLoading
+                                            ? "Loading..."
+                                            : formatMbiMetric(
+                                                mbiComparison.tokenizerA.precision
+                                            )}
+                                    </span>
+                                </div>
+
+                                <div className="compare-metric-card">
+                                    <span className="compare-metric-name">Recall</span>
+                                    <span className="compare-metric-value">
+                                        {mbiLoading
+                                            ? "Loading..."
+                                            : formatMbiMetric(
+                                                mbiComparison.tokenizerA.recall
+                                            )}
+                                    </span>
+                                </div>
+
+                                <div className="compare-metric-card">
+                                    <span className="compare-metric-name">F1</span>
+                                    <span className="compare-metric-value">
+                                        {mbiLoading
+                                            ? "Loading..."
+                                            : formatMbiMetric(
+                                                mbiComparison.tokenizerA.f1
+                                            )}
+                                    </span>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <div className="compare-tokenization-panel">
+
+                            <div className="compare-panel-heading">
+                                {compareTokenizerTwo || "Tokenizer 2"}
+                            </div>
+
+                            <div className="compare-tokenization-metrics">
+
+                                <div className="compare-metric-card">
+                                    <span className="compare-metric-name">Precision</span>
+                                    <span className="compare-metric-value">
+                                        {mbiLoading
+                                            ? "Loading..."
+                                            : formatMbiMetric(
+                                                mbiComparison.tokenizerB.precision
+                                            )}
+                                    </span>
+                                </div>
+
+                                <div className="compare-metric-card">
+                                    <span className="compare-metric-name">Recall</span>
+                                    <span className="compare-metric-value">
+                                        {mbiLoading
+                                            ? "Loading..."
+                                            : formatMbiMetric(
+                                                mbiComparison.tokenizerB.recall
+                                            )}
+                                    </span>
+                                </div>
+
+                                <div className="compare-metric-card">
+                                    <span className="compare-metric-name">F1</span>
+                                    <span className="compare-metric-value">
+                                        {mbiLoading
+                                            ? "Loading..."
+                                            : formatMbiMetric(
+                                                mbiComparison.tokenizerB.f1
+                                            )}
+                                    </span>
+                                </div>
+
+                            </div>
+
+                        </div>
 
                     </div>
 
