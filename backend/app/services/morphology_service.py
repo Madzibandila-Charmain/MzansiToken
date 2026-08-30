@@ -61,8 +61,10 @@ def to_boundary_vector(surf_word: str, split_word: str, delimeter="_") -> Bounda
     while i < len(split_word):
         # If character is a delimeter
         if split_word[i] == delimeter:
-            # set the vector to true in coresponding position
-            vector[pos-1] = 1
+            # Only mark a boundary when the delimiter sits between two
+            # characters in the surface word.
+            if 1 <= pos <= len(vector):
+                vector[pos-1] = 1
             i += 1  #move to next character in spit word
         else:
             # normal character

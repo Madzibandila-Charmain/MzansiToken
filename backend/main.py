@@ -15,10 +15,7 @@ from app.routers.metrics_router import router as metrics_router
 from app.routers.inspect_router import router as inspect_router
 from app.routers.example_router import router as example_router
 
-
-# Ethan's routers go here too, e.g.:
-# from app.routers.mbi_router import router as mbi_router
-# from app.routers.nchlt_router import router as nchlt_router
+from app.routers.mbi_router import router as mbi_router
 
 app = FastAPI(title="MzansiToken API")
 
@@ -47,7 +44,4 @@ app.include_router(tokenizer_router)
 app.include_router(metrics_router)
 app.include_router(inspect_router)
 app.include_router(example_router)
-
-# Ethans 
-# app.include_router(mbi_router)
-# app.include_router(nchlt_router)
+app.include_router(mbi_router)
