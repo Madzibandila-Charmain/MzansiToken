@@ -88,6 +88,8 @@ function Inspect() {
 
     const [mbiError, setMbiError] = useState("");
 
+    const [mbiUnavailable, setMbiUnavailable] = useState("");
+
     const [mbiMetrics, setMbiMetrics] = useState({
         precision: 0,
         recall: 0,
@@ -202,6 +204,7 @@ function Inspect() {
 
             setMbiLoading(true);
             setMbiError("");
+            setMbiUnavailable("");
 
             const result = await getMBI(
                 selectedTokenizer,
@@ -218,6 +221,22 @@ function Inspect() {
             });
 
         } catch (err) {
+
+            if (err.message?.includes("Unsupported language")) {
+
+                setMbiMetrics({
+                    precision: 0,
+                    recall: 0,
+                    f1: 0
+                });
+
+                setMbiUnavailable(
+                    `${selectedLanguage} does not have MBI metrics.`
+                );
+
+                return;
+
+            }
 
             setMbiError(err.message);
 
@@ -1015,11 +1034,9 @@ function Inspect() {
                             </span>
 
                             <span className="metric-value">
-                                {mbiLoading
+                                {mbiLoading || mbiUnavailable
                                     ? "N/A"
-                                    : Number(
-                                        mbiMetrics.precision
-                                    ).toFixed(2)}
+                                    : Number(mbiMetrics.precision).toFixed(2)}
                             </span>
 
                         </div>
@@ -1031,11 +1048,9 @@ function Inspect() {
                             </span>
 
                             <span className="metric-value">
-                                {mbiLoading
+                                {mbiLoading || mbiUnavailable
                                     ? "N/A"
-                                    : Number(
-                                        mbiMetrics.f1
-                                    ).toFixed(2)}
+                                    : Number(mbiMetrics.f1).toFixed(2)}
                             </span>
 
                         </div>
@@ -1047,16 +1062,23 @@ function Inspect() {
                             </span>
 
                             <span className="metric-value">
-                                {mbiLoading
+                                {mbiLoading || mbiUnavailable
                                     ? "N/A"
-                                    : Number(
-                                        mbiMetrics.recall
-                                    ).toFixed(2)}
+                                    : Number(mbiMetrics.recall).toFixed(2)}
                             </span>
 
                         </div>
 
                     </div>
+
+                    {mbiUnavailable && (
+
+                        <div className="selection-status is-ready">
+                            <span className="status-dot"></span>
+                            <span>{mbiUnavailable}</span>
+                        </div>
+
+                    )}
 
                     {mbiError && (
 
