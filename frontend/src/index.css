@@ -482,29 +482,46 @@
     TOKENIZATION METRICS
 ========================= */
 
-/* Container for all metric cards */
+/* Container for all metric rows */
 .tokenization-metrics {
     grid-column: 1 / -1;
-
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-
-    gap: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
     margin-top: 18px;
 }
 
+/* Each row of metric cards */
+.metric-row {
+    display: flex;
+    width: 100%;
+    gap: 16px;
+}
+
+/* First row - 4 cards */
+.metric-row:first-child {
+    justify-content: space-between;
+}
+
+/* Second row - 3 cards centred */
+.metric-row-centered {
+    justify-content: center;
+}
+
+/* Individual metric card */
 .metric-card {
+    flex: 1;
     min-height: 100px;
+    min-width: 0;
 
     display: flex;
     flex-direction: column;
-
     align-items: center;
     justify-content: center;
 
     box-sizing: border-box;
-    background: #ffffff;
 
+    background: #ffffff;
     border: 1px solid #e2e2e2;
     border-radius: 12px;
 
@@ -517,34 +534,31 @@
         transform 0.2s ease;
 }
 
+/* Metric name */
 .metric-name {
     margin-bottom: 8px;
-
     font-size: 12px;
     font-weight: 700;
-
     letter-spacing: 0.5px;
     color: #777777;
 }
 
+/* Metric value */
 .metric-value {
     font-size: 24px;
     font-weight: 700;
-
     color: #111111;
 }
 
+/* Metric card hover */
 .metric-card:hover {
     background-color: #fafafa;
     border-color: #bdbdbd;
-
     transform: translateY(-2px);
-
-    box-shadow: 
+    box-shadow:
         0 6px 16px rgba(0, 0, 0, 0.07),
         0 2px 5px rgba(0, 0, 0, 0.04);
 }
-
 /* =====================
     TOKENIZATION RESULT
 ======================== */

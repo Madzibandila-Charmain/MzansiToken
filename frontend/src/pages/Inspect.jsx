@@ -584,50 +584,85 @@ function Inspect() {
                 {/* Tokenization metrics */}
                 <div className="tokenization-metrics">
 
-                    <div className="metric-card">
-                        <span className="metric-name">
-                            Tokens
-                        </span>
+                    {/* Row 1 - Existing metrics */}
+                    <div className="metric-row">
 
-                        <span className="metric-value">
-                            {corpusMetrics.tokens}
-                        </span>
+                        <div className="metric-card">
+                            <span className="metric-name">
+                                Tokens
+                            </span>
+                            <span className="metric-value">
+                                {corpusMetrics.tokens}
+                            </span>
+                        </div>
+
+                        <div className="metric-card">
+                            <span className="metric-name">
+                                Fertility
+                            </span>
+                            <span className="metric-value">
+                                {Number(corpusMetrics.fertility).toFixed(2)}
+                            </span>
+                        </div>
+
+                        <div className="metric-card">
+                            <span className="metric-name">
+                                Compression
+                            </span>
+                            <span className="metric-value">
+                                {Number(corpusMetrics.compression).toFixed(2)}
+                            </span>
+                        </div>
+
+                        <div className="metric-card">
+                            <span className="metric-name">
+                                Token Premium
+                            </span>
+                            <span className="metric-value">
+                                {corpusMetrics.token_premium === null
+                                    ? "N/A"
+                                    : Number(corpusMetrics.token_premium).toFixed(2)
+                                }
+                            </span>
+                        </div>
+
                     </div>
 
-                    <div className="metric-card">
-                        <span className="metric-name">
-                            Fertility
-                        </span>
+                    {/* Row 2 - Placeholder metrics */}
+                    <div className="metric-row metric-row-centered">
 
-                        <span className="metric-value">
-                            {Number(corpusMetrics.fertility).toFixed(2)}
-                        </span>
-                    </div>
+                        <div className="metric-card">
+                            <span className="metric-name">
+                                Precision
+                            </span>
+                            <span className="metric-value">
+                                0.00
+                            </span>
+                        </div>
 
-                    <div className="metric-card">
-                        <span className="metric-name">
-                            Compression
-                        </span>
+                        <div className="metric-card">
+                            <span className="metric-name">
+                                F1
+                            </span>
+                            <span className="metric-value">
+                                0.00
+                            </span>
+                        </div>
 
-                        <span className="metric-value">
-                            {Number(corpusMetrics.compression).toFixed(2)}
-                        </span>
-                    </div>
+                        <div className="metric-card">
+                            <span className="metric-name">
+                                Recall
+                            </span>
+                            <span className="metric-value">
+                                0.00
+                            </span>
+                        </div>
 
-                    <div className="metric-card">
-                        <span className="metric-name">
-                            Token Premium
-                        </span>
-
-                        <span className="metric-value">
-                            {corpusMetrics.token_premium === null
-                                ? "N/A"
-                                : Number(corpusMetrics.token_premium).toFixed(2)
-                            }
-                        </span>
                     </div>
 
                 </div>
+
+                
 
             </section>
 
