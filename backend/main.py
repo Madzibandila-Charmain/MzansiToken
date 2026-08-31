@@ -6,6 +6,8 @@ Run it from the `backend` folder:
 Then open http://localhost:8000/docs to see and test every endpoint.
 """
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -18,12 +20,13 @@ from app.routers.example_router import router as example_router
 from app.routers.mbi_router import router as mbi_router
 from app.routers.rank_router import router as rank_router
 
-app = FastAPI(title="MzansiToken API")
-
-# Initialise the database on application startup
-@app.on_event("startup")
-def startup() -> None:
+@asynccontextmanager
+async def lifespan(_: FastAPI):
     init_db()
+    yield
+
+
+app = FastAPI(title="MzansiToken API", lifespan=lifespan)
 
 # CORS: the React dev server runs on 5173 (Vite) or 3000, this backend on 8000.
 # Without this the browser blocks requests between the two ports.
