@@ -381,3 +381,61 @@ export async function getBackendStatus(
         "Failed to load backend status."
     );
 }
+
+// LEADERBOARD
+
+export async function getLeaderboard(
+    {
+        sortBy = "overall_score",
+        descending = true,
+    } = {},
+    signal
+) {
+
+    const params = new URLSearchParams({
+        sort_by: sortBy,
+        descending: String(descending),
+    });
+
+    const response = await fetch(
+        `${API_BASE_URL}/leaderboard?${params.toString()}`,
+        {
+            signal,
+        }
+    );
+
+    return handleResponse(
+        response,
+        "Failed to load leaderboard data."
+    );
+}
+
+export async function createOrUpdateLeaderboardEntry(
+    name,
+    metrics,
+    signal
+) {
+
+    const response = await fetch(
+        `${API_BASE_URL}/leaderboard`,
+        {
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify({
+                name,
+                metrics,
+            }),
+
+            signal,
+        }
+    );
+
+    return handleResponse(
+        response,
+        "Failed to save leaderboard entry."
+    );
+}
