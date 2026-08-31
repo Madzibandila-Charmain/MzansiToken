@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
     createOrUpdateLeaderboardEntry,
+    deleteLeaderboardEntry,
     getDefaultCorpus,
     getLeaderboard,
     getMBI,
@@ -14,6 +15,7 @@ function Rank() {
     const [errorMessage, setErrorMessage] = useState("");
     const [selectionStatus, setSelectionStatus] = useState("");
     const [selectionLoading, setSelectionLoading] = useState(false);
+    const [deletingRowId, setDeletingRowId] = useState(null);
     const [languages, setLanguages] = useState([]);
     const [tokenizers, setTokenizers] = useState([]);
     const [language, setLanguage] = useState("");
@@ -116,6 +118,28 @@ function Rank() {
             setSelectionStatus("Could not add tokenizer");
         } finally {
             setSelectionLoading(false);
+        }
+    }
+
+    async function handleRemoveRow(row) {
+        if (!row?.id || deletingRowId != null || selectionLoading) {
+            return;
+        }
+
+        setDeletingRowId(row.id);
+        setSelectionStatus(`Removing ${row.name} from leaderboard...`);
+        setErrorMessage("");
+
+        try {
+            await deleteLeaderboardEntry(row.id);
+            await loadLeaderboard();
+
+            setSelectionStatus(`${row.name} removed from leaderboard`);
+        } catch (error) {
+            setErrorMessage(error.message || "Failed to remove tokenizer.");
+            setSelectionStatus("Could not remove tokenizer");
+        } finally {
+            setDeletingRowId(null);
         }
     }
 
@@ -230,6 +254,8 @@ function Rank() {
                     rows={rows}
                     isLoading={isLoading}
                     errorMessage={errorMessage}
+                    onRowClick={handleRemoveRow}
+                    deletingRowId={deletingRowId}
                 />
             </div>
         </>

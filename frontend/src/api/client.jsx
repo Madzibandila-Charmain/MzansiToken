@@ -439,3 +439,24 @@ export async function createOrUpdateLeaderboardEntry(
         "Failed to save leaderboard entry."
     );
 }
+
+export async function deleteLeaderboardEntry(
+    tokenizerId,
+    signal
+) {
+
+    const response = await fetch(
+        `${API_BASE_URL}/leaderboard/${encodeURIComponent(
+            tokenizerId
+        )}`,
+        {
+            method: "DELETE",
+            signal,
+        }
+    );
+
+    return handleResponse(
+        response,
+        "Failed to remove leaderboard entry."
+    );
+}

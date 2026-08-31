@@ -1,7 +1,13 @@
 import { useState } from "react";
 
 
-function LeaderboardTable({ rows = [], isLoading = false, errorMessage = "" }) {
+function LeaderboardTable({
+    rows = [],
+    isLoading = false,
+    errorMessage = "",
+    onRowClick,
+    deletingRowId = null,
+}) {
     const [sort, setSort] = useState({ keyToSort: "overall_score", direction: "desc" });
 
     const headers = [
@@ -141,7 +147,7 @@ function LeaderboardTable({ rows = [], isLoading = false, errorMessage = "" }) {
 
 
     return (
-        <table>
+        <table className="rank-table">
             <thead>
                 <tr>
                     {headers.map((header, index) => (
@@ -153,11 +159,19 @@ function LeaderboardTable({ rows = [], isLoading = false, errorMessage = "" }) {
             </thead>
             <tbody>
                     {getSortedArray(rows).map((row, index) => (
-                        <tr key={row.id ?? index}>
+                        <tr
+                            key={row.id ?? index}
+                            className={onRowClick ? "rank-table-row is-clickable" : "rank-table-row"}
+                            onClick={onRowClick ? () => onRowClick(row) : undefined}
+                            title={onRowClick ? "Click to remove this tokenizer from the leaderboard" : undefined}
+                            aria-busy={deletingRowId === row.id}
+                        >
                             {headers.map((header, index) => {
                                 return (
                                     <td key={index}>
-                                        {formatCellValue(header.KEY, row[header.KEY])}
+                                        {deletingRowId === row.id && header.KEY === "name"
+                                            ? "Removing..."
+                                            : formatCellValue(header.KEY, row[header.KEY])}
                                     </td>
                                 )
                             })}
