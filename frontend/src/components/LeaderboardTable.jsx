@@ -1,25 +1,30 @@
-import { use } from "react";
 import { useState } from "react";
 
 
-function LeaderboardTable(){
-    const [sort, setSort] = useState({keyToSort: "tokenPremium", direction: "desc"});
+function LeaderboardTable({
+    rows = [],
+    isLoading = false,
+    errorMessage = "",
+    onRowClick,
+    deletingRowId = null,
+}) {
+    const [sort, setSort] = useState({ keyToSort: "overall_score", direction: "desc" });
 
     const headers = [
         {
             id: 1,
-            KEY: "tokenizer",
+            KEY: "name",
             LABEL: "Tokenizer",
         },
         {
             id: 2,
-            KEY: "tokenCount",
+            KEY: "token_count",
             LABEL: "Token count",
         },
         {
             id: 3,
             KEY: "fertility",
-            LABEL: "Fertitlity",
+            LABEL: "Fertility",
         },
         {
             id: 4,
@@ -28,13 +33,13 @@ function LeaderboardTable(){
         },
         {
             id: 5,
-            KEY: "tokenPremium",
+            KEY: "token_premium",
             LABEL: "Token Premium",
         },
         {
             id: 6,
             KEY: "f1",
-            LABEL: "f1",
+            LABEL: "F1",
         },
         {
             id: 7,
@@ -46,43 +51,11 @@ function LeaderboardTable(){
             KEY: "recall",
             LABEL: "Recall",
         },
-    ]
-    
-
-    const data = [
-    {
-        id: 1,
-        tokenizer: "BPE-32k",
-        tokenCount: 128432,
-        fertility: 1.32,
-        compression: 4.21,
-        tokenPremium: 0.08,
-        f1: 0.912,
-        precision: 0.905,
-        recall: 0.919,
-    },
-    {
-        id: 2,
-        tokenizer: "WordPiece-30k",
-        tokenCount: 135210,
-        fertility: 1.41,
-        compression: 3.98,
-        tokenPremium: 0.15,
-        f1: 0.887,
-        precision: 0.879,
-        recall: 0.896,
-    },
-    {
-        id: 3,
-        tokenizer: "Unigram-64k",
-        tokenCount: 119873,
-        fertility: 1.19,
-        compression: 4.55,
-        tokenPremium: -0.03,
-        f1: 0.931,
-        precision: 0.928,
-        recall: 0.934,
-    },
+        {
+            id: 9,
+            KEY: "overall_score",
+            LABEL: "Overall",
+        },
     ];
 
     /**
@@ -109,18 +82,72 @@ function LeaderboardTable(){
      * Function that will sort an array of the data according to the sort thats set
      * @param {*} arrayToSort 
      */
-    function getSortedArray(arrayToSort){
-        if (sort.direction === "asc"){
-            // Sort alpha numerically in asc order
-            return arrayToSort.sort((a, b) => (a[sort.keyToSort] > b[sort.keyToSort] ? 1 : -1))
+    function getSortedArray(arrayToSort) {
+        return [...arrayToSort].sort((a, b) => {
+            const aValue = a?.[sort.keyToSort];
+            const bValue = b?.[sort.keyToSort];
+
+            if (aValue == null && bValue == null) {
+                return 0;
+            }
+
+            if (aValue == null) {
+                return 1;
+            }
+
+            if (bValue == null) {
+                return -1;
+            }
+
+            if (typeof aValue === "number" && typeof bValue === "number") {
+                return sort.direction === "asc"
+                    ? aValue - bValue
+                    : bValue - aValue;
+            }
+
+            const result = String(aValue).localeCompare(String(bValue));
+
+            return sort.direction === "asc"
+                ? result
+                : -result;
+        });
+    }
+
+
+    function formatCellValue(key, value) {
+        if (value == null) {
+            return "-";
         }
-        // Sort appha numerically in desc order
-        return arrayToSort.sort((a, b) => (a[sort.keyToSort] > b[sort.keyToSort] ? -1 : 1))
+
+        if (typeof value !== "number") {
+            return value;
+        }
+
+        if (key === "token_count") {
+            return value.toLocaleString();
+        }
+
+        return value.toFixed(3);
+    }
+
+
+    if (isLoading) {
+        return <p>Loading leaderboard...</p>;
+    }
+
+
+    if (errorMessage) {
+        return <p>{errorMessage}</p>;
+    }
+
+
+    if (!rows.length) {
+        return <p>No leaderboard data available yet.</p>;
     }
 
 
     return (
-        <table>
+        <table className="rank-table">
             <thead>
                 <tr>
                     {headers.map((header, index) => (
@@ -131,12 +158,20 @@ function LeaderboardTable(){
                 </tr>
             </thead>
             <tbody>
-                    {getSortedArray(data).map((row, index) => (
-                        <tr key={index}>
+                    {getSortedArray(rows).map((row, index) => (
+                        <tr
+                            key={row.id ?? index}
+                            className={onRowClick ? "rank-table-row is-clickable" : "rank-table-row"}
+                            onClick={onRowClick ? () => onRowClick(row) : undefined}
+                            title={onRowClick ? "Click to remove this tokenizer from the leaderboard" : undefined}
+                            aria-busy={deletingRowId === row.id}
+                        >
                             {headers.map((header, index) => {
                                 return (
                                     <td key={index}>
-                                        {row[header.KEY]}
+                                        {deletingRowId === row.id && header.KEY === "name"
+                                            ? "Removing..."
+                                            : formatCellValue(header.KEY, row[header.KEY])}
                                     </td>
                                 )
                             })}
