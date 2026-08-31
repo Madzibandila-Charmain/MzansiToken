@@ -1,14 +1,25 @@
 /*
     API client for the MzansiToken frontend.
-    This file contains all required communication between React and FastAPI backend
+
+    All communication between React and FastAPI
+    is handled in this file.
+
     Author: Madzibandila Charmain
-    Date: 23 August 2026
 */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL =
+    import.meta.env.VITE_API_BASE_URL ||
+    "http://127.0.0.1:8000";
 
-// Converts a failed FastAPI response into a useful error. 
-async function handleResponse(response, defaultMessage) {
+
+/*
+ *RESPONSE HANDLER
+ */
+
+async function handleResponse(
+    response,
+    defaultMessage
+) {
 
     if (response.ok) {
         return response.json();
@@ -17,23 +28,36 @@ async function handleResponse(response, defaultMessage) {
     let message = defaultMessage;
 
     try {
+
         const errorData = await response.json();
 
         if (errorData.detail) {
             message = errorData.detail;
         }
-    }
-    catch {
-        //Keeps the default message if the response is not JSON
+
+    } catch {
+        // Keep default message.
     }
 
     throw new Error(message);
 }
 
-// Gets the languages, tokenizers and default settings suppoted by the backend.
-export async function getOptions() {
 
-    const response = await fetch(`${API_BASE_URL}/options`);
+/*
+ * OPTIONS
+ */
+
+
+export async function getOptions(
+    signal
+) {
+
+    const response = await fetch(
+        `${API_BASE_URL}/options`,
+        {
+            signal,
+        }
+    );
 
     return handleResponse(
         response,
@@ -41,17 +65,32 @@ export async function getOptions() {
     );
 }
 
-// Gets tokenization and metrics for the default corpus of a selected language. 
-export async function getDefaultCorpus (language, tokenizer){
 
-    const response = await fetch ( 
+/* 
+ * DEFAULT CORPUS
+ */ 
+
+export async function getDefaultCorpus(
+    language,
+    tokenizer,
+    signal
+) {
+
+    const response = await fetch(
         `${API_BASE_URL}/inspect/default`,
         {
             method: "POST",
 
-            headers: {"Content-Type": "application/json"},
+            headers: {
+                "Content-Type": "application/json",
+            },
 
-            body: JSON.stringify ({language,tokenizer})
+            body: JSON.stringify({
+                language,
+                tokenizer,
+            }),
+
+            signal,
         }
     );
 
@@ -61,19 +100,43 @@ export async function getDefaultCorpus (language, tokenizer){
     );
 }
 
-// Uploads a user's to FastAPI. 
-export async function uploadCorpus (file, language, tokenizer) {
+
+/*
+ * UPLOAD CORPUS
+ */
+
+export async function uploadCorpus(
+    file,
+    language,
+    tokenizer,
+    signal
+) {
+
     const formData = new FormData();
 
-    formData.append("file", file);
-    formData.append("language", language);
-    formData.append("tokenizer", tokenizer);
+    formData.append(
+        "file",
+        file
+    );
 
-    const response = await fetch( 
+    formData.append(
+        "language",
+        language
+    );
+
+    formData.append(
+        "tokenizer",
+        tokenizer
+    );
+
+    const response = await fetch(
         `${API_BASE_URL}/inspect/upload`,
         {
             method: "POST",
-            body: formData
+
+            body: formData,
+
+            signal,
         }
     );
 
@@ -83,22 +146,238 @@ export async function uploadCorpus (file, language, tokenizer) {
     );
 }
 
-// Tokenizes text typed into the type anything box. 
-export async function tokenizeText (text, language, tokenizer){
 
-    const response = await fetch (
+/*
+ * TOKENIZE CUSTOM TEXT
+ */
+
+export async function tokenizeText(
+    text,
+    language,
+    tokenizer,
+    signal
+) {
+
+    const response = await fetch(
         `${API_BASE_URL}/tokenize-text`,
         {
             method: "POST",
 
-            headers: {"Content-Type": "application/json"},
+            headers: {
+                "Content-Type": "application/json",
+            },
 
-            body: JSON.stringify ({text, language, tokenizer})
+            body: JSON.stringify({
+                text,
+                language,
+                tokenizer,
+            }),
+
+            signal,
         }
     );
 
     return handleResponse(
         response,
         "Could not tokenize the text."
+    );
+}
+
+
+/*
+ * METRICS
+ */
+
+export async function getMetrics(
+    tokenizer,
+    signal
+) {
+
+    const response = await fetch(
+        `${API_BASE_URL}/metrics/${encodeURIComponent(
+            tokenizer
+        )}`,
+        {
+            signal,
+        }
+    );
+
+    return handleResponse(
+        response,
+        "Failed to load metrics."
+    );
+}
+
+
+/*
+ * TOKENIZER INFORMATION
+ */
+
+export async function getTokenizerInfo(
+    tokenizer,
+    signal
+) {
+
+    const response = await fetch(
+        `${API_BASE_URL}/tokenizer/${encodeURIComponent(
+            tokenizer
+        )}`,
+        {
+            signal,
+        }
+    );
+
+    return handleResponse(
+        response,
+        "Failed to load tokenizer information."
+    );
+}
+
+
+/*
+ * MBI METRICS
+ */
+
+export async function getMBI(
+    tokenizer,
+    language,
+    signal
+) {
+
+    const params = new URLSearchParams({
+        language,
+    });
+
+    const response = await fetch(
+        `${API_BASE_URL}/mbi/${encodeURIComponent(
+            tokenizer
+        )}?${params.toString()}`,
+        {
+            signal,
+        }
+    );
+
+    return handleResponse(
+        response,
+        "Failed to load MBI metrics."
+    );
+}
+
+
+export async function compareMBI(
+    tokenizerA,
+    tokenizerB,
+    language,
+    signal
+) {
+
+    const params = new URLSearchParams({
+        model_a: tokenizerA,
+        model_b: tokenizerB,
+        language,
+    });
+
+    const response = await fetch(
+        `${API_BASE_URL}/compare_mbi?${params.toString()}`,
+        {
+            signal,
+        }
+    );
+
+    return handleResponse(
+        response,
+        "Failed to compare MBI metrics."
+    );
+}
+
+
+export async function getExample(
+    tokenizer,
+    index = -1,
+    signal
+) {
+
+    const response = await fetch(
+        `${API_BASE_URL}/example/model/${encodeURIComponent(
+            tokenizer
+        )}?index=${index}`,
+        {
+            signal,
+        }
+    );
+
+    return handleResponse(
+        response,
+        "Failed to load example."
+    );
+}
+
+// SENTENCE COUNT
+
+export async function getSentenceCount(
+    signal
+) {
+
+    const response = await fetch(
+        `${API_BASE_URL}/sentence-count`,
+        {
+            signal,
+        }
+    );
+
+    return handleResponse(
+        response,
+        "Failed to load sentence count."
+    );
+}
+
+// COMPARE TOKENIZERS
+
+export async function compareTokenizers(
+    tokenizerA,
+    tokenizerB,
+    signal
+) {
+
+    const response = await fetch(
+        `${API_BASE_URL}/compare`,
+        {
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify({
+                tokenizer_a: tokenizerA,
+                tokenizer_b: tokenizerB,
+            }),
+
+            signal,
+        }
+    );
+
+    return handleResponse(
+        response,
+        "Failed to compare tokenizers."
+    );
+}
+
+// BACKEND STATUS
+
+export async function getBackendStatus(
+    signal
+) {
+
+    const response = await fetch(
+        `${API_BASE_URL}/status`,
+        {
+            signal,
+        }
+    );
+
+    return handleResponse(
+        response,
+        "Failed to load backend status."
     );
 }

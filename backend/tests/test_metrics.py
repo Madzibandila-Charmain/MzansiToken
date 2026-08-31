@@ -1,0 +1,230 @@
+import sys
+import os
+import pytest
+from unittest.mock import Mock
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+ 
+from app.services.metrics import (token_count, fertility, compression, token_premium, compute_efficiency_metrics,)
+
+# token_count() TESTS
+
+def test_token_count_basic():
+    # Two sentences, each with 2 tokens → total = 4
+    
+    tokenized = [["Hello", "world"], ["Cape", "Town"]]
+    assert token_count(tokenized) == 4
+
+
+def test_token_count_empty_list():
+    # No sentences at all → total tokens = 0
+    assert token_count([]) == 0
+
+
+def test_token_count_sentences_with_no_tokens():
+    # Sentences exist but each is empty → total tokens = 0
+    tokenized = [[], [], []]
+    assert token_count(tokenized) == 0
+
+
+# compression() TESTS
+# Formula: compression = total_bytes / total_tokens
+
+def test_compression_hand_calculated():
+    """
+    "Hello world" → 11 bytes
+    "Cape Town"   → 9 bytes
+    Total bytes = 20
+    Tokenized = 4 tokens
+    compression = 20 / 4 = 5.0
+    """
+    sentences = ["Hello world", "Cape Town"]
+    tokenized = [["Hello", "world"], ["Cape", "Town"]]
+    assert compression(tokenized, sentences) == 5.0
+
+
+def test_compression_zero_tokens_returns_zero():
+    # If there are no tokens, compression should safely return 0
+    sentences = ["Hello"]
+    tokenized = [[]]
+    assert compression(tokenized, sentences) == 0.0
+
+
+def test_compression_multibyte_characters():
+    """
+    "é" is a multi-byte UTF-8 character (2 bytes), not 1.
+    "café" has 5 bytes in UTF‑8:
+      c(1) + a(1) + f(1) + é(2) = 5
+    Tokenized = 1 token
+    compression = 5 / 1 = 5.0
+    """
+    sentences = ["café"]
+    tokenized = [["café"]]
+    assert compression(tokenized, sentences) == 5.0
+
+
+# fertility() TESTS
+# Formula: fertility = total_tokens / total_words
+
+def test_fertility_hand_calculated():
+    """
+    Sentences: "Hello world" (2 words), "Cape Town" (2 words)
+    Total words = 4
+    Tokenized = 4 tokens
+    fertility = 4 / 4 = 1.0
+    """
+    sentences = ["Hello world", "Cape Town"]
+    tokenized = [["Hello", "world"], ["Cape", "Town"]]
+    assert fertility(tokenized, sentences) == 1.0
+
+
+def test_fertility_subword_splitting():
+    # Empty sentence → 0 words, 0 tokens → fertility = 0.0
+    sentences = [""]
+    tokenized = [[]]
+    assert fertility(tokenized, sentences) == 0.0
+
+
+def test_fertility_rounds_to_three_decimals():
+    # 4 tokens / 3 words = 1.333 (rounded to 3 decimals)
+    sentences = ["one two three"]
+    tokenized = [["a", "b", "c", "d"]]
+    assert fertility(tokenized, sentences) == 1.333
+
+
+# token_premium() tests
+# Formula: token_premium = lang_token_count / eng_token_count
+
+def test_token_premium_english_baseline_is_one():
+    # English compared to itself → always 1.0
+    assert token_premium(100, 100) == 1.0
+
+
+def test_token_premium_hand_calculated():
+    """
+    isiZulu uses 200 tokens vs English 100 tokens
+    token_premium = 200 / 100 = 2.0
+    """
+    assert token_premium(200, 100) == 2.0
+
+
+def test_token_premium_none_when_english_missing():
+    # If English count is missing, return None
+    assert token_premium(200, None) is None
+
+
+def test_token_premium_none_when_english_zero():
+    # If English has 0 tokens, return None (avoid divide by zero)
+    assert token_premium(200, 0) is None
+
+
+def test_token_premium_rounds_to_three_decimals():
+    # 100 / 3 = 33.333 (rounded to 3 decimals)
+    assert token_premium(100, 3) == 33.333
+
+
+# compute_efficiency_metrics() tests
+# Requires a mocked tokenizer since it calls tokenize_corpus() internally.
+
+def _mock_tokenizer_word_level():
+    """
+    Helper function: creates a fake tokenizer.
+    Instead of using a real tokenizer, this one just splits text
+    by spaces. That way, we always know exactly what the output will be.
+    """
+    tokenizer = Mock()
+    tokenizer.tokenize.side_effect = lambda text: text.split()
+    return tokenizer
+
+
+def test_compute_efficiency_metrics_all_languages_present():
+    """
+    Check: every language in the input corpus gets results.
+    We expect each language to have all four metrics:
+    token_count, fertility, compression, and token_premium.
+    """
+    tokenizer = _mock_tokenizer_word_level()
+    corpus = {
+        "English": ["Hello world"],
+        "isiZulu": ["Sawubona mhlaba"],
+    }
+
+    result = compute_efficiency_metrics(tokenizer, corpus)
+
+    # Make sure both languages are present
+    assert set(result.keys()) == {"English", "isiZulu"}
+    # Make sure each language has all four metrics
+    for language in result:
+        assert set(result[language].keys()) == {
+            "token_count", "fertility", "compression", "token_premium"
+        }
+
+
+def test_compute_efficiency_metrics_english_premium_is_baseline():
+    """
+    Check: English should always have a token_premium of 1.0.
+    This means English is the baseline language for comparison.
+    """
+    tokenizer = _mock_tokenizer_word_level()
+    corpus = {
+        "English": ["Hello world"],
+        "isiZulu": ["Sawubona mhlaba wonke"],
+    }
+    result = compute_efficiency_metrics(tokenizer, corpus)
+
+    assert result["English"]["token_premium"] == 1.0
+
+
+def test_compute_efficiency_metrics_hand_calculated_values():
+    """
+    Check: metrics match simple hand-calculated values.
+
+    English: "Hello world"
+      - token_count = 2
+      - fertility   = 2 tokens / 2 words = 1.0
+      - compression = 11 characters / 2 tokens = 5.5
+      - token_premium = 2 / 2 = 1.0
+
+    isiZulu: "Sawubona mhlaba"
+      - token_count = 2
+      - fertility   = 2 / 2 = 1.0
+      - compression = 15 characters / 2 tokens = 7.5
+      - token_premium = 2 / 2 (English baseline) = 1.0
+    """
+    tokenizer = _mock_tokenizer_word_level()
+    corpus = {
+        "English": ["Hello world"],
+        "isiZulu": ["Sawubona mhlaba"],
+    }
+
+    result = compute_efficiency_metrics(tokenizer, corpus)
+
+    assert result["English"] == {
+        "token_count": 2,
+        "fertility": 1.0,
+        "compression": 5.5,
+        "token_premium": 1.0,
+    }
+    assert result["isiZulu"] == {
+        "token_count": 2,
+        "fertility": 1.0,
+        "compression": 7.5,
+        "token_premium": 1.0,
+    }
+
+
+def test_compute_efficiency_metrics_missing_english_returns_none_premium():
+    """
+    Edge case: if English is missing, token_premium should be None.
+    This prevents the code from crashing or making up fake values.
+    """
+    tokenizer = _mock_tokenizer_word_level()
+    corpus = {
+        "isiZulu": ["Sawubona mhlaba"],
+        "isiXhosa": ["Molo ehlabathini"],
+    }
+
+    result = compute_efficiency_metrics(tokenizer, corpus)
+
+    assert result["isiZulu"]["token_premium"] is None
+    assert result["isiXhosa"]["token_premium"] is None

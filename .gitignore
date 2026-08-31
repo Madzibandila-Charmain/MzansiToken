@@ -1,39 +1,18 @@
+# Dataset files (large, fetched via code)
+datasets/
+
 # Python
 __pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.coverage
-coverage.xml
-htmlcov/
-
-# Virtual environments
+*.pyc
 .venv/
 venv/
 env/
-backend/.venv/
 
-# Editor and OS files
-.vscode/
-.idea/
+# HuggingFace cache
+.cache/
+*.bin
+*.safetensors
+
+# OS/Editor junk
 .DS_Store
-Thumbs.db
-
-# Logs and local config
-*.log
-.env
-.env.*
-*.local
-
-# Node / frontend build artifacts
-node_modules/
-dist/
-dist-ssr/
-.vite/
-
-# Application runtime files
-*.sqlite3
-*.db
+.vscode/
