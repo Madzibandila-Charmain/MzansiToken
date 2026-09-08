@@ -24,18 +24,29 @@ Usage:
 from app.services.flores import load_flores, LANGUAGES
 from app.services.tokenizer import load_tokenizer, tokenize_corpus
 
+_english_baseline_cache = {}  # model_name -> {"token_count": int, "fertility": float}
 
-_english_baseline_cache = {}  # model_name -> english token_count
+def get_english_stats(model_name, tokenizer, corpus):
+    """
+    English token count and fertility for this model, computed once and cached.
 
-def get_english_baseline(model_name, tokenizer, corpus):
-    """Return cached English token count for this model, computing it once if needed."""
+    Both premium formulas need an English baseline, so we compute them together
+    rather than tokenizing English twice.
+    """
     if model_name in _english_baseline_cache:
         return _english_baseline_cache[model_name]
+
     english_sentences = corpus.get("English", [])
     english_tokenized = tokenize_corpus(tokenizer, english_sentences)
-    count = token_count(english_tokenized)
-    _english_baseline_cache[model_name] = count
-    return count
+
+    stats = {"token_count": token_count(english_tokenized), "fertility": fertility(english_tokenized, english_sentences),}
+    _english_baseline_cache[model_name] = stats
+    return stats
+
+
+def get_english_baseline(model_name, tokenizer, corpus):
+    """English token count only. Kept because existing code calls this."""
+    return get_english_stats(model_name, tokenizer, corpus)["token_count"]
 
 # Metric 1:  Tockn Count
 def token_count(tokenized_sentences: list[list[str]]) -> int:
