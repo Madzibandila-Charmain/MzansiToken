@@ -236,63 +236,34 @@ def compute_efficiency_metrics(tokenizer, corpus: dict[str, list[str]]) -> dict[
     return results
 
 def calculate_efficiency_metrics_one_language(tokenized_sentences, sentences, model_name: str, language: str,
-                               tokenizer, metrics_cache: dict, corpus: dict[str, list[str]]):
+                               tokenizer, metrics_cache: dict, corpus: dict[str, list[str]], basis: str = "parallel_corpus"):
     """
-    Calculate the four efficiency metrics for one language, given
-    sentences that have ALREADY been tokenized (tokenized_sentences).
+    Calculate the four efficiency metrics for one language, given sentences that
+    have ALREADY been tokenized.
 
-    This avoids tokenizing the same sentences twice — the caller
-    tokenizes once, then passes that result in here, instead of this
-    function re-tokenizing the same text again from scratch.
+    basis picks how token_premium is measured:
+      "parallel_corpus" - tokens(lang) / tokens(English). Only meaningful when this text really is the English corpus translated.
+      "per_word"        - fertility(lang) / fertility(English). Works for any text, because a ratio of averages does not care how much text you gave it.
 
-    Token premium compares a language to English. To avoid re-doing
-    work, we check if English's token count is already stored in the
-    metrics cache. If not, we compute it once and reuse it.
+    Use per_word for anything the user typed or uploaded.
     """
     lang_token_count = token_count(tokenized_sentences)
     lang_fertility = fertility(tokenized_sentences, sentences)
     lang_compression = compression(tokenized_sentences, sentences)
 
-    if language == "English":
-        english_token_count = lang_token_count
+    english = get_english_stats(model_name, tokenizer, corpus)
+
+    if basis == "per_word":
+        premium = token_premium_per_word(lang_fertility, english["fertility"])
+    elif language == "English":
+        premium = token_premium(lang_token_count, lang_token_count)
     else:
-        english_token_count = get_english_baseline(model_name, tokenizer, corpus)
-        
-    premium = token_premium(lang_token_count, english_token_count)
+        premium = token_premium(lang_token_count, english["token_count"])
 
     return {
         "token_count": lang_token_count,
         "fertility": lang_fertility,
         "compression": lang_compression,
-        "token_premium": premium
+        "token_premium": premium,
+        "token_premium_basis": basis,
     }
-
-# Quick test 
-if __name__ == "__main__":
-    import sys
-
-    # Get the data directory and model name from command-line arguments.
-    # Default values mean you can run: python BackEnd/metrics.py
-    # Or specify custom values: python BackEnd/metrics.py DataSets/FLORES gpt2
-    DATA_DIR = sys.argv[1] if len(sys.argv) > 1 else "DataSets/FLORES"
-    MODEL    = sys.argv[2] if len(sys.argv) > 2 else "gpt2"
-
-    print(f"\n Loading FLORES from '{DATA_DIR}' ")
-    corpus = load_flores(DATA_DIR)
- 
-    print(f"\n Loading tokenizer '{MODEL}' ")
-    tokenizer = load_tokenizer(MODEL)
- 
-    print(f"\n Computing efficiency metrics \n")
-    metrics = compute_efficiency_metrics(tokenizer, corpus)
-
-    print(f"{'Language':<12} {'Tokens':>8} {'Fertility':>10} {'Compression':>13} {'Premium':>9}")
-    print("-" * 58)
-
-    # Sort languages by token_premium so the most efficient appears first.
-    # sorted() returns a new sorted list without changing the original.
-    # key=lambda x: (x[1]["token_premium"] or 0) means: sort by the token_premium value, treating None as 0.
-    for lang, m in sorted(metrics.items(), key=lambda x: (x[1]["token_premium"] or 0)):
-        # Format token_premium as "1.000x" or "N/A" if None
-        premium = f"{m['token_premium']:.3f}x" if m["token_premium"] is not None else "N/A"
-        print(f"{lang:<12} {m['token_count']:>8,} {m['fertility']:>10.3f} {m['compression']:>13.3f} {premium:>9}")
