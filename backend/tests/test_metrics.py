@@ -1,17 +1,18 @@
 import sys
 import os
-import pytest
 from unittest.mock import Mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
- 
-from app.services.metrics import (token_count, fertility, compression, token_premium, compute_efficiency_metrics,)
+
+from app.services.metrics import (
+    token_count, fertility, compression, token_premium,
+    token_premium_per_word, compute_efficiency_metrics,
+)
 
 # token_count() TESTS
 
 def test_token_count_basic():
     # Two sentences, each with 2 tokens → total = 4
-    
     tokenized = [["Hello", "world"], ["Cape", "Town"]]
     assert token_count(tokenized) == 4
 
@@ -53,7 +54,7 @@ def test_compression_zero_tokens_returns_zero():
 def test_compression_multibyte_characters():
     """
     "é" is a multi-byte UTF-8 character (2 bytes), not 1.
-    "café" has 5 bytes in UTF‑8:
+    "café" has 5 bytes in UTF-8:
       c(1) + a(1) + f(1) + é(2) = 5
     Tokenized = 1 token
     compression = 5 / 1 = 5.0
@@ -78,7 +79,7 @@ def test_fertility_hand_calculated():
     assert fertility(tokenized, sentences) == 1.0
 
 
-def test_fertility_subword_splitting():
+def test_fertility_empty_sentence_returns_zero():
     # Empty sentence → 0 words, 0 tokens → fertility = 0.0
     sentences = [""]
     tokenized = [[]]
@@ -92,7 +93,7 @@ def test_fertility_rounds_to_three_decimals():
     assert fertility(tokenized, sentences) == 1.333
 
 
-# token_premium() tests
+# token_premium() tests - parallel corpus basis
 # Formula: token_premium = lang_token_count / eng_token_count
 
 def test_token_premium_english_baseline_is_one():
@@ -123,6 +124,48 @@ def test_token_premium_rounds_to_three_decimals():
     assert token_premium(100, 3) == 33.333
 
 
+def test_token_premium_corpus_basis_is_not_scale_invariant():
+    """
+    Why the per-word basis exists. Measured against the full English corpus,
+    the same text gives a different premium depending on how much of it you
+    supplied - and both answers are meaningless. This is the bug per_word fixes.
+    """
+    assert token_premium(4, 25741) != token_premium(40, 25741)   # 0.0 vs 0.002
+
+
+# token_premium_per_word() tests - per-word basis
+# Formula: premium = fertility(language) / fertility(English)
+
+def test_token_premium_per_word_english_baseline_is_one():
+    # Same fertility as English means no premium.
+    assert token_premium_per_word(1.228, 1.228) == 1.0
+
+
+def test_token_premium_per_word_hand_calculated():
+    # isiZulu 4.095 tokens per word / English 1.228 = 3.335
+    assert token_premium_per_word(4.095, 1.228) == 3.335
+
+
+def test_token_premium_per_word_is_scale_invariant():
+    """
+    The whole point of the per-word basis: the amount of text does not change
+    the answer, because fertility is already an average.
+
+    One sentence:           4 tokens / 2 words  = 2.0
+    The same sentence x10: 40 tokens / 20 words = 2.0
+    """
+    one = fertility([["a", "b", "c", "d"]], ["one two"])
+    ten = fertility([["a", "b", "c", "d"]] * 10, ["one two"] * 10)
+
+    assert one == ten == 2.0
+    assert token_premium_per_word(one, 1.0) == token_premium_per_word(ten, 1.0)
+
+
+def test_token_premium_per_word_none_when_english_missing():
+    # No English baseline means no premium, rather than a fabricated number.
+    assert token_premium_per_word(4.095, None) is None
+
+
 # compute_efficiency_metrics() tests
 # Requires a mocked tokenizer since it calls tokenize_corpus() internally.
 
@@ -140,8 +183,8 @@ def _mock_tokenizer_word_level():
 def test_compute_efficiency_metrics_all_languages_present():
     """
     Check: every language in the input corpus gets results.
-    We expect each language to have all four metrics:
-    token_count, fertility, compression, and token_premium.
+    We expect each language to have the four metrics plus the basis label:
+    token_count, fertility, compression, token_premium, token_premium_basis.
     """
     tokenizer = _mock_tokenizer_word_level()
     corpus = {
@@ -153,10 +196,11 @@ def test_compute_efficiency_metrics_all_languages_present():
 
     # Make sure both languages are present
     assert set(result.keys()) == {"English", "isiZulu"}
-    # Make sure each language has all four metrics
+    # Make sure each language has all four metrics and the basis label
     for language in result:
         assert set(result[language].keys()) == {
-            "token_count", "fertility", "compression", "token_premium"
+            "token_count", "fertility", "compression", "token_premium",
+            "token_premium_basis",
         }
 
 
@@ -182,14 +226,16 @@ def test_compute_efficiency_metrics_hand_calculated_values():
     English: "Hello world"
       - token_count = 2
       - fertility   = 2 tokens / 2 words = 1.0
-      - compression = 11 characters / 2 tokens = 5.5
+      - compression = 11 bytes / 2 tokens = 5.5
       - token_premium = 2 / 2 = 1.0
 
     isiZulu: "Sawubona mhlaba"
       - token_count = 2
       - fertility   = 2 / 2 = 1.0
-      - compression = 15 characters / 2 tokens = 7.5
+      - compression = 15 bytes / 2 tokens = 7.5
       - token_premium = 2 / 2 (English baseline) = 1.0
+
+    The corpus here really is parallel text, so the basis is parallel_corpus.
     """
     tokenizer = _mock_tokenizer_word_level()
     corpus = {
@@ -204,12 +250,15 @@ def test_compute_efficiency_metrics_hand_calculated_values():
         "fertility": 1.0,
         "compression": 5.5,
         "token_premium": 1.0,
+        "token_premium_basis": "parallel_corpus",
     }
+
     assert result["isiZulu"] == {
         "token_count": 2,
         "fertility": 1.0,
         "compression": 7.5,
         "token_premium": 1.0,
+        "token_premium_basis": "parallel_corpus",
     }
 
 
