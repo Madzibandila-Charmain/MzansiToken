@@ -143,6 +143,22 @@ def token_premium(lang_token_count: int, eng_token_count: int) -> float | None:
  
     return round(lang_token_count / eng_token_count, 3)
 
+# Metric 4b: Token Premium, per-word basis
+def token_premium_per_word(lang_fertility: float, eng_fertility: float) -> float | None:
+    """
+    Token premium measured per word instead of per corpus.
+
+    Formula:
+        premium = fertility(this language) / fertility(English)
+
+    Fertility is already an average, so this ratio gives the same answer for one
+    sentence as for a thousand. That is what makes it safe for text the user
+    typed or uploaded, where dividing by the whole English corpus is not.
+    """
+    if not eng_fertility:
+        return None
+    return round(lang_fertility / eng_fertility, 3)
+
 # Compute all metrics for all languages
 def compute_efficiency_metrics(tokenizer, corpus: dict[str, list[str]]) -> dict[str, dict]:
     """
@@ -209,10 +225,11 @@ def compute_efficiency_metrics(tokenizer, corpus: dict[str, list[str]]) -> dict[
 
         # Store all metrics in a dictionary for this language
         results[language] = {
-            "token_count":   lang_token_count,                       # total number of tokens
-            "fertility":     fertility(token_lists, sentences),      # average tokens per word
-            "compression":   compression(token_lists, sentences),    # how compact the language is
-            "token_premium": token_premium(lang_token_count, eng_count),  # cost relative to English
+            "token_count":   lang_token_count,
+            "fertility":     fertility(token_lists, sentences),
+            "compression":   compression(token_lists, sentences),
+            "token_premium": token_premium(lang_token_count, eng_count),
+            "token_premium_basis": "parallel_corpus",   # full parallel corpus, so totals are comparable
         }
 
     # Return the full results dictionary
