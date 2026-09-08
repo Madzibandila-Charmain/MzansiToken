@@ -89,8 +89,7 @@ async def inspect_upload(
 
     tokenized = tokenize_corpus(tokenizer_model, sentences)
     metrics = calculate_efficiency_metrics_one_language(
-        tokenized, sentences, tokenizer, language, tokenizer_model, _metrics_cache, corpus
-    )
+        tokenized, sentences, tokenizer, language, tokenizer_model, _metrics_cache, corpus, basis="per_word",)
 
     return {
         "filename": file.filename,
@@ -130,8 +129,8 @@ def tokenize_text_post(request: TokenizeTextRequest):
 
     tokens = tokenize_text(tokenizer, text)
     metrics = calculate_efficiency_metrics_one_language(
-        [tokens], [text], model_name, language, tokenizer, _metrics_cache, corpus
-    )
+        [tokens], [text], model_name, language, tokenizer, _metrics_cache, corpus, basis="per_word",)
+    
     return {
         "language": language,
         "tokenizer": model_name,
