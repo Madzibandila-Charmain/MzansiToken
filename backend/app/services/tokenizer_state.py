@@ -2,27 +2,23 @@
 tokenizer_state.py - the shared tokenizer cache.
 
 Both the FLORES efficiency work and the NCHLT morphology work tokenize with the same Hugging Face models. 
-This module exists so there is exactly ONE cache: if each half loaded its own, the server would download xlm-roberta-base twice and
-hold two copies in memory.
+One cache for the whole app, so the FLORES and NCHLT work don't each download the same model separately.
 
 Import from here. Do not call load_tokenizer() directly in a router.
 """
+
+import re
+from functools import lru_cache
 
 from fastapi import HTTPException
 
 from app.services.tokenizer import load_tokenizer
 
-_tokenizer_cache = {}
+MAX_CACHED_TOKENIZERS = 5
+MAX_MODEL_NAME_LENGTH = 96
 
-
-def get_or_load_tokenizer(model_name: str):
-    """Return a cached tokenizer, or load it from Hugging Face if not cached yet."""
-    if model_name in _tokenizer_cache:
-        return _tokenizer_cache[model_name]
-    tokenizer = load_tokenizer(model_name)
-    _tokenizer_cache[model_name] = tokenizer
-    return tokenizer
-
+# Matches a Hugging Face id: "gpt2" or "owner/name". No spaces, no extra slashes, can't start with a dot or dash.
+REPO_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)?$")
 
 # Tokenizers offered in the dropdowns — curated and verified to load without a Hugging Face login via check_tokenizers.py.
 SUPPORTED_TOKENIZERS = [
@@ -38,7 +34,57 @@ SUPPORTED_TOKENIZERS = [
 ]
 
 
-def validate_tokenizer(model_name: str):
-    """Reject any tokenizer that is not on the supported list."""
-    if model_name not in SUPPORTED_TOKENIZERS:
-        raise HTTPException(status_code=400, detail=f"Unsupported tokenizer: {model_name}")
+def validate_tokenizer(model_name: str) -> str:
+    """
+    Check the name looks like a Hugging Face model id, and return it cleaned.
+
+    This doesn't check the model exists - only load_tokenizer() can do that.
+    Raises HTTPException 400 if the name is empty, too long, or malformed.
+    """
+    if not isinstance(model_name, str) or not model_name.strip():
+        raise HTTPException(status_code=400, detail="Tokenizer name cannot be empty.")
+
+    name = model_name.strip()
+
+    if len(name) > MAX_MODEL_NAME_LENGTH:
+        raise HTTPException(status_code=400, detail=f"Tokenizer name is too long (max {MAX_MODEL_NAME_LENGTH} characters).",)
+
+    if not REPO_ID.match(name):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"'{name}' is not a valid Hugging Face model id. "
+                "Use a name like 'gpt2' or 'Davlan/afro-xlmr-base'."),)
+
+    return name
+
+
+@lru_cache(maxsize=MAX_CACHED_TOKENIZERS)
+def _load_cached(name: str):
+    """
+    Load a tokenizer, keeping the most recently used ones in memory.
+
+    lru_cache handles the eviction and is safe across threads. Failed loads
+    aren't cached, so fixing a typo and retrying works.
+    """
+    return load_tokenizer(name)
+
+
+def get_or_load_tokenizer(model_name: str):
+    """
+    Return a cached tokenizer, or load it from Hugging Face.
+
+    Validating here means every endpoint gets it, including the GETs, which
+    had no check before.
+    """
+    return _load_cached(validate_tokenizer(model_name))
+
+
+def clear_tokenizer_cache():
+    """Empty the cache. For tests, and a future DELETE /cache."""
+    _load_cached.cache_clear()
+
+
+def tokenizer_cache_info():
+    """Cache hits, misses and current size."""
+    return _load_cached.cache_info()._asdict()

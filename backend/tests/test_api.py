@@ -97,13 +97,15 @@ def test_morphology_metrics_endpoint_returns_values():
 
 # ── Validation errors reach the frontend as readable 400s ─────────────────────
 
-def test_unsupported_tokenizer_is_rejected():
+def test_malformed_tokenizer_name_is_rejected():
+    # Any well-formed model id is allowed now, so this checks the format guard
+    # instead. The spaces mean it never reaches Hugging Face at all.
     response = client.post(
         "/inspect/default",
-        json={"language": "isiZulu", "tokenizer": "not-a-real-model"},
+        json={"language": "isiZulu", "tokenizer": "not a real model"},
     )
     assert response.status_code == 400
-    assert "Unsupported tokenizer" in response.json()["detail"]
+    assert "not a valid Hugging Face model id" in response.json()["detail"]
 
 
 def test_unsupported_language_is_rejected():
