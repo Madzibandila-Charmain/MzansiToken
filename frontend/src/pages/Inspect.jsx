@@ -626,23 +626,20 @@ function Inspect() {
     }
 
     function formatTokenizedText(tokenizedText) {
-
         if (Array.isArray(tokenizedText)) {
-
-            return tokenizedText.flat();
-
+            return tokenizedText;
         }
 
         if (typeof tokenizedText === "string") {
-
             return tokenizedText
-                .split(/\s+/)
-                .filter(Boolean);
-
+                .split(/\n+/)
+                .map((sentence) =>
+                    sentence.split(/\s+/).filter(Boolean)
+                )
+                .filter((sentence) => sentence.length > 0);
         }
 
         return [];
-
     }
 
     /* Handled file slection from user computer. */
@@ -801,52 +798,38 @@ function Inspect() {
 
     // Cycles through the 8 CSS colors for the tokens
 
-    function renderTokens(tokens) {
+    function renderTokens(sentences) {
 
-        if (!tokens || tokens.length === 0) {
-
+        if (!sentences || sentences.length === 0) {
             return "Your tokenized text will appear here.";
-
         }
 
-        const visibleTokens = tokens.slice(0, 1000);
+        const visibleSentences = sentences.slice(0, 10);
 
         return (
-
             <>
 
-                {visibleTokens.map((token, index) => {
+                {visibleSentences.map((sentence, sentenceIndex) => (
+                    <div
+                        key={`sentence-${sentenceIndex}`}
+                        className="token-sentence"
+                    >
+                        {sentence.map((token, tokenIndex) => {
+                            const colourIndex = tokenIndex % 8;
 
-                    const colourIndex = index % 8;
-
-                    return (
-
-                        <span
-                            key={`${index}-${token}`}
-                            className={`token-pill token-colour-${colourIndex}`}
-                        >
-                            {token}
-                        </span>
-
-                    );
-
-                })}
-
-                {tokens.length > 1000 && (
-
-                    <span className="token-limit-message">
-
-                        Showing the first 1,000 tokens of{" "}
-                        {tokens.length.toLocaleString()}.
-
-                    </span>
-
-                )}
-
+                            return (
+                                <span
+                                    key={`${sentenceIndex}-${tokenIndex}-${token}`}
+                                    className={`token-pill token-colour-${colourIndex}`}
+                                >
+                                    {token}
+                                </span>
+                            );
+                        })}
+                    </div>
+                ))}
             </>
-
         );
-
     }
 
     return (

@@ -996,3 +996,9 @@
         opacity: 1;
     }
 }
+
+/* New line for every sentence */
+.token-sentence {
+    display: block;
+    margin-bottom: 8px;
+}
