@@ -74,30 +74,12 @@ def load_flores(data_dir: str) -> dict[str, list[str]]:
         # Print a quick sanity check (should be 997 sentences per FLORES file)
         print(f"Loaded {len(sentences)} sentences for {language_name}")
 
+        # FLORES is supposed to be parallel text — sentence 42 should mean the same thing in every language.
+        # If the files don’t all have the same length, that assumption breaks. In that case, any cross‑language comparison is wrong.
+        lengths = {lang: len(sents) for lang, sents in corpus.items()}
+
+        if len(set(lengths.values())) > 1:
+            print(f"Warning: FLORES files are not parallel: {lengths}")
+            print("Comparisons are only valid up to the shortest file.")
+
     return corpus
-
-# This blocks only runs when you execute this file diretly: python BackEnd/flores.py DataSet/FLORES
-# It does not run when another file imports this file e.g frome flores impor load_flores
-
-if __name__ == "__main__":
-    import sys
- 
-    # sys.argv is the list of command-line arguments.
-    # sys.argv[0] is always the script name itself ("flores.py").
-    # sys.argv[1] is the first argument the user typed after the script name.
-    # If the user didn't provide an argument, we default to "DataSets/FLORES".
-    DATA_DIR = sys.argv[1] if len(sys.argv) > 1 else "DataSets/FLORES"
- 
-    print(f"\n=== Loading FLORES from '{DATA_DIR}' ===\n")
- 
-    # Attempts laoding the corpus, stops cleanly if the folder is missing
-    try:
-        corpus = load_flores(DATA_DIR)
-    except FileNotFoundError as e:
-        print(f"Error: {e}")
-        sys.exit(1)
- 
-    # Print a summary of what was loaded
-    print(f"\nSummary: loaded {len(corpus)} languages")
-    for lang, sentences in corpus.items():
-        print(f"  {lang:<12}: {len(sentences)} sentences")
