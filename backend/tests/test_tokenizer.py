@@ -203,42 +203,61 @@ def test_tokenize_corpus_handles_empty_sentence():
 
 # get_tokenizer_info() TESTS
 
-def test_get_tokenizer_info():
-    tokenizer = Mock()
-    tokenizer.vocab_size = 50257
-    tokenizer.model_type = "gpt2"
- 
-    result = get_tokenizer_info(tokenizer)
- 
-    assert result["vocab_size"] == 50257
-    assert result["model_type"] == "gpt2"
-    assert result["class"] == "Mock"
+# get_tokenizer_info() TESTS
+
+def test_get_tokenizer_info_returns_real_attributes():
+    """
+    This fake exposes only attributes a real Hugging Face tokenizer has.
+
+    The old test set model_type on a Mock by hand, so it passed while the field
+    was hard-coded to "unknown" for every real model. A fake built to match the
+    code instead of reality proves nothing.
+    """
+    class RealisticTokenizer:
+        vocab_size = 50257
+        model_max_length = 1024
+
+    result = get_tokenizer_info(RealisticTokenizer())
+
+    assert result == {
+        "vocab_size": 50257,
+        "model_max_length": 1024,
+        "class": "RealisticTokenizer",
+    }
 
 
-def test_get_tokenizer_info_unknown_model_type():
-    class FakeTokenizer:
+def test_get_tokenizer_info_hides_the_no_limit_sentinel():
+    # Hugging Face uses a huge number to mean "no maximum". Report None rather
+    # than putting 1e30 in front of the user.
+    class NoLimitTokenizer:
         vocab_size = 100
- 
-    tokenizer = FakeTokenizer()
- 
-    result = get_tokenizer_info(tokenizer)
- 
+        model_max_length = int(1e30)
+
+    assert get_tokenizer_info(NoLimitTokenizer())["model_max_length"] is None
+
+
+def test_get_tokenizer_info_survives_a_missing_max_length():
+    # Only vocab_size is guaranteed. Everything optional degrades quietly.
+    class MinimalTokenizer:
+        vocab_size = 100
+
+    result = get_tokenizer_info(MinimalTokenizer())
+
     assert result["vocab_size"] == 100
-    assert result["model_type"] == "unknown"
-    assert result["class"] == "FakeTokenizer"
+    assert result["model_max_length"] is None
+    assert result["class"] == "MinimalTokenizer"
 
 
 def test_get_tokenizer_info_contains_required_keys():
-    tokenizer = Mock()
-    tokenizer.vocab_size = 100
-    tokenizer.model_type = "test"
- 
-    result = get_tokenizer_info(tokenizer)
- 
-    assert "vocab_size" in result
-    assert "model_type" in result
-    assert "class" in result
+    class RealisticTokenizer:
+        vocab_size = 100
+        model_max_length = 512
 
+    assert set(get_tokenizer_info(RealisticTokenizer()).keys()) == {
+        "vocab_size", "model_max_length", "class"
+    }
+
+      
 # Input Validation test - load_tokenizer()
 
 def test_load_tokenizer_empty_name():
