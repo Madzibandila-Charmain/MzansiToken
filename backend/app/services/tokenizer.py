@@ -123,33 +123,30 @@ def tokenize_corpus(tokenizer, sentences: list[str]) -> list[list[str]]:
 
 def get_tokenizer_info(tokenizer) -> dict:
     """
-    Extract basic metadata about a loaded tokenizer.
+    Metadata about a loaded tokenizer, for the dashboard header.
 
-    This is displayed in the dashboard header so the user knows exactly what they loaded
-    — not just the name they typed, but the actual vocabulary size and class of the tokenizer.
-
-    Args:
-        tokenizer: a loaded tokenizer returned by load_tokenizer()
-
-    Returns:
-        dict with keys: vocab_size, model_type, class
+    Every field here is something real Hugging Face tokenizers actually carry.
+    The old model_type field was not - it lives on the model config, not the
+    tokenizer - so it always fell back to "unknown".
     """
 
-    return {
-        # vocab_size: how many unique tokens this tokenizer knows.
-        # This is a built-in attribute of all Hugging Face tokenizers.
-        "vocab_size": tokenizer.vocab_size,
- 
-        # model_type: the architecture name e.g. "gpt2", "llama", "gemma".
-        # We use getattr() instead of tokenizer.model_type directly because
-        # not all tokenizers have this attribute — getattr() returns "unknown"
-        # as a default if the attribute does not exist, instead of crashing.
-        # getattr(object, attribute_name, default_value)
-        "model_type": getattr(tokenizer, "model_type", "unknown"),
+    # Hugging Face uses a huge sentinel value to mean "no limit". Showing that
+    # as a number is worse than showing nothing.
+    max_length = getattr(tokenizer, "model_max_length", None)
+    if max_length is None or max_length > 1_000_000:
+        max_length = None
 
-        # __class__.__name__: the Python class name of this tokenizer.
-        # e.g. "GPT2Tokenizer", "LlamaTokenizer", "GemmaTokenizer"
-        # .name gives us the class name as a readable string.
+    return {
+        # How many unique tokens this tokenizer knows.
+        "vocab_size": tokenizer.vocab_size,
+
+        # True for the Rust-backed tokenizers, False for the pure Python ones.
+        "is_fast": getattr(tokenizer, "is_fast", False),
+
+        # Longest sequence the matching model accepts, or None if unbounded.
+        "model_max_length": max_length,
+
+        # Python class name, e.g. "GPT2TokenizerFast".
         "class": tokenizer.__class__.__name__,
     }
 
@@ -185,67 +182,3 @@ def tokenize_NCHLT(tokenizer, nchlt_data, delimeter="_") -> list[tuple[str, str]
         results.append((surf, tokenized_str))
 
     return results
-
-# This blocks only runs when you execute this file diretly: python BackEnd/tokenizer.py
-# It does not run when another file imports this file e.g from tokenizer import load_tokenizer
-
-if __name__ == "__main__":
-    import sys
-
-    # sys.argv[1] is the first command-line argument after the script name.
-    # If no argument given, we default to "gpt2" as a safe test model.
-    # gpt2 is used for testing because:
-    #   - It is small (downloads fast)
-    #   - It is public (no authentication needed)
-    #   - It represents the kind of tokenizer we are analysing
-    # In the actual dashboard, the user can type any model name they want.
-    MODEL = sys.argv[1] if len(sys.argv) > 1 else "gpt2"
-
-    print(f"\n Testing tokenizer: '{MODEL}' \n")
-
-    # Test 1: Valid model should load without errors
-    try:
-        tokenizer = load_tokenizer(MODEL)
-        info = get_tokenizer_info(tokenizer)
-        print(f"Loaded successfully.")
-        print(f"  Class:      {info['class']}")
-        print(f"  Vocab size: {info['vocab_size']:,}")   # :, adds thousand separator
-        print(f"  Model type: {info['model_type']}")
-
-    except ValueError as e:
-        print(f"Load failed: {e}")
-        sys.exit(1)
-
-    # Test 2: Tokenize an English sentence 
-    sentence = "Where is Cape Town?"
-    tokens = tokenize_text(tokenizer, sentence)
-    print(f"\nTokenizing English: '{sentence}'")
-    print(f"  {len(tokens)} tokens: {tokens}")
-
-    # TEST 3: same concept in isiZulu
-    # This immediately demonstrates the fertility difference — isiZulu produces more tokens for the same meaning
-    zulu = "Ikhaya lami liSekhaya."
-    tokens_zulu = tokenize_text(tokenizer, zulu)
-    print(f"\nTokenizing isiZulu: '{zulu}'")
-    print(f"  {len(tokens_zulu)} tokens: {tokens_zulu}")
- 
-    # Show the comparison — this is what the dashboard visualises
-    print(f"\n  English: {len(tokens)} tokens for {len(sentence.split())} words")
-    print(f"  isiZulu: {len(tokens_zulu)} tokens for {len(zulu.split())} words")
-    print(f"  isiZulu needs {len(tokens_zulu)/max(len(tokens),1):.2f}x more tokens\n")
- 
-    # TEST 4: invalid model name must raise ValueError, not crash
-    print("Testing invalid model name (should fail cleanly) ")
-    try:
-        load_tokenizer("this-model-does-not-exist-xyz-123")
-        print("ERROR: should have raised ValueError but did not")
-    except ValueError as e:
-        print(f"Correctly raised ValueError: {e}\n")
- 
-    # TEST 5: empty model name must raise ValueError immediately
-    print("Testing empty model name (should fail cleanly)")
-    try:
-        load_tokenizer("")
-        print("ERROR: should have raised ValueError but did not")
-    except ValueError as e:
-        print(f"Correctly raised ValueError: {e}\n")
