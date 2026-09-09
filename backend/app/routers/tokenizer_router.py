@@ -11,8 +11,12 @@ Routes:
 from fastapi import APIRouter, HTTPException
 
 from app.services.flores_state import corpus
-from app.services.tokenizer_state import SUPPORTED_TOKENIZERS, get_or_load_tokenizer
+from app.services.qualitative import get_sentence_count
+from app.services.tokenizer_state import (SUPPORTED_TOKENIZERS, get_or_load_tokenizer, tokenizer_cache_info,)
 from app.services.tokenizer import (get_tokenizer_info, tokenize_corpus, tokenize_text,)
+
+# Hard ceiling on how many sentences per language one request can return.
+MAX_CORPUS_LIMIT = 200
 
 router = APIRouter(tags=["tokenizer"])
 
@@ -60,26 +64,40 @@ def tokenize_text_endpoint(model_name: str, text: str):
 
 
 @router.get("/tokenize-corpus/{model_name:path}")
-def tokenize_corpus_endpoint(model_name: str):
+def tokenize_corpus_endpoint(model_name: str, language: str | None = None, limit: int = 50):
     """
-    Tokenize every sentence in the FLORES dataset for a given tokenizer.
+    Tokenized sentences from the FLORES corpus, for debugging and inspection.
 
-    Useful for debugging, or when the frontend needs raw token data for all
-    languages rather than metric summaries.
+    Paged on purpose. Returning everything is 8 languages x 997 sentences of
+    token lists - several MB of JSON, enough to lock up a browser tab.
 
-    Example call: GET /tokenize-corpus/gpt2
+    Example: GET /tokenize-corpus/gpt2?language=isiZulu&limit=20
     """
+    if limit < 1 or limit > MAX_CORPUS_LIMIT:
+        raise HTTPException(
+            status_code=400,
+            detail=f"limit must be between 1 and {MAX_CORPUS_LIMIT}.",
+        )
+
+    if language is not None and language not in corpus:
+        raise HTTPException(status_code=400, detail=f"Unsupported language: {language}")
+
     try:
         tokenizer = get_or_load_tokenizer(model_name)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    # tokenize_corpus() takes a list of sentences, not the whole corpus dict,
-    # so each language is tokenized separately.
-    result = {}
-    for language, sentences in corpus.items():
-        result[language] = tokenize_corpus(tokenizer, sentences)
-    return result
+    selected = {language: corpus[language]} if language else corpus
+
+    return {
+        "model_name": model_name,
+        "limit": limit,
+        "sentences_available": get_sentence_count(corpus),
+        "tokenized": {
+            name: tokenize_corpus(tokenizer, sentences[:limit])
+            for name, sentences in selected.items()
+        },
+    }
 
 
 @router.get("/options")
@@ -94,4 +112,21 @@ def get_options():
     return {
         "languages": list(corpus.keys()),
         "tokenizers": SUPPORTED_TOKENIZERS,
+    }
+
+
+@router.get("/status")
+def get_status():
+    """
+    Backend health, for the frontend to check on load.
+
+    This is the endpoint Charmaine's getBackendStatus() was already written against - it just didn't exist yet.
+    """
+    return {
+        "status": "ok",
+        "corpus_loaded": len(corpus) > 0,
+        "languages": len(corpus),
+        "sentences": get_sentence_count(corpus),
+        "suggested_tokenizers": len(SUPPORTED_TOKENIZERS),
+        "tokenizer_cache": tokenizer_cache_info(),
     }
