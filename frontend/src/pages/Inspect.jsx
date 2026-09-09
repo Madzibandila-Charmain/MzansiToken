@@ -882,7 +882,7 @@ function Inspect() {
 
                 <div className="inspect-filters">
 
-                    {/* Tokenizer Dropdown */}
+                    {/* Tokenizer Search Box */}
 
                     <div className="filter-group">
 
@@ -890,17 +890,32 @@ function Inspect() {
                             Tokenizer
                         </label>
 
-                        <input
-                            type="text"
-                            id="tokenizer"
-                            value={tokenizerInput}
-                            onChange={(event) =>
-                                setTokenizerInput(event.target.value)
-                            }
-                            onKeyDown={handleTokenizerInput}
-                            placeholder="Type tokenizer name..."
-                            disabled={selectionLoading}
-                        />
+                        <div className="tokenizer-search">
+
+                            <input
+                                type="text"
+                                id="tokenizer"
+                                value={tokenizerInput}
+                                onChange={(event) =>
+                                    setTokenizerInput(event.target.value)
+                                }
+                                onKeyDown={handleTokenizerInput}
+                                placeholder="Type tokenizer name..."
+                                disabled={selectionLoading}
+                            />
+
+                            <button
+                                type="button"
+                                className="search-button"
+                                onClick={() =>
+                                    handleTokenizerInput({ key: "Enter" })
+                                }
+                                disabled={selectionLoading}
+                            >
+                                Search
+                            </button>
+
+                        </div>
 
                     </div>
 
