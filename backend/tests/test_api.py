@@ -121,3 +121,36 @@ def test_missing_field_is_rejected():
     # React sending a malformed body must not produce a 500.
     response = client.post("/inspect/default", json={"language": "isiZulu"})
     assert response.status_code == 422
+
+
+# ── Input size caps ───────────────────────────────────────────────────────────
+
+def test_upload_over_the_size_cap_is_rejected():
+    # 6 MB against a 5 MB limit. The read aborts partway, so the whole file is
+    # never held in memory, and no tokenizer is loaded for a rejected request.
+    big = b"x" * (6 * 1024 * 1024)
+    response = client.post(
+        "/inspect/upload",
+        files={"file": ("big.txt", big, "text/plain")},
+        data={"language": "isiZulu", "tokenizer": "gpt2"},
+    )
+    assert response.status_code == 413
+    assert "too large" in response.json()["detail"].lower()
+
+
+def test_typed_text_over_the_character_cap_is_rejected():
+    response = client.post(
+        "/tokenize-text",
+        json={"text": "a" * 20_001, "language": "isiZulu", "tokenizer": "gpt2"},
+    )
+    assert response.status_code == 400
+    assert "too long" in response.json()["detail"].lower()
+
+
+def test_typed_text_at_the_character_cap_is_accepted():
+    # Off-by-one: exactly at the limit must still work.
+    response = client.post(
+        "/tokenize-text",
+        json={"text": "word " * 4000, "language": "isiZulu", "tokenizer": "gpt2"},
+    )
+    assert response.status_code == 200
