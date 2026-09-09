@@ -21,7 +21,6 @@ Usage:
     from metrics import compute_efficiency_metrics
 """
 
-from app.services.flores import load_flores, LANGUAGES
 from app.services.tokenizer import load_tokenizer, tokenize_corpus
 
 _english_baseline_cache = {}  # model_name -> {"token_count": int, "fertility": float}
