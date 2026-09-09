@@ -19,31 +19,29 @@ from app.services.tokenizer import load_tokenizer, tokenize_text
 
 def get_example_sentence(tokenizer, corpus: dict[str, list[str]], index: int) -> dict:
     """
-    Get one sentence tokenized across all 9 languages.
+    Grab one sentence across all languages and show how it breaks down.
 
-    This is the core function for the qualitative examples view.
-    It takes a sentence index (0–996), finds that sentence in every language,
-    tokenizes it, and returns everything the frontend needs to show the
-    color‑coded token view.
+    This is the main function for the qualitative examples view.
+    You give it a sentence index (0–996), it finds that same sentence
+    in every language, runs the tokenizer, and packages everything
+    the frontend needs to paint the color‑coded token view.
 
     Args:
-        tokenizer: a loaded tokenizer from load_tokenizer()
+        tokenizer: a tokenizer loaded with load_tokenizer()
         corpus:    dict from load_flores() — {language: [sentences]}
         index:     which sentence to use, 0 to 996
 
     Returns:
         dict with the sentence index, total count, and per‑language results
     """
+    
+    total = get_sentence_count(corpus)
 
-    # Figure out how many sentences are in the dataset
-    if "English" in corpus:
-        total = len(corpus["English"])
-    else:
-        # Fallback: grab the length of the first language if English is missing
-        total = len(next(iter(corpus.values())))
+    if total == 0:
+        raise ValueError("The corpus is empty.")
 
-    # Keep index inside valid range (avoid going out of bounds)
-    index = max(0, min(index, total - 1))
+    if not 0 <= index < total:
+        raise ValueError(f"Sentence index {index} is out of range (0 to {total - 1}).")
 
     languages = {}
 
@@ -71,26 +69,22 @@ def get_example_sentence(tokenizer, corpus: dict[str, list[str]], index: int) ->
 
 def get_random_sentence(tokenizer, corpus: dict[str, list[str]]) -> dict:
     """
-    Get a random sentence tokenized across all 9 languages.
+    Pick a random sentence and tokenize it across all languages.
 
-    This is a simple wrapper around get_example_sentence().
-    Instead of picking a specific index, it chooses one at random.
-    The frontend uses this when the user clicks "Next sentence".
+    This is just a wrapper around get_example_sentence().
+    Instead of you choosing the index, it rolls the dice and
+    grabs one at random. The frontend uses this when the user
+    clicks "Next sentence".
 
     Args:
-        tokenizer: a loaded tokenizer from load_tokenizer()
+        tokenizer: a tokenizer loaded with load_tokenizer()
         corpus:    dict from load_flores()
 
     Returns:
         Same structure as get_example_sentence()
     """
 
-    # Figure out how many sentences are in the dataset
-    if "English" in corpus:
-        total = len(corpus["English"])
-    else:
-        # Fallback: use the first language if English is missing
-        total = len(next(iter(corpus.values())))
+    total = get_sentence_count(corpus)
 
     # Pick a random index between 0 and total-1
     # randint includes both ends, so it can return 0 or the last index
@@ -101,54 +95,24 @@ def get_random_sentence(tokenizer, corpus: dict[str, list[str]]) -> dict:
 
 def get_sentence_count(corpus: dict[str, list[str]]) -> int:
     """
-    Return the total number of sentences in the corpus.
+    Figure out how many sentences are safe to index everywhere.
 
-    The frontend uses this to know the valid range for the sentence
-    index slider or navigation buttons.
+    We don’t just trust English’s length — if one language file
+    is shorter, using English’s count would let the frontend
+    request sentences that don’t exist in the other languages.
+    That would blow up with IndexError halfway through.
+
+    So we take the minimum length across all languages.
+    That way, every index we hand back is guaranteed to exist
+    in every language.
 
     Args:
-        corpus: dict from load_flores()
+        corpus: dict of {language: [sentences]}
 
     Returns:
-        int: number of sentences (997 for the full FLORES dev set)
+        int — the safe sentence count
     """
 
-    # If English is in the corpus, use its length as the total
-    if "English" in corpus:
-        return len(corpus["English"])
-
-    # Otherwise, fall back to the first language in the dict
-    return len(next(iter(corpus.values())))
-
-# Quick test
-if __name__ == "__main__":
-    import sys
-
-    # If you pass arguments when running the script, use them. Otherwise, fall back to defaults.
-    DATA_DIR = sys.argv[1] if len(sys.argv) > 1 else "DataSets/FLORES"
-    MODEL    = sys.argv[2] if len(sys.argv) > 2 else "gpt2"
-
-    # Load the FLORES dataset
-    print(f"\n Loading FLORES from '{DATA_DIR}' ")
-    corpus = load_flores(DATA_DIR)
-
-    # Load the tokenizer (e.g. GPT-2)
-    print(f"\n Loading tokenizer '{MODEL}' ")
-    tokenizer = load_tokenizer(MODEL)
-
-    # Grab one random sentence across all languages
-    print(f"\n Random sentence example \n")
-    result = get_random_sentence(tokenizer, corpus)
-
-    # Show which sentence index we picked
-    print(f"Sentence index: {result['index']} of {result['total_sentences']}\n")
-
-    # Loop through each language and show a preview
-    for lang, data in result["languages"].items():
-        print(f"{lang}:")
-        # Show the first 60 characters of the sentence
-        print(f"  Text:   {data['sentence'][:60]}...")
-        # Show the first 8 tokens
-        print(f"  Tokens: {data['tokens'][:8]}...")
-        # Show how many tokens total
-        print(f"  Count:  {data['token_count']} tokens\n")
+    if not corpus:
+        return 0
+    return min(len(sentences) for sentences in corpus.values())
