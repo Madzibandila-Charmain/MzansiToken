@@ -213,24 +213,31 @@ export async function getMetrics(
  * TOKENIZER INFORMATION
  */
 
-export async function getTokenizerInfo(
-    tokenizer,
-    signal
-) {
-
+export async function getTokenizerInfo(tokenizer, signal) {
     const response = await fetch(
-        `${API_BASE_URL}/tokenizer/${encodeURIComponent(
-            tokenizer
-        )}`,
+        `${API_BASE_URL}/tokenizer/${encodeURIComponent(tokenizer)}`,
         {
             signal,
         }
     );
 
-    return handleResponse(
-        response,
-        "Failed to load tokenizer information."
-    );
+    if (!response.ok) {
+        let message = "Failed to load tokenizer";
+
+        try {
+            const errorData = await response.json();
+
+            if (errorData.detail) {
+                message = errorData.detail;
+            }
+        } catch {
+            // Keep the default error message
+        }
+
+        throw new Error(message);
+    }
+
+    return response.json();
 }
 
 
