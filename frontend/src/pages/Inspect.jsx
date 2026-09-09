@@ -69,6 +69,7 @@ function Inspect() {
     /* Tokenizers provided by the backend. */
 
     const [tokenizers, setTokenizers] = useState([]);
+    const [tokenizerInput, setTokenizerInput] = useState("");
 
     /* Displays whether the frontend is currently waiting for a backend response. */
 
@@ -127,7 +128,8 @@ function Inspect() {
                         result.defaults?.tokenizer || result.tokenizers[0]; 
 
                     setLanguage(defaultLanguage); 
-                    setTokenizer(defaultTokenizer); 
+                    setTokenizer(defaultTokenizer);
+                    setTokenizerInput(defaultTokenizer); 
 
                     const defaultResult = 
                         await getDefaultCorpus(
@@ -646,19 +648,83 @@ function Inspect() {
 
     async function handleFileChange(event) {
 
-        const file = event.target.files[0];
-
-        if (!file) {
+        if (event.key !== "Enter") {
             return;
         }
 
-        await processUploadedCorpus(
+        const newTokenizer = tokenizerInput.trim();
 
-            file,
-            language,
-            tokenizer
+        if (!newTokenizer) {
+            return;
+        }
 
-        );
+        if (selectionLoading) {
+            return;
+        }
+
+        setSelectionLoading(true);
+        setSelectionType("tokenizer");
+        setSelectionStatus("Loading tokenizer...");
+        setError("");
+
+         try {
+
+            /*
+            * Send the tokenizer string to the backend.
+            *
+            * The backend will load/check the tokenizer
+            * and return whether it is available.
+            */
+
+            // const result = await loadTokenizer(newTokenizer);
+
+            /*
+            * Only after the backend successfully loads the tokenizer
+            * do we make it the active tokenizer.
+            */
+
+            setTokenizer(newTokenizer);
+
+            if (source === "default") {
+
+                await loadDefaultCorpus(
+                    language,
+                    newTokenizer
+                );
+
+            }
+            else if (selectedFile) {
+
+                await processUploadedCorpus(
+                    selectedFile,
+                    language,
+                    newTokenizer
+                );
+
+            }
+            else {
+
+                await loadMbiMetrics(
+                    language,
+                    newTokenizer
+                );
+
+            }
+
+            setSelectionStatus("Tokenizer ready");
+
+        }
+        catch (err) {
+
+            setError(err.message);
+            setSelectionStatus("Tokenizer failed");
+
+        }
+        finally {
+
+            setSelectionLoading(false);
+
+        }
 
     }
 
@@ -808,25 +874,17 @@ function Inspect() {
                             Tokenizer
                         </label>
 
-                        <select
+                        <input
+                            type="text"
                             id="tokenizer"
-                            value={tokenizer}
-                            onChange={handleTokenizerChange}
+                            value={tokenizerInput}
+                            onChange={(event) =>
+                                setTokenizerInput(event.target.value)
+                            }
+                            onKeyDown={handleTokenizerInput}
+                            placeholder="Type tokenizer name..."
                             disabled={selectionLoading}
-                        >
-
-                            {tokenizers.map((item) => (
-
-                                <option
-                                    key={item}
-                                    value={item}
-                                >
-                                    {item}
-                                </option>
-
-                            ))}
-
-                        </select>
+                        />
 
                     </div>
 
