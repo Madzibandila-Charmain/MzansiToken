@@ -647,7 +647,36 @@ function Inspect() {
     /* Handled file slection from user computer. */
 
     async function handleFileChange(event) {
+        const file = event.target.files[0];
 
+        if (!file) {
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError("");
+
+            await processUploadedCorpus(
+                file,
+                language,
+                tokenizer
+            );
+
+            await loadMbiMetrics(
+                language,
+                tokenizer
+            );
+        }
+        catch (err) {
+            setError(err.message);
+        }
+        finally {
+            setLoading(false);
+        }
+    }
+
+    async function handleTokenizerInput(event) {
         if (event.key !== "Enter") {
             return;
         }
@@ -667,65 +696,47 @@ function Inspect() {
         setSelectionStatus("Loading tokenizer...");
         setError("");
 
-         try {
-
+        try {
             /*
-            * Send the tokenizer string to the backend.
-            *
-            * The backend will load/check the tokenizer
-            * and return whether it is available.
+            * The tokenizer name typed by the user is sent
+            * to the backend when we load the corpus.
             */
-
-            // const result = await loadTokenizer(newTokenizer);
-
-            /*
-            * Only after the backend successfully loads the tokenizer
-            * do we make it the active tokenizer.
-            */
-
             setTokenizer(newTokenizer);
 
             if (source === "default") {
-
                 await loadDefaultCorpus(
                     language,
                     newTokenizer
                 );
-
             }
             else if (selectedFile) {
-
                 await processUploadedCorpus(
                     selectedFile,
                     language,
                     newTokenizer
                 );
 
-            }
-            else {
-
                 await loadMbiMetrics(
                     language,
                     newTokenizer
                 );
-
+            }
+            else {
+                await loadMbiMetrics(
+                    language,
+                    newTokenizer
+                );
             }
 
             setSelectionStatus("Tokenizer ready");
-
         }
         catch (err) {
-
             setError(err.message);
             setSelectionStatus("Tokenizer failed");
-
         }
         finally {
-
             setSelectionLoading(false);
-
         }
-
     }
 
     /* Returns the corpus back to the default state */
