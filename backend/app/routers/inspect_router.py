@@ -15,6 +15,31 @@ from app.services.metrics import calculate_efficiency_metrics_one_language
 from app.services.tokenizer import tokenize_corpus, tokenize_text
 from app.services.tokenizer_state import get_or_load_tokenizer, validate_tokenizer
 
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB
+UPLOAD_CHUNK_BYTES = 64 * 1024      # Reads 64KB at a time
+MAX_TEXT_CHARS = 20_000             # Cap on text typed into the INSPECT box. 
+
+
+async def read_capped(file: UploadFile, limit: int) -> bytes:
+    """Read an upload, stopping as soon as it goes past `limit` bytes."""
+    chunks = []
+    total = 0
+
+    while True:
+        chunk = await file.read(UPLOAD_CHUNK_BYTES)
+        if not chunk:
+            break
+
+        total += len(chunk)
+        if total > limit:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File is too large. The limit is {limit // (1024 * 1024)} MB.",
+            )
+        chunks.append(chunk)
+
+    return b"".join(chunks)
+
 router = APIRouter(tags=["inspect"])
 
 
@@ -70,19 +95,22 @@ async def inspect_upload(
 
     validate_tokenizer(tokenizer)
 
-    try:
-        tokenizer_model = get_or_load_tokenizer(tokenizer)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    # Read and check the file before loading the tokenizer - no point
+    # downloading a model for a request we are about to reject.
+    contents = await read_capped(file, MAX_UPLOAD_BYTES)
 
     try:
-        contents = await file.read()
         text = contents.decode("utf-8")
     except UnicodeDecodeError:
         raise HTTPException(status_code=400, detail="The uploaded file must be UTF-8 encoded.")
 
     if not text.strip():
         raise HTTPException(status_code=400, detail="The uploaded file is empty.")
+
+    try:
+        tokenizer_model = get_or_load_tokenizer(tokenizer)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     # Split into non-blank lines, same convention as load_flores()
     sentences = [line.strip() for line in text.splitlines() if line.strip()]
@@ -117,6 +145,9 @@ def tokenize_text_post(request: TokenizeTextRequest):
     if not text.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty.")
 
+    if len(text) > MAX_TEXT_CHARS:
+        raise HTTPException(status_code=400, detail=f"Text is too long: {len(text):,} characters. The limit is {MAX_TEXT_CHARS:,}.",)
+    
     if language not in corpus:
         raise HTTPException(status_code=400, detail=f"Unsupported language: {language}")
 
