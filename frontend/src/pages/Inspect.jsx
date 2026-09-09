@@ -11,7 +11,8 @@ import {
     getDefaultCorpus,
     uploadCorpus,
     tokenizeText,
-    getMBI
+    getMBI,
+    getTokenizerInfo
 } from "../api/client";
 
 import { useAppState } from "../context/AppStateContext";
@@ -697,6 +698,10 @@ function Inspect() {
         setError("");
 
         try {
+
+            // Check/load the tokenizer entered by the user
+            await getTokenizerInfo(newTokenizer);
+
             /*
             * The tokenizer name typed by the user is sent
             * to the backend when we load the corpus.
