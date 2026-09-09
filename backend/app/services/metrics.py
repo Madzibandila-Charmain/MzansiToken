@@ -236,7 +236,7 @@ def compute_efficiency_metrics(tokenizer, corpus: dict[str, list[str]]) -> dict[
     return results
 
 def calculate_efficiency_metrics_one_language(tokenized_sentences, sentences, model_name: str, language: str,
-                               tokenizer, metrics_cache: dict, corpus: dict[str, list[str]], basis: str = "parallel_corpus"):
+                               tokenizer, corpus: dict[str, list[str]], basis: str = "parallel_corpus"):
     """
     Calculate the four efficiency metrics for one language, given sentences that
     have ALREADY been tokenized.
