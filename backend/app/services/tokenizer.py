@@ -130,8 +130,7 @@ def get_tokenizer_info(tokenizer) -> dict:
     tokenizer - so it always fell back to "unknown".
     """
 
-    # Hugging Face uses a huge sentinel value to mean "no limit". Showing that
-    # as a number is worse than showing nothing.
+    # Hugging Face uses a huge sentinel value to mean "no limit". Showing that as a number is worse than showing nothing.
     max_length = getattr(tokenizer, "model_max_length", None)
     if max_length is None or max_length > 1_000_000:
         max_length = None
@@ -140,13 +139,10 @@ def get_tokenizer_info(tokenizer) -> dict:
         # How many unique tokens this tokenizer knows.
         "vocab_size": tokenizer.vocab_size,
 
-        # True for the Rust-backed tokenizers, False for the pure Python ones.
-        "is_fast": getattr(tokenizer, "is_fast", False),
-
         # Longest sequence the matching model accepts, or None if unbounded.
         "model_max_length": max_length,
 
-        # Python class name, e.g. "GPT2TokenizerFast".
+        # Python class name, e.g. "XLMRobertaTokenizer". This is the closest thing to an architecture label that a tokenizer actually carries.
         "class": tokenizer.__class__.__name__,
     }
 
