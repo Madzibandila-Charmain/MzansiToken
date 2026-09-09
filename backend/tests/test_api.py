@@ -47,6 +47,38 @@ def test_sentence_count():
     assert response.json()["count"] == len(corpus["English"])
 
 
+def test_status_reports_the_loaded_corpus():
+    response = client.get("/status")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["status"] == "ok"
+    assert data["corpus_loaded"] is True
+    assert data["languages"] == 8
+    assert data["sentences"] == 997
+
+
+def test_tokenize_corpus_respects_the_limit():
+    response = client.get("/tokenize-corpus/gpt2", params={"language": "isiZulu", "limit": 5})
+    assert response.status_code == 200
+
+    data = response.json()
+    assert list(data["tokenized"].keys()) == ["isiZulu"]
+    assert len(data["tokenized"]["isiZulu"]) == 5
+
+
+def test_tokenize_corpus_rejects_an_oversized_limit():
+    # Without a ceiling this endpoint can return several MB of JSON.
+    response = client.get("/tokenize-corpus/gpt2", params={"limit": 5000})
+    assert response.status_code == 400
+    assert "limit must be between" in response.json()["detail"]
+
+
+def test_tokenize_corpus_rejects_an_unknown_language():
+    response = client.get("/tokenize-corpus/gpt2", params={"language": "Klingon"})
+    assert response.status_code == 400
+
+
 # ── The router split itself ───────────────────────────────────────────────────
 
 def test_all_routes_are_registered():
