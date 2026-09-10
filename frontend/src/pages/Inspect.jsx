@@ -105,17 +105,6 @@ function Inspect() {
 
     const fileInputRef = useRef(null);
 
-    const languageOptions = [
-        "English",
-        "Sepedi",
-        "Sesotho",
-        "siSwati",
-        "Setswana",
-        "Xitsonga",
-        "isiXhosa",
-        "isiZulu"
-    ];
-
     /*  Load languages and tokenizers from the FastAPI 
         backend when the page loads. 
     */
@@ -297,20 +286,31 @@ function Inspect() {
                     setLoading(true);
                     setError("");
 
-                    const result = await tokenizeText(
+                    const sentences = inputText 
+                        .split(/(?<=[.!?])/) 
+                        .map((sentence) => sentence.trim()) 
+                        .filter((sentence) => sentence.length > 0); 
 
-                        inputText,
-                        language,
-                        tokenizer
+                    const tokenizedSentences = [];
 
-                    );
+                    for (const sentence of sentences) { 
+                        const sentenceResult = await tokenizeText( 
+                            sentence, 
+                            language, 
+                            tokenizer 
+                        ); 
+                        
+                        tokenizedSentences.push( 
+                            formatTokenizedText( sentenceResult.tokenized_text ) 
+                        ); 
+                    }
 
-                    setTypedTokenizedText(
+                    setTypedTokenizedText(tokenizedSentences);
 
-                        formatTokenizedText(
-                            result.tokenized_text
-                        )
-
+                    const result = await tokenizeText( 
+                        inputText, 
+                        language, 
+                        tokenizer 
                     );
 
                     setTextMetrics({
@@ -499,52 +499,33 @@ function Inspect() {
 
     }
 
-    async function handleLanguageChange(event) {
+    async function handleLanguageChange(newLanguage) {
 
         if (selectionLoading) {
             return;
         }
 
-        const newLanguage = 
-            typeof languageValue === "string"
-                ? languageValue
-                : languageValue.target.value;
-
         setLanguage(newLanguage);
 
         setSelectionLoading(true);
-
         setSelectionType("language");
-
         setSelectionStatus("Loading language...");
 
-        /* Ensures changing language should load new language's
-            default corpus
-        */
-
         try {
-
             setError("");
 
             if (source === "default") {
-
                 await loadDefaultCorpus(
-
                     newLanguage,
                     tokenizer
-
                 );
-
             }
 
             else if (selectedFile) {
-
                 await processUploadedCorpus(
-
                     selectedFile,
                     newLanguage,
                     tokenizer
-
                 );
 
                 await loadMbiMetrics(
@@ -557,21 +538,13 @@ function Inspect() {
             setSelectionStatus("Language ready");
 
         }
-
         catch (err) {
-
             setError(err.message);
-
             setSelectionStatus("Language failed");
-
         }
-
         finally {
-
             setSelectionLoading(false);
-
         }
-
     }
 
     async function handleTokenizerChange(event) {
@@ -643,11 +616,18 @@ function Inspect() {
     }
 
     function formatTokenizedText(tokenizedText) {
+        if (!tokenizedText) {
+            return [];
+        }
+
+        // Backend returned a list of tokens
         if (Array.isArray(tokenizedText)) {
             return tokenizedText;
         }
 
+        // Backend returned text as a string
         if (typeof tokenizedText === "string") {
+
             return tokenizedText
                 .split(/\n+/)
                 .map((sentence) =>
@@ -815,10 +795,24 @@ function Inspect() {
 
     // Cycles through the 8 CSS colors for the tokens
 
-    function renderTokens(sentences) {
+    function renderTokens(tokens) {
 
-        if (!sentences || sentences.length === 0) {
+        if (!tokens || tokens.length === 0) {
+
             return "Your tokenized text will appear here.";
+
+        }
+
+        let sentences;
+
+        if (Array.isArray(tokens[0])) {
+
+            sentences = tokens;
+
+        } else {
+
+            sentences = [tokens];
+
         }
 
         const visibleSentences = sentences.slice(0, 10);
@@ -896,10 +890,14 @@ function Inspect() {
                                 type="text"
                                 id="tokenizer"
                                 value={tokenizerInput}
-                                onChange={(event) =>
+                                onChange={(event) => {
                                     setTokenizerInput(event.target.value)
-                                }
-                                onKeyDown={handleTokenizerInput}
+                                }}
+                                onKeyDown={(event) => {
+                                    if (event.key === "Enter") {
+                                        handleTokenizerInput(event);
+                                    }
+                                }}
                                 placeholder="Type tokenizer name..."
                                 disabled={selectionLoading}
                             />
@@ -958,7 +956,7 @@ function Inspect() {
 
                                     <div className="language-options">
 
-                                        {languageOptions.map((item) => (
+                                        {languages.map((item) => (
 
                                             <button
                                                 type="button"

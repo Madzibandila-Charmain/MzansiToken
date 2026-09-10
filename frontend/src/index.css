@@ -217,7 +217,7 @@
 }
 
 .inspect-filters {
-    width: 66.666%;
+    width: 80.666%;
 
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -285,10 +285,13 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .tokenizer-search input {
     flex: 1;
+    min-width: 0;
 }
 
 .search-button {
