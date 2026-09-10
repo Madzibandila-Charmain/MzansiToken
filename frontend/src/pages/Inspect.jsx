@@ -72,6 +72,9 @@ function Inspect() {
     const [tokenizers, setTokenizers] = useState([]);
     const [tokenizerInput, setTokenizerInput] = useState("");
 
+    /* Language menu */
+    const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
+
     /* Displays whether the frontend is currently waiting for a backend response. */
 
     const [loading, setLoading] = useState(false);
@@ -101,6 +104,17 @@ function Inspect() {
     /* Reference to the actual file input. */
 
     const fileInputRef = useRef(null);
+
+    const languageOptions = [
+        "English",
+        "Sepedi",
+        "Sesotho",
+        "siSwati",
+        "Setswana",
+        "Xitsonga",
+        "isiXhosa",
+        "isiZulu"
+    ];
 
     /*  Load languages and tokenizers from the FastAPI 
         backend when the page loads. 
@@ -491,7 +505,10 @@ function Inspect() {
             return;
         }
 
-        const newLanguage = event.target.value;
+        const newLanguage = 
+            typeof languageValue === "string"
+                ? languageValue
+                : languageValue.target.value;
 
         setLanguage(newLanguage);
 
@@ -904,31 +921,81 @@ function Inspect() {
 
                     {/* Language dropdown */}
 
-                    <div className="filter-group">
+                    <div className="filter-group language-filter">
 
                         <label htmlFor="language">
                             Language
                         </label>
 
-                        <select
-                            id="language"
-                            value={language}
-                            onChange={handleLanguageChange}
-                            disabled={selectionLoading}
-                        >
+                        <div className="language-selector">
 
-                            {languages.map((item) => (
+                            <button
+                                type="button"
+                                id="language"
+                                className="language-button"
+                                onClick={() =>
+                                    setLanguageMenuOpen(!languageMenuOpen)
+                                }
+                                disabled={selectionLoading}
+                            >
+                                <span>{language}</span>
+                                <span className="language-arrow">
+                                    ▾
+                                </span>
+                            </button>
 
-                                <option
-                                    key={item}
-                                    value={item}
-                                >
-                                    {item}
-                                </option>
+                            {languageMenuOpen && (
 
-                            ))}
+                                <div className="language-menu">
 
-                        </select>
+                                    <div className="language-menu-title">
+                                        CHOOSE A LANGUAGE
+                                    </div>
+
+                                    <div className="language-menu-subtitle">
+                                            Choose one of the available languages
+                                    </div>
+
+                                    <div className="language-options">
+
+                                        {languageOptions.map((item) => (
+
+                                            <button
+                                                type="button"
+                                                key={item}
+                                                className={`language-option ${
+                                                    language === item
+                                                        ? "selected"
+                                                        : ""
+                                                }`}
+                                                onClick={() => {
+                                                    setLanguageMenuOpen(false);
+                                                    handleLanguageChange(item);
+                                                }}
+                                                disabled={selectionLoading}
+                                            >
+                                                {item}
+                                            </button>
+
+                                        ))}
+
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        className="language-done-button"
+                                        onClick={() =>
+                                            setLanguageMenuOpen(false)
+                                        }
+                                    >
+                                        Done
+                                    </button>
+
+                                </div>
+
+                            )}
+
+                        </div>
 
                     </div>
 

@@ -311,6 +311,161 @@
     cursor: not-allowed;
 }
 
+/* =========================
+   LANGUAGE MINI SELECTOR
+========================= */
+
+.language-filter {
+    position: relative;
+}
+
+.language-selector {
+    position: relative;
+    width: 100%;
+}
+
+.language-button {
+    width: 100%;
+    height: 44px;
+    box-sizing: border-box;
+    padding: 0 14px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    border: 1px solid #d9d9d9;
+    border-radius: 8px;
+    background-color: #ffffff;
+
+    font-size: 14px;
+    color: #333333;
+
+    cursor: pointer;
+    outline: none;
+}
+
+.language-button:hover {
+    border-color: #aaaaaa;
+}
+
+.language-button:disabled {
+    background-color: #f5f5f5;
+    color: #888888;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.language-arrow {
+    font-size: 13px;
+    color: #777777;
+}
+
+/* Floating language menu */
+
+.language-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+
+    width: 280px;
+    padding: 14px;
+
+    box-sizing: border-box;
+
+    background: #ffffff;
+    border: 1px solid #d9d9d9;
+    border-radius: 10px;
+
+    box-shadow:
+        0 8px 20px rgba(0, 0, 0, 0.10),
+        0 2px 6px rgba(0, 0, 0, 0.06);
+
+    z-index: 1000;
+}
+
+/* Menu heading */
+
+.language-menu-title {
+    margin-bottom: 5px;
+
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+
+    color: #777777;
+}
+
+.language-menu-subtitle {
+    margin-bottom: 12px;
+
+    font-size: 11px;
+    color: #999999;
+}
+
+/* Language pills */
+
+.language-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.language-option {
+    padding: 7px 12px;
+
+    border: 1px solid #d5d5d5;
+    border-radius: 18px;
+
+    background: #ffffff;
+
+    font-size: 12px;
+    color: #555555;
+
+    cursor: pointer;
+}
+
+.language-option:hover {
+    border-color: #1976d2;
+    color: #1976d2;
+}
+
+.language-option.selected {
+    border-color: #1976d2;
+    background-color: #eef6ff;
+    color: #075fa8;
+    font-weight: 600;
+}
+
+.language-option:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Done button */
+
+.language-done-button {
+    width: 100%;
+    height: 30px;
+
+    margin-top: 12px;
+
+    border: none;
+    border-radius: 6px;
+
+    background-color: #08639b;
+    color: #ffffff;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.language-done-button:hover {
+    background-color: #075580;
+}
+
 @media (max-width: 700px) {
     .inspect-controls {
         padding: 24px;
