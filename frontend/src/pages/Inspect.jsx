@@ -83,9 +83,8 @@ function Inspect() {
 
     const [selectionLoading, setSelectionLoading] = useState(false);
 
-    const [selectionStatus, setSelectionStatus] = useState("");
-
-    const [selectionType, setSelectionType] = useState("");
+    const [tokenizerStatus, setTokenizerStatus] = useState("");
+    const [languageStatus, setLanguageStatus] = useState("");
 
     /* Stores an error returned by the backend. */
 
@@ -506,13 +505,11 @@ function Inspect() {
         }
 
         setLanguage(newLanguage);
-
         setSelectionLoading(true);
-        setSelectionType("language");
-        setSelectionStatus("Loading language...");
+        setLanguageStatus(`Loading ${newLanguage}`);
+        setError("");
 
         try {
-            setError("");
 
             if (source === "default") {
                 await loadDefaultCorpus(
@@ -535,84 +532,16 @@ function Inspect() {
 
             }
 
-            setSelectionStatus("Language ready");
+            setLanguageStatus("Language ready.");
 
         }
         catch (err) {
             setError(err.message);
-            setSelectionStatus("Language failed");
+            setLanguageStatus("Could not load language corpus.");
         }
         finally {
             setSelectionLoading(false);
         }
-    }
-
-    async function handleTokenizerChange(event) {
-
-        if (selectionLoading) {
-            return;
-        }
-
-        const newTokenizer = event.target.value;
-
-        setTokenizer(newTokenizer);
-
-        setSelectionLoading(true);
-
-        setSelectionType("tokenizer");
-
-        setSelectionStatus("Loading tokenizer...");
-
-        try {
-
-            setError("");
-
-            if (source === "default") {
-
-                await loadDefaultCorpus(
-
-                    language,
-                    newTokenizer
-
-                );
-
-            }
-
-            else if (selectedFile) {
-
-                await processUploadedCorpus(
-
-                    selectedFile,
-                    language,
-                    newTokenizer
-
-                );
-
-                await loadMbiMetrics(
-                    language,
-                    newTokenizer
-                );
-
-            }
-
-            setSelectionStatus("Tokenizer ready");
-
-        }
-
-        catch (err) {
-
-            setError(err.message);
-
-            setSelectionStatus("Tokenizer failed");
-
-        }
-
-        finally {
-
-            setSelectionLoading(false);
-
-        }
-
     }
 
     function formatTokenizedText(tokenizedText) {
@@ -687,8 +616,7 @@ function Inspect() {
         }
 
         setSelectionLoading(true);
-        setSelectionType("tokenizer");
-        setSelectionStatus("Loading tokenizer...");
+        setTokenizerStatus("Loading tokenizer...");
         setError("");
 
         try {
@@ -727,11 +655,11 @@ function Inspect() {
                 );
             }
 
-            setSelectionStatus("Tokenizer ready");
+            setTokenizerStatus("Tokenizer ready.");
         }
         catch (err) {
             setError(err.message);
-            setSelectionStatus("Tokenizer failed");
+            setTokenizerStatus("Tokenizer not available.");
         }
         finally {
             setSelectionLoading(false);
@@ -747,11 +675,6 @@ function Inspect() {
         }
 
         setSelectionLoading(true);
-
-        setSelectionType("default");
-
-        setSelectionStatus("Loading default corpus...");
-
         setError("");
 
         try {
@@ -768,27 +691,16 @@ function Inspect() {
             setSource("default");
 
             if (fileInputRef.current) {
-
                 fileInputRef.current.value = "";
-
             }
-
-            setSelectionStatus("Default corpus ready");
-
         }
 
         catch (err) {
-
             setError(err.message);
-
-            setSelectionStatus("Default corpus failed");
-
         }
 
         finally {
-
             setSelectionLoading(false);
-
         }
 
     }
@@ -798,21 +710,16 @@ function Inspect() {
     function renderTokens(tokens) {
 
         if (!tokens || tokens.length === 0) {
-
             return "Your tokenized text will appear here.";
-
         }
 
         let sentences;
 
         if (Array.isArray(tokens[0])) {
-
             sentences = tokens;
-
-        } else {
-
+        } 
+        else {
             sentences = [tokens];
-
         }
 
         const visibleSentences = sentences.slice(0, 10);
@@ -876,9 +783,9 @@ function Inspect() {
 
                 <div className="inspect-filters">
 
-                    {/* Tokenizer Search Box */}
+                    {/* Tokenizer */}
 
-                    <div className="filter-group">
+                    <div className="filter-group tokenizer-filter">
 
                         <label htmlFor="tokenizer">
                             Tokenizer
@@ -915,9 +822,24 @@ function Inspect() {
 
                         </div>
 
+                        {/* Tokenizer status */}
+                        { tokenizerStatus && (
+                            <div
+                                className={`selection-status ${
+                                    tokenizerStatus === "Tokenizer not available."
+                                        ? "is-error"
+                                        : tokenizerStatus === "Loading tokenizer..."
+                                            ? "is-loading"
+                                            : "is-ready"
+                                }`}
+                            >
+                                <span className="status-dot"></span>
+                                <span>{tokenizerStatus}</span>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Language dropdown */}
+                    {/* Language */}
 
                     <div className="filter-group language-filter">
 
@@ -995,29 +917,27 @@ function Inspect() {
 
                         </div>
 
+                        {/* Language status */}
+                        {languageStatus && (
+                            <div
+                                className={`selection-status ${
+                                    languageStatus === "Could not load language corpus."
+                                        ? "is-error"
+                                        : languageStatus.startsWith("Loading ")
+                                            ? "is-loading"
+                                            : "is-ready"
+                                }`}
+                            >
+                                <span className="status-dot"></span>
+                                <span>
+                                    {languageStatus}
+                                </span>
+                            </div>
+                        )}
+
                     </div>
 
                 </div>
-
-                {selectionStatus && (
-
-                    <div
-                        className={`selection-status ${
-                            selectionLoading
-                                ? "is-loading"
-                                : "is-ready"
-                        }`}
-                    >
-
-                        <span className="status-dot"></span>
-
-                        <span>
-                            {selectionStatus}
-                        </span>
-
-                    </div>
-
-                )}
 
             </section>
 
