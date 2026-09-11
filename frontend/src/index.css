@@ -1101,6 +1101,36 @@
     background: #c74848;
 }
 
+.language-tokenization-grid {
+
+    grid-column: 1 / -1;
+
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 28px;
+
+    margin-top: 28px;
+
+}
+
+.language-tokenization-block {
+
+    margin-top: 0;
+
+}
+
+.tokenization-language {
+
+    font-size: 18px;
+
+    font-weight: 600;
+
+    margin-bottom: 14px;
+
+}
+
 /* =====================
     RANK
 ===================== */

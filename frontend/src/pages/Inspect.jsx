@@ -1,78 +1,149 @@
 /*
     Inspect Page
+
     Author: Madzibandila Charmain
+
     Date: 21 August 2026
 */
 
 import { useEffect, useRef, useState } from "react";
 
 import {
+
     getOptions,
+
     getDefaultCorpus,
+
     uploadCorpus,
+
     tokenizeText,
+
     getMBI,
+
     getTokenizerInfo
+
 } from "../api/client";
 
 import { useAppState } from "../context/AppStateContext";
 
 function Inspect() {
 
-    /* Shared application state. These values are stored in AppStateContext so they remain unchanged when the user moves between different pages. */ 
+    /* Shared application state. These values are stored in AppStateContext so they remain unchanged when the user moves between different pages. */
 
-    const { 
+    const {
 
-        language, 
+        language,
+
         setLanguage,
 
-        tokenizer, 
-        setTokenizer, 
+        tokenizer,
 
-        source, 
-        setSource, 
+        setTokenizer,
 
-        selectedFile, 
-        setSelectedFile, 
+        source,
 
-        fileName, 
+        setSource,
+
+        selectedFile,
+
+        setSelectedFile,
+
+        fileName,
+
         setFileName,
 
-        corpusTokenizedText, 
-        setCorpusTokenizedText, 
+        corpusTokenizedText,
 
-        corpusMetrics, 
-        setCorpusMetrics, 
+        setCorpusTokenizedText,
 
-        typedTokenizedText, 
-        setTypedTokenizedText, 
+        corpusMetrics,
 
-        textMetrics, 
-        setTextMetrics, 
+        setCorpusMetrics,
 
-        inspectInitialised, 
+        typedTokenizedText,
+
+        setTypedTokenizedText,
+
+        textMetrics,
+
+        setTextMetrics,
+
+        inspectInitialised,
+
         setInspectInitialised
 
     } = useAppState();
 
     /*
         Type Anything text belongs only to Inspect.
-
         It is intentionally not stored in AppStateContext
         so Compare has its own independent text box.
     */
+
     const [inputText, setInputText] = useState("");
 
     /* Languages provided by the backend. */
 
     const [languages, setLanguages] = useState([]);
 
+    const [selectedLanguages, setSelectedLanguages] = useState(() => {
+
+        const savedLanguages =
+            localStorage.getItem("inspectSelectedLanguages");
+
+        if (savedLanguages) {
+
+            try {
+
+                return JSON.parse(savedLanguages);
+
+            }
+
+            catch (err) {
+
+                return [];
+
+            }
+
+        }
+
+        return [];
+
+    });
+
+    const [languageData, setLanguageData] = useState(() => {
+
+        const savedLanguageData =
+            localStorage.getItem("inspectLanguageData");
+
+        if (savedLanguageData) {
+
+            try {
+
+                return JSON.parse(savedLanguageData);
+
+            }
+
+            catch (err) {
+
+                return {};
+
+            }
+
+        }
+
+        return {};
+
+    });
+
     /* Tokenizers provided by the backend. */
 
     const [tokenizers, setTokenizers] = useState([]);
+
     const [tokenizerInput, setTokenizerInput] = useState("");
 
     /* Language menu */
+
     const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
 
     /* Displays whether the frontend is currently waiting for a backend response. */
@@ -84,6 +155,7 @@ function Inspect() {
     const [selectionLoading, setSelectionLoading] = useState(false);
 
     const [tokenizerStatus, setTokenizerStatus] = useState("");
+
     const [languageStatus, setLanguageStatus] = useState("");
 
     /* Stores an error returned by the backend. */
@@ -95,17 +167,49 @@ function Inspect() {
     const [mbiUnavailable, setMbiUnavailable] = useState("");
 
     const [mbiMetrics, setMbiMetrics] = useState({
+
         precision: 0,
+
         recall: 0,
+
         f1: 0
+
     });
 
     /* Reference to the actual file input. */
 
     const fileInputRef = useRef(null);
 
-    /*  Load languages and tokenizers from the FastAPI 
-        backend when the page loads. 
+    /*
+        Save selected languages so they remain unchanged
+        when the user moves between different pages.
+    */
+
+    useEffect(() => {
+
+        localStorage.setItem(
+            "inspectSelectedLanguages",
+            JSON.stringify(selectedLanguages)
+        );
+
+    }, [selectedLanguages]);
+
+    /*
+        Save language results so they remain unchanged
+        when the user moves between different pages.
+    */
+
+    useEffect(() => {
+
+        localStorage.setItem(
+            "inspectLanguageData",
+            JSON.stringify(languageData)
+        );
+
+    }, [languageData]);
+
+    /* Load languages and tokenizers from the FastAPI
+       backend when the page loads.
     */
 
     useEffect(() => {
@@ -115,114 +219,244 @@ function Inspect() {
             try {
 
                 setLoading(true);
+
                 setError("");
 
                 const result = await getOptions();
 
                 setLanguages(result.languages);
+
                 setTokenizers(result.tokenizers);
 
-                if (!inspectInitialised) { 
+                if (!inspectInitialised) {
 
-                    const defaultLanguage = 
-                        result.defaults?.language || "English"; 
+                    const defaultLanguage =
+                        result.defaults?.language || "English";
 
-                    const defaultTokenizer = 
-                        result.defaults?.tokenizer || result.tokenizers[0]; 
+                    const defaultTokenizer =
+                        result.defaults?.tokenizer || "gpt2";
 
-                    setLanguage(defaultLanguage); 
+                    setLanguage(defaultLanguage);
+
                     setTokenizer(defaultTokenizer);
-                    setTokenizerInput(defaultTokenizer); 
 
-                    const defaultResult = 
+                    setSelectedLanguages([defaultLanguage]);
+
+                    setTokenizerInput(defaultTokenizer);
+
+                    const defaultResult =
                         await getDefaultCorpus(
                             defaultLanguage,
                             defaultTokenizer
-                        ); 
+                        );
 
                     setCorpusTokenizedText(
                         formatTokenizedText(
                             defaultResult.tokenized_text
                         )
-                    ); 
+                    );
 
-                    setCorpusMetrics({ 
+                    setCorpusMetrics({
 
                         tokens:
-                            defaultResult.metrics.token_count ?? 0, 
+                            defaultResult.metrics.token_count ?? 0,
 
                         fertility:
-                            defaultResult.metrics.fertility ?? 0, 
+                            defaultResult.metrics.fertility ?? 0,
 
                         compression:
-                            defaultResult.metrics.compression ?? 0, 
+                            defaultResult.metrics.compression ?? 0,
 
                         token_premium:
                             defaultResult.metrics.token_premium ?? null
 
-                    }); 
+                    });
+
+                    setLanguageData({
+
+                        [defaultLanguage]: {
+
+                            tokenizedText:
+                                formatTokenizedText(
+                                    defaultResult.tokenized_text
+                                ),
+
+                            metrics: {
+
+                                tokens:
+                                    defaultResult.metrics.token_count ?? 0,
+
+                                fertility:
+                                    defaultResult.metrics.fertility ?? 0,
+
+                                compression:
+                                    defaultResult.metrics.compression ?? 0,
+
+                                token_premium:
+                                    defaultResult.metrics.token_premium ?? null
+
+                            },
+
+                            mbi: null
+
+                        }
+
+                    });
+
+                    try {
+
+                        const defaultMbiResult = await getMBI(
+
+                            defaultTokenizer,
+
+                            defaultLanguage
+
+                        );
+
+                        setLanguageData((previousData) => ({
+
+                            ...previousData,
+
+                            [defaultLanguage]: {
+
+                                ...previousData[defaultLanguage],
+
+                                mbi: {
+
+                                    precision:
+                                        defaultMbiResult.metrics.precision ?? 0,
+
+                                    recall:
+                                        defaultMbiResult.metrics.recall ?? 0,
+
+                                    f1:
+                                        defaultMbiResult.metrics.f1 ?? 0
+
+                                }
+
+                            }
+
+                        }));
+
+                    }
+
+                    catch (err) {
+
+                        setLanguageData((previousData) => ({
+
+                            ...previousData,
+
+                            [defaultLanguage]: {
+
+                                ...previousData[defaultLanguage],
+
+                                mbi: null
+
+                            }
+
+                        }));
+
+                    }
 
                     await loadMbiMetrics(
+
                         defaultLanguage,
+
                         defaultTokenizer
+
                     );
 
-                    setInspectInitialised(true); 
+                    setInspectInitialised(true);
 
-                } 
+                }
 
-            } 
+                else {
 
-            catch (err) { 
+                    if (
 
-                setError(err.message); 
+                        selectedLanguages.length === 0 &&
 
-            } 
+                        language
 
-            finally { 
+                    ) {
 
-                setLoading(false); 
+                        setSelectedLanguages([language]);
 
-            } 
+                    }
+
+                    setTokenizerInput(tokenizer);
+
+                }
+
+            }
+
+            catch (err) {
+
+                setError(err.message);
+
+            }
+
+            finally {
+
+                setLoading(false);
+
+            }
 
         }
 
-        initialiseInspect(); 
+        initialiseInspect();
 
-    }, [ 
+    }, [
 
-        inspectInitialised, 
-        setLanguage, 
-        setTokenizer, 
-        setCorpusTokenizedText, 
-        setCorpusMetrics, 
-        setInspectInitialised 
+        inspectInitialised,
+
+        setLanguage,
+
+        setTokenizer,
+
+        setCorpusTokenizedText,
+
+        setCorpusMetrics,
+
+        setInspectInitialised
 
     ]);
 
     async function loadMbiMetrics(
+
         selectedLanguage = language,
+
         selectedTokenizer = tokenizer
+
     ) {
 
         try {
 
             setMbiLoading(true);
+
             setMbiError("");
+
             setMbiUnavailable("");
 
             const result = await getMBI(
+
                 selectedTokenizer,
+
                 selectedLanguage
+
             );
 
             setMbiMetrics({
+
                 precision:
                     result.metrics.precision ?? 0,
+
                 recall:
                     result.metrics.recall ?? 0,
+
                 f1:
                     result.metrics.f1 ?? 0
+
             });
 
         } catch (err) {
@@ -230,13 +464,19 @@ function Inspect() {
             if (err.message?.includes("Unsupported language")) {
 
                 setMbiMetrics({
+
                     precision: 0,
+
                     recall: 0,
+
                     f1: 0
+
                 });
 
                 setMbiUnavailable(
+
                     `${selectedLanguage} does not have MBI metrics.`
+
                 );
 
                 return;
@@ -266,8 +506,11 @@ function Inspect() {
             setTextMetrics({
 
                 tokens: 0,
+
                 fertility: 0,
+
                 compression: 0,
+
                 token_premium: 0
 
             });
@@ -283,33 +526,51 @@ function Inspect() {
                 try {
 
                     setLoading(true);
+
                     setError("");
 
-                    const sentences = inputText 
-                        .split(/(?<=[.!?])/) 
-                        .map((sentence) => sentence.trim()) 
-                        .filter((sentence) => sentence.length > 0); 
+                    const sentences = inputText
+
+                        .split(/(?<=[.!?])/)
+
+                        .map((sentence) => sentence.trim())
+
+                        .filter((sentence) => sentence.length > 0);
 
                     const tokenizedSentences = [];
 
-                    for (const sentence of sentences) { 
-                        const sentenceResult = await tokenizeText( 
-                            sentence, 
-                            language, 
-                            tokenizer 
-                        ); 
-                        
-                        tokenizedSentences.push( 
-                            formatTokenizedText( sentenceResult.tokenized_text ) 
-                        ); 
+                    for (const sentence of sentences) {
+
+                        const sentenceResult = await tokenizeText(
+
+                            sentence,
+
+                            language,
+
+                            tokenizer
+
+                        );
+
+                        tokenizedSentences.push(
+
+                            formatTokenizedText(
+                                sentenceResult.tokenized_text
+                            )
+
+                        );
+
                     }
 
                     setTypedTokenizedText(tokenizedSentences);
 
-                    const result = await tokenizeText( 
-                        inputText, 
-                        language, 
-                        tokenizer 
+                    const result = await tokenizeText(
+
+                        inputText,
+
+                        language,
+
+                        tokenizer
+
                     );
 
                     setTextMetrics({
@@ -333,7 +594,7 @@ function Inspect() {
 
                     setError(err.message);
 
-                } 
+                }
 
                 finally {
 
@@ -350,11 +611,17 @@ function Inspect() {
         return () => clearTimeout(timeoutId);
 
     }, [
-        inputText, 
-        language, 
-        tokenizer, 
-        setTypedTokenizedText, 
+
+        inputText,
+
+        language,
+
+        tokenizer,
+
+        setTypedTokenizedText,
+
         setTextMetrics
+
     ]);
 
     /* Loads default Corpus */
@@ -370,11 +637,13 @@ function Inspect() {
         try {
 
             setLoading(true);
+
             setError("");
 
             const result = await getDefaultCorpus(
 
                 selectedLanguage,
+
                 selectedTokenizer
 
             );
@@ -382,7 +651,9 @@ function Inspect() {
             setCorpusTokenizedText(
 
                 formatTokenizedText(
+
                     result.tokenized_text
+
                 )
 
             );
@@ -404,8 +675,11 @@ function Inspect() {
             });
 
             await loadMbiMetrics(
+
                 selectedLanguage,
+
                 selectedTokenizer
+
             );
 
         }
@@ -441,12 +715,15 @@ function Inspect() {
         try {
 
             setLoading(true);
+
             setError("");
 
             const result = await uploadCorpus(
 
                 file,
+
                 selectedLanguage,
+
                 selectedTokenizer
 
             );
@@ -460,7 +737,9 @@ function Inspect() {
             setCorpusTokenizedText(
 
                 formatTokenizedText(
+
                     result.tokenized_text
+
                 )
 
             );
@@ -501,169 +780,474 @@ function Inspect() {
     async function handleLanguageChange(newLanguage) {
 
         if (selectionLoading) {
+
             return;
+
         }
 
-        setLanguage(newLanguage);
         setSelectionLoading(true);
+
         setLanguageStatus(`Loading ${newLanguage}`);
+
         setError("");
 
         try {
 
+            let result;
+
             if (source === "default") {
-                await loadDefaultCorpus(
+
+                result = await getDefaultCorpus(
+
                     newLanguage,
+
                     tokenizer
+
                 );
+
             }
 
             else if (selectedFile) {
-                await processUploadedCorpus(
-                    selectedFile,
-                    newLanguage,
-                    tokenizer
-                );
 
-                await loadMbiMetrics(
+                result = await uploadCorpus(
+
+                    selectedFile,
+
                     newLanguage,
+
                     tokenizer
+
                 );
 
             }
+
+            let mbiResult = null;
+
+            try {
+
+                mbiResult = await getMBI(
+
+                    tokenizer,
+
+                    newLanguage
+
+                );
+
+            }
+
+            catch (err) {
+
+                mbiResult = null;
+
+            }
+
+            setLanguageData((previousData) => ({
+
+                ...previousData,
+
+                [newLanguage]: {
+
+                    tokenizedText: formatTokenizedText(
+
+                        result.tokenized_text
+
+                    ),
+
+                    metrics: {
+
+                        tokens:
+                            result.metrics.token_count ?? 0,
+
+                        fertility:
+                            result.metrics.fertility ?? 0,
+
+                        compression:
+                            result.metrics.compression ?? 0,
+
+                        token_premium:
+                            result.metrics.token_premium ?? null
+
+                    },
+
+                    mbi: mbiResult
+
+                        ? {
+
+                            precision:
+                                mbiResult.metrics.precision ?? 0,
+
+                            recall:
+                                mbiResult.metrics.recall ?? 0,
+
+                            f1:
+                                mbiResult.metrics.f1 ?? 0
+
+                        }
+
+                        : null
+
+                }
+
+            }));
+
+            setLanguage(newLanguage);
 
             setLanguageStatus("Language ready.");
 
         }
+
         catch (err) {
+
             setError(err.message);
+
             setLanguageStatus("Could not load language corpus.");
+
         }
+
         finally {
+
             setSelectionLoading(false);
+
         }
+
+    }
+
+    async function toggleLanguage(selectedLanguage) {
+
+        if (selectionLoading) {
+
+            return;
+
+        }
+
+        if (selectedLanguages.includes(selectedLanguage)) {
+
+            // Deselect language
+
+            setSelectedLanguages((previousLanguages) =>
+
+                previousLanguages.filter(
+
+                    (item) => item !== selectedLanguage
+
+                )
+
+            );
+
+            // Remove its stored results
+
+            setLanguageData((previousData) => {
+
+                const updatedData = {
+
+                    ...previousData
+
+                };
+
+                delete updatedData[selectedLanguage];
+
+                return updatedData;
+
+            });
+
+            // If the removed language was active,
+
+            // make another selected language active.
+
+            if (language === selectedLanguage) {
+
+                const remainingLanguages =
+
+                    selectedLanguages.filter(
+
+                        (item) => item !== selectedLanguage
+
+                    );
+
+                if (remainingLanguages.length > 0) {
+
+                    setLanguage(remainingLanguages[0]);
+
+                }
+
+            }
+
+            return;
+
+        }
+
+        let updatedLanguages = [...selectedLanguages];
+
+        // Maximum of 4 languages
+
+        if (updatedLanguages.length >= 4) {
+
+            const removedLanguage = updatedLanguages.shift();
+
+            setLanguageData((previousData) => {
+
+                const updatedData = {
+
+                    ...previousData
+
+                };
+
+                delete updatedData[removedLanguage];
+
+                return updatedData;
+
+            });
+
+        }
+
+        updatedLanguages.push(selectedLanguage);
+
+        setSelectedLanguages(updatedLanguages);
+
+        await handleLanguageChange(selectedLanguage);
+
     }
 
     function formatTokenizedText(tokenizedText) {
+
         if (!tokenizedText) {
+
             return [];
+
         }
 
         // Backend returned a list of tokens
+
         if (Array.isArray(tokenizedText)) {
+
             return tokenizedText;
+
         }
 
         // Backend returned text as a string
+
         if (typeof tokenizedText === "string") {
 
             return tokenizedText
+
                 .split(/\n+/)
+
                 .map((sentence) =>
+
                     sentence.split(/\s+/).filter(Boolean)
+
                 )
+
                 .filter((sentence) => sentence.length > 0);
+
         }
 
         return [];
+
     }
 
     /* Handled file slection from user computer. */
 
     async function handleFileChange(event) {
+
         const file = event.target.files[0];
 
         if (!file) {
+
             return;
+
         }
 
         try {
+
             setLoading(true);
+
             setError("");
 
             await processUploadedCorpus(
+
                 file,
+
                 language,
+
                 tokenizer
+
             );
 
             await loadMbiMetrics(
+
                 language,
+
                 tokenizer
+
             );
+
+            const result = await uploadCorpus(
+
+                file,
+
+                language,
+
+                tokenizer
+
+            );
+
+            setLanguageData((previousData) => ({
+
+                ...previousData,
+
+                [language]: {
+
+                    tokenizedText:
+                        formatTokenizedText(
+
+                            result.tokenized_text
+
+                        ),
+
+                    metrics: {
+
+                        tokens:
+                            result.metrics.token_count ?? 0,
+
+                        fertility:
+                            result.metrics.fertility ?? 0,
+
+                        compression:
+                            result.metrics.compression ?? 0,
+
+                        token_premium:
+                            result.metrics.token_premium ?? null
+
+                    },
+
+                    mbi: previousData[language]?.mbi ?? null
+
+                }
+
+            }));
+
         }
+
         catch (err) {
+
             setError(err.message);
+
         }
+
         finally {
+
             setLoading(false);
+
         }
+
     }
 
     async function handleTokenizerInput(event) {
+
         if (event.key !== "Enter") {
+
             return;
+
         }
 
         const newTokenizer = tokenizerInput.trim();
 
         if (!newTokenizer) {
+
             return;
+
         }
 
         if (selectionLoading) {
+
             return;
+
         }
 
         setSelectionLoading(true);
+
         setTokenizerStatus("Loading tokenizer...");
+
         setError("");
 
         try {
 
             // Check/load the tokenizer entered by the user
+
             await getTokenizerInfo(newTokenizer);
 
             /*
             * The tokenizer name typed by the user is sent
             * to the backend when we load the corpus.
             */
+
             setTokenizer(newTokenizer);
 
             if (source === "default") {
+
                 await loadDefaultCorpus(
+
                     language,
+
                     newTokenizer
+
                 );
+
             }
+
             else if (selectedFile) {
+
                 await processUploadedCorpus(
+
                     selectedFile,
+
                     language,
+
                     newTokenizer
+
                 );
 
                 await loadMbiMetrics(
+
                     language,
+
                     newTokenizer
+
                 );
+
             }
+
             else {
+
                 await loadMbiMetrics(
+
                     language,
+
                     newTokenizer
+
                 );
+
             }
 
             setTokenizerStatus("Tokenizer ready.");
+
         }
+
         catch (err) {
+
             setError(err.message);
+
             setTokenizerStatus("Tokenizer not available.");
+
         }
+
         finally {
+
             setSelectionLoading(false);
+
         }
+
     }
 
     /* Returns the corpus back to the default state */
@@ -671,17 +1255,23 @@ function Inspect() {
     async function handleDefault() {
 
         if (selectionLoading) {
+
             return;
+
         }
 
         setSelectionLoading(true);
+
         setError("");
 
         try {
 
             await loadDefaultCorpus(
+
                 language,
+
                 tokenizer
+
             );
 
             setFileName("default");
@@ -691,16 +1281,66 @@ function Inspect() {
             setSource("default");
 
             if (fileInputRef.current) {
+
                 fileInputRef.current.value = "";
+
             }
+
+            const result = await getDefaultCorpus(
+
+                language,
+
+                tokenizer
+
+            );
+
+            setLanguageData((previousData) => ({
+
+                ...previousData,
+
+                [language]: {
+
+                    tokenizedText:
+                        formatTokenizedText(
+
+                            result.tokenized_text
+
+                        ),
+
+                    metrics: {
+
+                        tokens:
+                            result.metrics.token_count ?? 0,
+
+                        fertility:
+                            result.metrics.fertility ?? 0,
+
+                        compression:
+                            result.metrics.compression ?? 0,
+
+                        token_premium:
+                            result.metrics.token_premium ?? null
+
+                    },
+
+                    mbi: previousData[language]?.mbi ?? null
+
+                }
+
+            }));
+
         }
 
         catch (err) {
+
             setError(err.message);
+
         }
 
         finally {
+
             setSelectionLoading(false);
+
         }
 
     }
@@ -710,44 +1350,71 @@ function Inspect() {
     function renderTokens(tokens) {
 
         if (!tokens || tokens.length === 0) {
+
             return "Your tokenized text will appear here.";
+
         }
 
         let sentences;
 
         if (Array.isArray(tokens[0])) {
+
             sentences = tokens;
-        } 
+
+        }
+
         else {
+
             sentences = [tokens];
+
         }
 
         const visibleSentences = sentences.slice(0, 10);
 
         return (
+
             <>
 
                 {visibleSentences.map((sentence, sentenceIndex) => (
+
                     <div
+
                         key={`sentence-${sentenceIndex}`}
+
                         className="token-sentence"
+
                     >
+
                         {sentence.map((token, tokenIndex) => {
+
                             const colourIndex = tokenIndex % 8;
 
                             return (
+
                                 <span
+
                                     key={`${sentenceIndex}-${tokenIndex}-${token}`}
+
                                     className={`token-pill token-colour-${colourIndex}`}
+
                                 >
+
                                     {token}
+
                                 </span>
+
                             );
+
                         })}
+
                     </div>
+
                 ))}
+
             </>
+
         );
+
     }
 
     return (
@@ -759,16 +1426,21 @@ function Inspect() {
                 {/* Description of what the Inspect page does */}
 
                 <p className="inspect-label">
+
                     INSPECT
+
                 </p>
 
                 <h1>
+
                     From isiXhosa to Setswana, See the Language Beneath.
+
                 </h1>
 
                 <p className="inspect-description">
 
                     Pick a tokenizer, choose a language and explore how your
+
                     text is broken down into subword tokens the model can understand.
 
                 </p>
@@ -788,55 +1460,95 @@ function Inspect() {
                     <div className="filter-group tokenizer-filter">
 
                         <label htmlFor="tokenizer">
+
                             Tokenizer
+
                         </label>
 
                         <div className="tokenizer-search">
 
                             <input
+
                                 type="text"
+
                                 id="tokenizer"
+
                                 value={tokenizerInput}
+
                                 onChange={(event) => {
+
                                     setTokenizerInput(event.target.value)
+
                                 }}
+
                                 onKeyDown={(event) => {
+
                                     if (event.key === "Enter") {
+
                                         handleTokenizerInput(event);
+
                                     }
+
                                 }}
+
                                 placeholder="Type tokenizer name..."
+
                                 disabled={selectionLoading}
+
                             />
 
                             <button
+
                                 type="button"
+
                                 className="search-button"
+
                                 onClick={() =>
+
                                     handleTokenizerInput({ key: "Enter" })
+
                                 }
+
                                 disabled={selectionLoading}
+
                             >
+
                                 Search
+
                             </button>
 
                         </div>
 
                         {/* Tokenizer status */}
+
                         { tokenizerStatus && (
+
                             <div
+
                                 className={`selection-status ${
+
                                     tokenizerStatus === "Tokenizer not available."
+
                                         ? "is-error"
+
                                         : tokenizerStatus === "Loading tokenizer..."
+
                                             ? "is-loading"
+
                                             : "is-ready"
+
                                 }`}
+
                             >
+
                                 <span className="status-dot"></span>
+
                                 <span>{tokenizerStatus}</span>
+
                             </div>
+
                         )}
+
                     </div>
 
                     {/* Language */}
@@ -844,24 +1556,49 @@ function Inspect() {
                     <div className="filter-group language-filter">
 
                         <label htmlFor="language">
+
                             Language
+
                         </label>
 
                         <div className="language-selector">
 
                             <button
+
                                 type="button"
+
                                 id="language"
+
                                 className="language-button"
+
                                 onClick={() =>
+
                                     setLanguageMenuOpen(!languageMenuOpen)
+
                                 }
+
                                 disabled={selectionLoading}
+
                             >
-                                <span>{language}</span>
-                                <span className="language-arrow">
-                                    ▾
+
+                                <span>
+
+                                    {selectedLanguages.length === 1
+
+                                        ? selectedLanguages[0]
+
+                                        : `${selectedLanguages.length} languages selected`
+
+                                    }
+
                                 </span>
+
+                                <span className="language-arrow">
+
+                                    ▾
+
+                                </span>
+
                             </button>
 
                             {languageMenuOpen && (
@@ -869,11 +1606,15 @@ function Inspect() {
                                 <div className="language-menu">
 
                                     <div className="language-menu-title">
+
                                         CHOOSE A LANGUAGE
+
                                     </div>
 
                                     <div className="language-menu-subtitle">
-                                            Choose one of the available languages
+
+                                        Choose up to 4 languages
+
                                     </div>
 
                                     <div className="language-options">
@@ -881,20 +1622,33 @@ function Inspect() {
                                         {languages.map((item) => (
 
                                             <button
+
                                                 type="button"
+
                                                 key={item}
+
                                                 className={`language-option ${
-                                                    language === item
+
+                                                    selectedLanguages.includes(item)
+
                                                         ? "selected"
+
                                                         : ""
+
                                                 }`}
+
                                                 onClick={() => {
-                                                    setLanguageMenuOpen(false);
-                                                    handleLanguageChange(item);
+
+                                                    toggleLanguage(item);
+
                                                 }}
+
                                                 disabled={selectionLoading}
+
                                             >
+
                                                 {item}
+
                                             </button>
 
                                         ))}
@@ -902,13 +1656,21 @@ function Inspect() {
                                     </div>
 
                                     <button
+
                                         type="button"
+
                                         className="language-done-button"
+
                                         onClick={() =>
+
                                             setLanguageMenuOpen(false)
+
                                         }
+
                                     >
+
                                         Done
+
                                     </button>
 
                                 </div>
@@ -918,21 +1680,37 @@ function Inspect() {
                         </div>
 
                         {/* Language status */}
+
                         {languageStatus && (
+
                             <div
+
                                 className={`selection-status ${
+
                                     languageStatus === "Could not load language corpus."
+
                                         ? "is-error"
+
                                         : languageStatus.startsWith("Loading ")
+
                                             ? "is-loading"
+
                                             : "is-ready"
+
                                 }`}
+
                             >
+
                                 <span className="status-dot"></span>
+
                                 <span>
+
                                     {languageStatus}
+
                                 </span>
+
                             </div>
+
                         )}
 
                     </div>
@@ -946,7 +1724,9 @@ function Inspect() {
             <section className="corpus-box">
 
                 <div className="corpus-heading">
+
                     Mzansi Explorer • Corpus Tokenization
+
                 </div>
 
                 <p className="corpus-label">
@@ -958,19 +1738,31 @@ function Inspect() {
                 <div className="upload-container">
 
                     <input
+
                         type="file"
+
                         id="corpus-upload"
+
                         ref={fileInputRef}
+
                         accept=".txt"
+
                         onChange={handleFileChange}
+
                         disabled={selectionLoading}
+
                     />
 
                     <label
+
                         htmlFor="corpus-upload"
+
                         className="upload-button"
+
                     >
+
                         Upload your corpus(text)
+
                     </label>
 
                     {/* Shows Default button */}
@@ -978,174 +1770,270 @@ function Inspect() {
                     {fileName !== "default" && (
 
                         <button
+
                             type="button"
+
                             className="default-button"
+
                             onClick={handleDefault}
+
                             disabled={selectionLoading}
+
                         >
+
                             Default
+
                         </button>
 
                     )}
 
                 </div>
 
-                {/* Tokenization Result */}
+                <div className="language-tokenization-grid">
 
-                <div className="tokenization-result">
+                    {selectedLanguages.map((selectedLanguage) => {
 
-                    <div className="tokenization-text">
+                        const data = languageData[selectedLanguage];
 
-                        {renderTokens(
-                            corpusTokenizedText
-                        )}
+                        if (!data) {
 
-                    </div>
+                            return null;
+
+                        }
+
+                        return (
+
+                            <div
+
+                                key={selectedLanguage}
+
+                                className="language-tokenization-block"
+
+                            >
+
+                                {/* Tokenization Result */}
+
+                                <div className="tokenization-result">
+
+                                    <div className="tokenization-language">
+
+                                        {selectedLanguage}
+
+                                    </div>
+
+                                    <div className="tokenization-text">
+
+                                        {renderTokens(
+
+                                            data.tokenizedText
+
+                                        )}
+
+                                    </div>
+
+                                </div>
+
+                                {/* Tokenization metrics */}
+
+                                <div className="tokenization-metrics">
+
+                                    {/* Row 1 - Existing metrics */}
+
+                                    <div className="metric-row">
+
+                                        <div className="metric-card">
+
+                                            <span className="metric-name">
+
+                                                Tokens
+
+                                            </span>
+
+                                            <span className="metric-value">
+
+                                                {data.metrics.tokens}
+
+                                            </span>
+
+                                        </div>
+
+                                        <div className="metric-card">
+
+                                            <span className="metric-name">
+
+                                                Fertility
+
+                                            </span>
+
+                                            <span className="metric-value">
+
+                                                {Number(
+
+                                                    data.metrics.fertility
+
+                                                ).toFixed(2)}
+
+                                            </span>
+
+                                        </div>
+
+                                        <div className="metric-card">
+
+                                            <span className="metric-name">
+
+                                                Compression
+
+                                            </span>
+
+                                            <span className="metric-value">
+
+                                                {Number(
+
+                                                    data.metrics.compression
+
+                                                ).toFixed(2)}
+
+                                            </span>
+
+                                        </div>
+
+                                        <div className="metric-card">
+
+                                            <span className="metric-name">
+
+                                                Token Premium
+
+                                            </span>
+
+                                            <span className="metric-value">
+
+                                                {data.metrics.token_premium === null
+
+                                                    ? "N/A"
+
+                                                    : Number(
+
+                                                        data.metrics.token_premium
+
+                                                    ).toFixed(2)
+
+                                                }
+
+                                            </span>
+
+                                        </div>
+
+                                    </div>
+
+                                    {/* Row 2 - Placeholder metrics */}
+
+                                    <div className="metric-row metric-row-centered">
+
+                                        <div className="metric-card">
+
+                                            <span className="metric-name">
+
+                                                Precision
+
+                                            </span>
+
+                                            <span className="metric-value">
+
+                                                {data.mbi === null
+
+                                                    ? "N/A"
+
+                                                    : Number(
+
+                                                        data.mbi.precision
+
+                                                    ).toFixed(2)}
+
+                                            </span>
+
+                                        </div>
+
+                                        <div className="metric-card">
+
+                                            <span className="metric-name">
+
+                                                F1
+
+                                            </span>
+
+                                            <span className="metric-value">
+
+                                                {data.mbi === null
+
+                                                    ? "N/A"
+
+                                                    : Number(
+
+                                                        data.mbi.f1
+
+                                                    ).toFixed(2)}
+
+                                            </span>
+
+                                        </div>
+
+                                        <div className="metric-card">
+
+                                            <span className="metric-name">
+
+                                                Recall
+
+                                            </span>
+
+                                            <span className="metric-value">
+
+                                                {data.mbi === null
+
+                                                    ? "N/A"
+
+                                                    : Number(
+
+                                                        data.mbi.recall
+
+                                                    ).toFixed(2)}
+
+                                            </span>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        );
+
+                    })}
 
                 </div>
 
-                {/* Tokenization metrics */}
+                {mbiUnavailable && (
 
-                <div className="tokenization-metrics">
+                    <div className="selection-status is-error">
 
-                    {/* Row 1 - Existing metrics */}
+                        <span className="status-dot"></span>
 
-                    <div className="metric-row">
-
-                        <div className="metric-card">
-
-                            <span className="metric-name">
-                                Tokens
-                            </span>
-
-                            <span className="metric-value">
-                                {corpusMetrics.tokens}
-                            </span>
-
-                        </div>
-
-                        <div className="metric-card">
-
-                            <span className="metric-name">
-                                Fertility
-                            </span>
-
-                            <span className="metric-value">
-
-                                {Number(
-                                    corpusMetrics.fertility
-                                ).toFixed(2)}
-
-                            </span>
-
-                        </div>
-
-                        <div className="metric-card">
-
-                            <span className="metric-name">
-                                Compression
-                            </span>
-
-                            <span className="metric-value">
-
-                                {Number(
-                                    corpusMetrics.compression
-                                ).toFixed(2)}
-
-                            </span>
-
-                        </div>
-
-                        <div className="metric-card">
-
-                            <span className="metric-name">
-                                Token Premium
-                            </span>
-
-                            <span className="metric-value">
-
-                                {corpusMetrics.token_premium === null
-
-                                    ? "N/A"
-
-                                    : Number(
-                                        corpusMetrics.token_premium
-                                    ).toFixed(2)
-
-                                }
-
-                            </span>
-
-                        </div>
+                        <span>{mbiUnavailable}</span>
 
                     </div>
 
-                    {/* Row 2 - Placeholder metrics */}
+                )}
 
-                    <div className="metric-row metric-row-centered">
+                {mbiError && (
 
-                        <div className="metric-card">
+                    <div className="inspect-error">
 
-                            <span className="metric-name">
-                                Precision
-                            </span>
-
-                            <span className="metric-value">
-                                {mbiLoading || mbiUnavailable
-                                    ? "N/A"
-                                    : Number(mbiMetrics.precision).toFixed(2)}
-                            </span>
-
-                        </div>
-
-                        <div className="metric-card">
-
-                            <span className="metric-name">
-                                F1
-                            </span>
-
-                            <span className="metric-value">
-                                {mbiLoading || mbiUnavailable
-                                    ? "N/A"
-                                    : Number(mbiMetrics.f1).toFixed(2)}
-                            </span>
-
-                        </div>
-
-                        <div className="metric-card">
-
-                            <span className="metric-name">
-                                Recall
-                            </span>
-
-                            <span className="metric-value">
-                                {mbiLoading || mbiUnavailable
-                                    ? "N/A"
-                                    : Number(mbiMetrics.recall).toFixed(2)}
-                            </span>
-
-                        </div>
+                        {mbiError}
 
                     </div>
 
-                    {mbiUnavailable && (
-
-                        <div className="selection-status is-error">
-                            <span className="status-dot"></span>
-                            <span>{mbiUnavailable}</span>
-                        </div>
-
-                    )}
-
-                    {mbiError && (
-
-                        <div className="inspect-error">
-                            {mbiError}
-                        </div>
-
-                    )}
-
-                </div>
+                )}
 
             </section>
 
@@ -1154,18 +2042,27 @@ function Inspect() {
             <section className="text-input-box">
 
                 <div className="text-input-heading">
+
                     Mzansi Explorer • Type Anything
+
                 </div>
 
                 {/* Text entered by the user */}
 
                 <textarea
+
                     className="text-input-area"
+
                     value={inputText}
+
                     onChange={(event) =>
+
                         setInputText(event.target.value)
+
                     }
+
                     placeholder="Type or paste your text here..."
+
                 />
 
                 {/*Tokenization result */}
@@ -1175,6 +2072,7 @@ function Inspect() {
                     <div className="typed-result-text">
 
                         {renderTokens(typedTokenizedText) ||
+
                             "Your tokenized text will appear here."}
 
                     </div>
@@ -1188,11 +2086,15 @@ function Inspect() {
                         <div className="typed-metric-card">
 
                             <span className="typed-metric-name">
+
                                 Tokens
+
                             </span>
 
                             <span className="typed-metric-value">
+
                                 {textMetrics.tokens}
+
                             </span>
 
                         </div>
@@ -1202,13 +2104,17 @@ function Inspect() {
                         <div className="typed-metric-card">
 
                             <span className="typed-metric-name">
+
                                 Fertility
+
                             </span>
 
                             <span className="typed-metric-value">
 
                                 {Number(
+
                                     textMetrics.fertility
+
                                 ).toFixed(2)}
 
                             </span>
@@ -1220,13 +2126,17 @@ function Inspect() {
                         <div className="typed-metric-card">
 
                             <span className="typed-metric-name">
+
                                 Compression
+
                             </span>
 
                             <span className="typed-metric-value">
 
                                 {Number(
+
                                     textMetrics.compression
+
                                 ).toFixed(2)}
 
                             </span>
@@ -1238,7 +2148,9 @@ function Inspect() {
                         <div className="typed-metric-card">
 
                             <span className="typed-metric-name">
+
                                 Token Premium
+
                             </span>
 
                             <span className="typed-metric-value">
@@ -1248,7 +2160,9 @@ function Inspect() {
                                     ? "N/A"
 
                                     : Number(
+
                                         textMetrics.token_premium
+
                                     ).toFixed(2)
 
                                 }
