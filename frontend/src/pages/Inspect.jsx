@@ -303,60 +303,37 @@ function Inspect() {
 
                     });
 
-                    try {
-
-                        const defaultMbiResult = await getMBI(
-
-                            defaultTokenizer,
-
-                            defaultLanguage
-
-                        );
-
-                        setLanguageData((previousData) => ({
-
-                            ...previousData,
-
-                            [defaultLanguage]: {
-
-                                ...previousData[defaultLanguage],
-
-                                mbi: {
-
-                                    precision:
-                                        defaultMbiResult.metrics.precision ?? 0,
-
-                                    recall:
-                                        defaultMbiResult.metrics.recall ?? 0,
-
-                                    f1:
-                                        defaultMbiResult.metrics.f1 ?? 0
-
+                    if (hasMbiMetrics(defaultLanguage)) {
+                        try {
+                            const defaultMbiResult = await getMBI(
+                                defaultTokenizer,
+                                defaultLanguage
+                            );
+                            setLanguageData((previousData) => ({
+                                ...previousData,
+                                [defaultLanguage]: {
+                                    ...previousData[defaultLanguage],
+                                    mbi: {
+                                        precision:
+                                            defaultMbiResult.metrics.precision ?? 0,
+                                        recall:
+                                            defaultMbiResult.metrics.recall ?? 0,
+                                        f1:
+                                            defaultMbiResult.metrics.f1 ?? 0
+                                    }
                                 }
-
-                            }
-
-                        }));
-
-                    }
-
-                    catch (err) {
-
-                        setLanguageData((previousData) => ({
-
-                            ...previousData,
-
-                            [defaultLanguage]: {
-
-                                ...previousData[defaultLanguage],
-
-                                mbi: null
-
-                            }
-
-                        }));
-
-                    }
+                            }));
+                        }
+                        catch (err) {
+                            setLanguageData((previousData) => ({
+                                ...previousData,
+                                [defaultLanguage]: {
+                                    ...previousData[defaultLanguage],
+                                    mbi: null
+                                }
+                            }));
+                        }
+                    }                    
 
                     await loadMbiMetrics(
 
@@ -409,90 +386,71 @@ function Inspect() {
     }, [
 
         inspectInitialised,
-
         setLanguage,
-
         setTokenizer,
-
         setCorpusTokenizedText,
-
         setCorpusMetrics,
-
         setInspectInitialised
 
     ]);
 
+    function hasMbiMetrics(selectedLanguage) {
+        return selectedLanguage !== "English";
+    }
+
     async function loadMbiMetrics(
-
         selectedLanguage = language,
-
         selectedTokenizer = tokenizer
-
     ) {
-
-        try {
-
-            setMbiLoading(true);
+        if (!hasMbiMetrics(selectedLanguage)) {
+            setMbiMetrics({
+                precision: 0,
+                recall: 0,
+                f1: 0
+            });
 
             setMbiError("");
+            setMbiUnavailable("");
 
+            return;
+        }
+
+        try {
+            setMbiLoading(true);
+            setMbiError("");
             setMbiUnavailable("");
 
             const result = await getMBI(
-
                 selectedTokenizer,
-
                 selectedLanguage
-
             );
 
             setMbiMetrics({
-
                 precision:
                     result.metrics.precision ?? 0,
-
                 recall:
                     result.metrics.recall ?? 0,
-
                 f1:
                     result.metrics.f1 ?? 0
-
             });
-
         } catch (err) {
-
             if (err.message?.includes("Unsupported language")) {
-
                 setMbiMetrics({
-
                     precision: 0,
-
                     recall: 0,
-
                     f1: 0
-
                 });
-
                 setMbiUnavailable(
-
                     `${selectedLanguage} does not have MBI metrics.`
-
                 );
-
                 return;
-
             }
 
             setMbiError(err.message);
-
             throw err;
-
         } finally {
-
             setMbiLoading(false);
-
         }
-
     }
 
     //The second useEffect
@@ -504,19 +462,12 @@ function Inspect() {
             setTypedTokenizedText([]);
 
             setTextMetrics({
-
                 tokens: 0,
-
                 fertility: 0,
-
                 compression: 0,
-
-                token_premium: 0
-
             });
 
             return;
-
         }
 
         const timeoutId = setTimeout(
@@ -526,15 +477,12 @@ function Inspect() {
                 try {
 
                     setLoading(true);
-
                     setError("");
 
                     const sentences = inputText
 
                         .split(/(?<=[.!?])/)
-
                         .map((sentence) => sentence.trim())
-
                         .filter((sentence) => sentence.length > 0);
 
                     const tokenizedSentences = [];
@@ -544,11 +492,8 @@ function Inspect() {
                         const sentenceResult = await tokenizeText(
 
                             sentence,
-
                             language,
-
                             tokenizer
-
                         );
 
                         tokenizedSentences.push(
@@ -566,11 +511,8 @@ function Inspect() {
                     const result = await tokenizeText(
 
                         inputText,
-
                         language,
-
                         tokenizer
-
                     );
 
                     setTextMetrics({
@@ -584,28 +526,19 @@ function Inspect() {
                         compression:
                             result.metrics.compression ?? 0,
 
-                        token_premium: 0
-
                     });
-
                 }
 
                 catch (err) {
-
                     setError(err.message);
-
                 }
 
                 finally {
-
                     setLoading(false);
-
                 }
-
             },
 
             400
-
         );
 
         return () => clearTimeout(timeoutId);
@@ -613,15 +546,10 @@ function Inspect() {
     }, [
 
         inputText,
-
         language,
-
         tokenizer,
-
         setTypedTokenizedText,
-
         setTextMetrics
-
     ]);
 
     /* Loads default Corpus */
@@ -629,7 +557,6 @@ function Inspect() {
     async function loadDefaultCorpus(
 
         selectedLanguage = language,
-
         selectedTokenizer = tokenizer
 
     ){
@@ -637,25 +564,18 @@ function Inspect() {
         try {
 
             setLoading(true);
-
             setError("");
 
             const result = await getDefaultCorpus(
-
                 selectedLanguage,
-
                 selectedTokenizer
-
             );
 
             setCorpusTokenizedText(
 
                 formatTokenizedText(
-
                     result.tokenized_text
-
                 )
-
             );
 
             setCorpusMetrics({
@@ -675,39 +595,27 @@ function Inspect() {
             });
 
             await loadMbiMetrics(
-
                 selectedLanguage,
-
                 selectedTokenizer
-
             );
 
         }
 
         catch (err) {
-
             setError(err.message);
-
             throw err;
-
         }
 
         finally {
-
             setLoading(false);
-
         }
-
     }
 
     //Connects the upload button to the backend
-
     async function processUploadedCorpus(
 
         file,
-
         selectedLanguage,
-
         selectedTokenizer
 
     ) {
@@ -715,17 +623,12 @@ function Inspect() {
         try {
 
             setLoading(true);
-
             setError("");
 
             const result = await uploadCorpus(
-
                 file,
-
                 selectedLanguage,
-
                 selectedTokenizer
-
             );
 
             setSource("upload")
@@ -737,11 +640,8 @@ function Inspect() {
             setCorpusTokenizedText(
 
                 formatTokenizedText(
-
                     result.tokenized_text
-
                 )
-
             );
 
             setCorpusMetrics({
@@ -762,17 +662,12 @@ function Inspect() {
         }
 
         catch (err) {
-
             setError(err.message);
-
             throw err;
-
         }
 
         finally {
-
             setLoading(false);
-
         }
 
     }
@@ -780,9 +675,7 @@ function Inspect() {
     async function handleLanguageChange(newLanguage) {
 
         if (selectionLoading) {
-
             return;
-
         }
 
         setSelectionLoading(true);
@@ -798,48 +691,34 @@ function Inspect() {
             if (source === "default") {
 
                 result = await getDefaultCorpus(
-
                     newLanguage,
-
                     tokenizer
-
                 );
-
             }
 
             else if (selectedFile) {
 
                 result = await uploadCorpus(
-
                     selectedFile,
-
                     newLanguage,
-
                     tokenizer
-
                 );
 
             }
 
             let mbiResult = null;
 
-            try {
-
-                mbiResult = await getMBI(
-
-                    tokenizer,
-
-                    newLanguage
-
-                );
-
-            }
-
-            catch (err) {
-
-                mbiResult = null;
-
-            }
+            if (hasMbiMetrics(newLanguage)) {
+                try {
+                    mbiResult = await getMBI(
+                        tokenizer,
+                        newLanguage
+                    );
+                }
+                catch (err) {
+                    mbiResult = null;
+                }
+            } 
 
             setLanguageData((previousData) => ({
 
@@ -915,9 +794,7 @@ function Inspect() {
     async function toggleLanguage(selectedLanguage) {
 
         if (selectionLoading) {
-
             return;
-
         }
 
         if (selectedLanguages.includes(selectedLanguage)) {
@@ -1789,26 +1666,24 @@ function Inspect() {
 
                 </div>
 
-                <div className="language-tokenization-grid">
-
+                <div
+                    className={
+                        selectedLanguages.length > 1
+                            ? "language-tokenization-grid"
+                            : "language-tokenization-single"
+                    }
+                >
                     {selectedLanguages.map((selectedLanguage) => {
 
                         const data = languageData[selectedLanguage];
-
                         if (!data) {
-
                             return null;
-
                         }
 
                         return (
-
                             <div
-
                                 key={selectedLanguage}
-
                                 className="language-tokenization-block"
-
                             >
 
                                 {/* Tokenization Result */}
@@ -1926,91 +1801,55 @@ function Inspect() {
                                     </div>
 
                                     {/* Row 2 - Placeholder metrics */}
+                                    {hasMbiMetrics(selectedLanguage) && (
+                                        <div className="metric-row metric-row-centered">
+                                            <div className="metric-card">
+                                                <span className="metric-name">
+                                                    Precision
+                                                </span>
 
-                                    <div className="metric-row metric-row-centered">
+                                                <span className="metric-value">
+                                                    {data.mbi === null
+                                                        ? "N/A"
+                                                        : Number(
+                                                            data.mbi.precision
+                                                        ).toFixed(2)}
+                                                </span>
+                                            </div>
 
-                                        <div className="metric-card">
+                                            <div className="metric-card">
+                                                <span className="metric-name">
+                                                    F1
+                                                </span>
 
-                                            <span className="metric-name">
+                                                <span className="metric-value">
+                                                    {data.mbi === null
+                                                        ? "N/A"
+                                                        : Number(
+                                                            data.mbi.f1
+                                                        ).toFixed(2)}
+                                                </span>
+                                            </div>
 
-                                                Precision
+                                            <div className="metric-card">
+                                                <span className="metric-name">
+                                                    Recall
+                                                </span>
 
-                                            </span>
-
-                                            <span className="metric-value">
-
-                                                {data.mbi === null
-
-                                                    ? "N/A"
-
-                                                    : Number(
-
-                                                        data.mbi.precision
-
-                                                    ).toFixed(2)}
-
-                                            </span>
-
+                                                <span className="metric-value">
+                                                    {data.mbi === null
+                                                        ? "N/A"
+                                                        : Number(
+                                                            data.mbi.recall
+                                                        ).toFixed(2)}
+                                                </span>
+                                            </div>
                                         </div>
-
-                                        <div className="metric-card">
-
-                                            <span className="metric-name">
-
-                                                F1
-
-                                            </span>
-
-                                            <span className="metric-value">
-
-                                                {data.mbi === null
-
-                                                    ? "N/A"
-
-                                                    : Number(
-
-                                                        data.mbi.f1
-
-                                                    ).toFixed(2)}
-
-                                            </span>
-
-                                        </div>
-
-                                        <div className="metric-card">
-
-                                            <span className="metric-name">
-
-                                                Recall
-
-                                            </span>
-
-                                            <span className="metric-value">
-
-                                                {data.mbi === null
-
-                                                    ? "N/A"
-
-                                                    : Number(
-
-                                                        data.mbi.recall
-
-                                                    ).toFixed(2)}
-
-                                            </span>
-
-                                        </div>
-
-                                    </div>
-
+                                    )}
                                 </div>
-
                             </div>
-
                         );
-
                     })}
-
                 </div>
 
                 {mbiUnavailable && (
@@ -2086,15 +1925,11 @@ function Inspect() {
                         <div className="typed-metric-card">
 
                             <span className="typed-metric-name">
-
                                 Tokens
-
                             </span>
 
                             <span className="typed-metric-value">
-
                                 {textMetrics.tokens}
-
                             </span>
 
                         </div>
@@ -2104,19 +1939,13 @@ function Inspect() {
                         <div className="typed-metric-card">
 
                             <span className="typed-metric-name">
-
                                 Fertility
-
                             </span>
 
                             <span className="typed-metric-value">
-
                                 {Number(
-
                                     textMetrics.fertility
-
                                 ).toFixed(2)}
-
                             </span>
 
                         </div>
@@ -2126,47 +1955,13 @@ function Inspect() {
                         <div className="typed-metric-card">
 
                             <span className="typed-metric-name">
-
                                 Compression
-
                             </span>
 
                             <span className="typed-metric-value">
-
                                 {Number(
-
                                     textMetrics.compression
-
                                 ).toFixed(2)}
-
-                            </span>
-
-                        </div>
-
-                        {/* Token premium */}
-
-                        <div className="typed-metric-card">
-
-                            <span className="typed-metric-name">
-
-                                Token Premium
-
-                            </span>
-
-                            <span className="typed-metric-value">
-
-                                {textMetrics.token_premium === null
-
-                                    ? "N/A"
-
-                                    : Number(
-
-                                        textMetrics.token_premium
-
-                                    ).toFixed(2)
-
-                                }
-
                             </span>
 
                         </div>

@@ -195,7 +195,7 @@
 /* Main box */
 .inspect-controls {
     width: calc(100% - 40px);
-    max-width: 1000px;
+    max-width: 1250px;
 
     margin: 0 auto 80px;
     padding: 36px;
@@ -488,7 +488,7 @@
 /* Main corpus box */
 .corpus-box {
     width: calc(100% - 40px);
-    max-width: 1000px;
+    max-width: 1250px;
 
     margin: 0 auto 80px;
     padding: 32px 36px;
@@ -762,7 +762,7 @@
 
 .text-input-box {
     width: calc(100% - 40px);
-    max-width: 1000px;
+    max-width: 1250px;
 
     margin: 0 auto 80px;
     padding: 32px 36px;
@@ -1110,6 +1110,16 @@
     grid-template-columns: 1fr 1fr;
 
     gap: 28px;
+
+    margin-top: 28px;
+
+}
+
+.language-tokenization-single {
+
+    grid-column: 1 / -1;
+
+    display: block;
 
     margin-top: 28px;
 
