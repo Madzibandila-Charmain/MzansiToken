@@ -1,27 +1,19 @@
+
 /*
     Inspect Page
-
     Author: Madzibandila Charmain
-
     Date: 21 August 2026
 */
 
 import { useEffect, useRef, useState } from "react";
 
 import {
-
     getOptions,
-
     getDefaultCorpus,
-
     uploadCorpus,
-
     tokenizeText,
-
     getMBI,
-
     getTokenizerInfo
-
 } from "../api/client";
 
 import { useAppState } from "../context/AppStateContext";
@@ -29,125 +21,75 @@ import { useAppState } from "../context/AppStateContext";
 function Inspect() {
 
     /* Shared application state. These values are stored in AppStateContext so they remain unchanged when the user moves between different pages. */
-
     const {
-
         language,
-
         setLanguage,
-
         tokenizer,
-
         setTokenizer,
-
         source,
-
         setSource,
-
         selectedFile,
-
         setSelectedFile,
-
         fileName,
-
         setFileName,
-
         corpusTokenizedText,
-
         setCorpusTokenizedText,
-
         corpusMetrics,
-
         setCorpusMetrics,
-
         typedTokenizedText,
-
         setTypedTokenizedText,
-
         textMetrics,
-
         setTextMetrics,
-
         inspectInitialised,
-
         setInspectInitialised
-
     } = useAppState();
-
-    /*
-        Type Anything text belongs only to Inspect.
-        It is intentionally not stored in AppStateContext
-        so Compare has its own independent text box.
-    */
 
     const [inputText, setInputText] = useState("");
 
     /* Languages provided by the backend. */
-
     const [languages, setLanguages] = useState([]);
 
     const [selectedLanguages, setSelectedLanguages] = useState(() => {
-
         const savedLanguages =
             localStorage.getItem("inspectSelectedLanguages");
 
         if (savedLanguages) {
-
             try {
-
                 return JSON.parse(savedLanguages);
-
             }
-
             catch (err) {
-
                 return [];
-
             }
-
         }
 
         return [];
-
     });
 
     const [languageData, setLanguageData] = useState(() => {
-
         const savedLanguageData =
             localStorage.getItem("inspectLanguageData");
 
         if (savedLanguageData) {
-
             try {
-
                 return JSON.parse(savedLanguageData);
-
             }
-
             catch (err) {
-
                 return {};
-
             }
-
         }
 
         return {};
-
     });
 
     /* Tokenizers provided by the backend. */
-
     const [tokenizers, setTokenizers] = useState([]);
 
     const [tokenizerInput, setTokenizerInput] = useState("");
 
     /* Language menu */
-
     const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
 
     /* Displays whether the frontend is currently waiting for a backend response. */
-
     const [loading, setLoading] = useState(false);
 
     const [mbiLoading, setMbiLoading] = useState(false);
@@ -159,7 +101,6 @@ function Inspect() {
     const [languageStatus, setLanguageStatus] = useState("");
 
     /* Stores an error returned by the backend. */
-
     const [error, setError] = useState("");
 
     const [mbiError, setMbiError] = useState("");
@@ -167,51 +108,39 @@ function Inspect() {
     const [mbiUnavailable, setMbiUnavailable] = useState("");
 
     const [mbiMetrics, setMbiMetrics] = useState({
-
         precision: 0,
-
         recall: 0,
-
         f1: 0
-
     });
 
     /* Reference to the actual file input. */
-
     const fileInputRef = useRef(null);
 
     /*
         Save selected languages so they remain unchanged
         when the user moves between different pages.
     */
-
     useEffect(() => {
-
         localStorage.setItem(
             "inspectSelectedLanguages",
             JSON.stringify(selectedLanguages)
         );
-
     }, [selectedLanguages]);
 
     /*
         Save language results so they remain unchanged
         when the user moves between different pages.
     */
-
     useEffect(() => {
-
         localStorage.setItem(
             "inspectLanguageData",
             JSON.stringify(languageData)
         );
-
     }, [languageData]);
 
     /* Load languages and tokenizers from the FastAPI
        backend when the page loads.
     */
-
     useEffect(() => {
 
         async function initialiseInspect() {
@@ -219,13 +148,11 @@ function Inspect() {
             try {
 
                 setLoading(true);
-
                 setError("");
 
                 const result = await getOptions();
 
                 setLanguages(result.languages);
-
                 setTokenizers(result.tokenizers);
 
                 if (!inspectInitialised) {
@@ -240,9 +167,19 @@ function Inspect() {
 
                     setTokenizer(defaultTokenizer);
 
-                    setSelectedLanguages([defaultLanguage]);
+                    setSource("default");
 
-                    setTokenizerInput(defaultTokenizer);
+                    setFileName("default");
+
+                    setSelectedFile(null);
+
+                    setSelectedLanguages([
+                        defaultLanguage
+                    ]);
+
+                    setTokenizerInput(
+                        defaultTokenizer
+                    );
 
                     const defaultResult =
                         await getDefaultCorpus(
@@ -250,14 +187,12 @@ function Inspect() {
                             defaultTokenizer
                         );
 
-                    setCorpusTokenizedText(
+                    const formattedDefaultTokens =
                         formatTokenizedText(
                             defaultResult.tokenized_text
-                        )
-                    );
+                        );
 
-                    setCorpusMetrics({
-
+                    const defaultMetrics = {
                         tokens:
                             defaultResult.metrics.token_count ?? 0,
 
@@ -269,114 +204,126 @@ function Inspect() {
 
                         token_premium:
                             defaultResult.metrics.token_premium ?? null
+                    };
 
-                    });
+                    setCorpusTokenizedText(
+                        formattedDefaultTokens
+                    );
+
+                    setCorpusMetrics(
+                        defaultMetrics
+                    );
 
                     setLanguageData({
-
                         [defaultLanguage]: {
-
                             tokenizedText:
-                                formatTokenizedText(
-                                    defaultResult.tokenized_text
-                                ),
+                                formattedDefaultTokens,
 
-                            metrics: {
-
-                                tokens:
-                                    defaultResult.metrics.token_count ?? 0,
-
-                                fertility:
-                                    defaultResult.metrics.fertility ?? 0,
-
-                                compression:
-                                    defaultResult.metrics.compression ?? 0,
-
-                                token_premium:
-                                    defaultResult.metrics.token_premium ?? null
-
-                            },
+                            metrics:
+                                defaultMetrics,
 
                             mbi: null
-
                         }
-
                     });
 
-                    if (hasMbiMetrics(defaultLanguage)) {
+                    if (
+                        hasMbiMetrics(
+                            defaultLanguage
+                        )
+                    ) {
+
                         try {
-                            const defaultMbiResult = await getMBI(
-                                defaultTokenizer,
-                                defaultLanguage
-                            );
-                            setLanguageData((previousData) => ({
-                                ...previousData,
-                                [defaultLanguage]: {
-                                    ...previousData[defaultLanguage],
-                                    mbi: {
-                                        precision:
-                                            defaultMbiResult.metrics.precision ?? 0,
-                                        recall:
-                                            defaultMbiResult.metrics.recall ?? 0,
-                                        f1:
-                                            defaultMbiResult.metrics.f1 ?? 0
+
+                            const defaultMbiResult =
+                                await getMBI(
+                                    defaultTokenizer,
+                                    defaultLanguage
+                                );
+
+                            setLanguageData(
+                                (previousData) => ({
+                                    ...previousData,
+
+                                    [defaultLanguage]: {
+                                        ...previousData[
+                                            defaultLanguage
+                                        ],
+
+                                        mbi: {
+                                            precision:
+                                                defaultMbiResult
+                                                    .metrics
+                                                    .precision ?? 0,
+
+                                            recall:
+                                                defaultMbiResult
+                                                    .metrics
+                                                    .recall ?? 0,
+
+                                            f1:
+                                                defaultMbiResult
+                                                    .metrics
+                                                    .f1 ?? 0
+                                        }
                                     }
-                                }
-                            }));
+                                })
+                            );
+
                         }
                         catch (err) {
-                            setLanguageData((previousData) => ({
-                                ...previousData,
-                                [defaultLanguage]: {
-                                    ...previousData[defaultLanguage],
-                                    mbi: null
-                                }
-                            }));
+
+                            setLanguageData(
+                                (previousData) => ({
+                                    ...previousData,
+
+                                    [defaultLanguage]: {
+                                        ...previousData[
+                                            defaultLanguage
+                                        ],
+
+                                        mbi: null
+                                    }
+                                })
+                            );
                         }
-                    }                    
+                    }
 
                     await loadMbiMetrics(
-
                         defaultLanguage,
-
                         defaultTokenizer
-
                     );
 
                     setInspectInitialised(true);
 
                 }
-
                 else {
 
                     if (
-
+                        source === "default" &&
                         selectedLanguages.length === 0 &&
-
                         language
-
                     ) {
 
-                        setSelectedLanguages([language]);
+                        setSelectedLanguages([
+                            language
+                        ]);
 
                     }
 
-                    setTokenizerInput(tokenizer);
-
+                    setTokenizerInput(
+                        tokenizer
+                    );
                 }
-
             }
-
             catch (err) {
 
-                setError(err.message);
+                setError(
+                    err.message
+                );
 
             }
-
             finally {
-
                 setLoading(false);
-
             }
 
         }
@@ -384,14 +331,15 @@ function Inspect() {
         initialiseInspect();
 
     }, [
-
         inspectInitialised,
         setLanguage,
         setTokenizer,
+        setSource,
+        setFileName,
+        setSelectedFile,
         setCorpusTokenizedText,
         setCorpusMetrics,
         setInspectInitialised
-
     ]);
 
     function hasMbiMetrics(selectedLanguage) {
@@ -402,7 +350,13 @@ function Inspect() {
         selectedLanguage = language,
         selectedTokenizer = tokenizer
     ) {
-        if (!hasMbiMetrics(selectedLanguage)) {
+
+        if (
+            !hasMbiMetrics(
+                selectedLanguage
+            )
+        ) {
+
             setMbiMetrics({
                 precision: 0,
                 recall: 0,
@@ -410,14 +364,18 @@ function Inspect() {
             });
 
             setMbiError("");
+
             setMbiUnavailable("");
 
             return;
         }
 
         try {
+
             setMbiLoading(true);
+
             setMbiError("");
+
             setMbiUnavailable("");
 
             const result = await getMBI(
@@ -428,36 +386,59 @@ function Inspect() {
             setMbiMetrics({
                 precision:
                     result.metrics.precision ?? 0,
+
                 recall:
                     result.metrics.recall ?? 0,
+
                 f1:
                     result.metrics.f1 ?? 0
             });
-        } catch (err) {
-            if (err.message?.includes("Unsupported language")) {
+
+        }
+        catch (err) {
+
+            if (
+                err.message?.includes(
+                    "Unsupported language"
+                )
+            ) {
+
                 setMbiMetrics({
                     precision: 0,
                     recall: 0,
                     f1: 0
                 });
+
                 setMbiUnavailable(
                     `${selectedLanguage} does not have MBI metrics.`
                 );
+
                 return;
+
             }
 
-            setMbiError(err.message);
+            setMbiError(
+                err.message
+            );
+
             throw err;
-        } finally {
-            setMbiLoading(false);
+
         }
+        finally {
+
+            setMbiLoading(false);
+
+        }
+
     }
 
     //The second useEffect
-
     useEffect(() => {
 
-        if (!inputText.trim() || !tokenizer) {
+        if (
+            !inputText.trim() ||
+            !tokenizer
+        ) {
 
             setTypedTokenizedText([]);
 
@@ -468,55 +449,62 @@ function Inspect() {
             });
 
             return;
+
         }
 
         const timeoutId = setTimeout(
-
             async () => {
 
                 try {
 
                     setLoading(true);
+
                     setError("");
 
                     const sentences = inputText
-
                         .split(/(?<=[.!?])/)
-                        .map((sentence) => sentence.trim())
-                        .filter((sentence) => sentence.length > 0);
+                        .map((sentence) =>
+                            sentence.trim()
+                        )
+                        .filter(
+                            (sentence) =>
+                                sentence.length > 0
+                        );
 
                     const tokenizedSentences = [];
 
-                    for (const sentence of sentences) {
+                    for (
+                        const sentence
+                        of sentences
+                    ) {
 
-                        const sentenceResult = await tokenizeText(
-
-                            sentence,
-                            language,
-                            tokenizer
-                        );
+                        const sentenceResult =
+                            await tokenizeText(
+                                sentence,
+                                language,
+                                tokenizer
+                            );
 
                         tokenizedSentences.push(
-
                             formatTokenizedText(
                                 sentenceResult.tokenized_text
                             )
-
                         );
 
                     }
 
-                    setTypedTokenizedText(tokenizedSentences);
-
-                    const result = await tokenizeText(
-
-                        inputText,
-                        language,
-                        tokenizer
+                    setTypedTokenizedText(
+                        tokenizedSentences
                     );
 
-                    setTextMetrics({
+                    const result =
+                        await tokenizeText(
+                            inputText,
+                            language,
+                            tokenizer
+                        );
 
+                    setTextMetrics({
                         tokens:
                             result.metrics.token_count ?? 0,
 
@@ -525,26 +513,30 @@ function Inspect() {
 
                         compression:
                             result.metrics.compression ?? 0,
-
                     });
-                }
 
+                }
                 catch (err) {
-                    setError(err.message);
-                }
 
+                    setError(
+                        err.message
+                    );
+
+                }
                 finally {
-                    setLoading(false);
-                }
-            },
 
+                    setLoading(false);
+
+                }
+
+            },
             400
         );
 
-        return () => clearTimeout(timeoutId);
+        return () =>
+            clearTimeout(timeoutId);
 
     }, [
-
         inputText,
         language,
         tokenizer,
@@ -553,33 +545,30 @@ function Inspect() {
     ]);
 
     /* Loads default Corpus */
-
     async function loadDefaultCorpus(
-
         selectedLanguage = language,
         selectedTokenizer = tokenizer
-
     ){
 
         try {
 
             setLoading(true);
+
             setError("");
 
-            const result = await getDefaultCorpus(
-                selectedLanguage,
-                selectedTokenizer
-            );
+            const result =
+                await getDefaultCorpus(
+                    selectedLanguage,
+                    selectedTokenizer
+                );
 
             setCorpusTokenizedText(
-
                 formatTokenizedText(
                     result.tokenized_text
                 )
             );
 
             setCorpusMetrics({
-
                 tokens:
                     result.metrics.token_count ?? 0,
 
@@ -591,7 +580,6 @@ function Inspect() {
 
                 token_premium:
                     result.metrics.token_premium
-
             });
 
             await loadMbiMetrics(
@@ -600,128 +588,209 @@ function Inspect() {
             );
 
         }
-
         catch (err) {
-            setError(err.message);
+
+            setError(
+                err.message
+            );
+
             throw err;
+
+        }
+        finally {
+
+            setLoading(false);
+
         }
 
-        finally {
-            setLoading(false);
-        }
     }
-    
+
     async function handleLanguageChange(newLanguage) {
 
         if (selectionLoading) {
             return;
         }
 
+        /*
+            Language selection is only available when
+
+            the default corpus is active.
+        */
+
+        if (source !== "default") {
+            return;
+        }
+
         setSelectionLoading(true);
 
-        setLanguageStatus(`Loading ${newLanguage}`);
+        setLanguageStatus(
+            `Loading ${newLanguage}`
+        );
 
         setError("");
 
         try {
 
-            let result;
-
-            if (source === "default") {
-
-                result = await getDefaultCorpus(
+            const result =
+                await getDefaultCorpus(
                     newLanguage,
                     tokenizer
                 );
-            }
-
-            else if (selectedFile) {
-
-                result = await uploadCorpus(
-                    selectedFile,
-                    newLanguage,
-                    tokenizer
-                );
-
-            }
 
             let mbiResult = null;
 
-            if (hasMbiMetrics(newLanguage)) {
+            if (
+                hasMbiMetrics(
+                    newLanguage
+                )
+            ) {
+
                 try {
-                    mbiResult = await getMBI(
-                        tokenizer,
-                        newLanguage
-                    );
+
+                    mbiResult =
+                        await getMBI(
+                            tokenizer,
+                            newLanguage
+                        );
+
                 }
                 catch (err) {
+
                     mbiResult = null;
-                }
-            } 
-
-            setLanguageData((previousData) => ({
-
-                ...previousData,
-
-                [newLanguage]: {
-
-                    tokenizedText: formatTokenizedText(
-
-                        result.tokenized_text
-
-                    ),
-
-                    metrics: {
-
-                        tokens:
-                            result.metrics.token_count ?? 0,
-
-                        fertility:
-                            result.metrics.fertility ?? 0,
-
-                        compression:
-                            result.metrics.compression ?? 0,
-
-                        token_premium:
-                            result.metrics.token_premium ?? null
-
-                    },
-
-                    mbi: mbiResult
-
-                        ? {
-
-                            precision:
-                                mbiResult.metrics.precision ?? 0,
-
-                            recall:
-                                mbiResult.metrics.recall ?? 0,
-
-                            f1:
-                                mbiResult.metrics.f1 ?? 0
-
-                        }
-
-                        : null
 
                 }
 
-            }));
+            }
+
+            const formattedTokens =
+                formatTokenizedText(
+                    result.tokenized_text
+                );
+
+            const newMetrics = {
+                tokens:
+                    result.metrics.token_count ?? 0,
+
+                fertility:
+                    result.metrics.fertility ?? 0,
+
+                compression:
+                    result.metrics.compression ?? 0,
+
+                token_premium:
+                    result.metrics.token_premium ?? null
+            };
+
+            const newMbi =
+                mbiResult
+                    ? {
+                        precision:
+                            mbiResult.metrics.precision ?? 0,
+
+                        recall:
+                            mbiResult.metrics.recall ?? 0,
+
+                        f1:
+                            mbiResult.metrics.f1 ?? 0
+                    }
+                    : null;
+
+            setLanguageData(
+                (previousData) => ({
+                    ...previousData,
+
+                    [newLanguage]: {
+                        tokenizedText:
+                            formattedTokens,
+
+                        metrics:
+                            newMetrics,
+
+                        mbi:
+                            newMbi
+                    }
+                })
+            );
 
             setLanguage(newLanguage);
 
-            setLanguageStatus("Language ready.");
+            /*
+                Update the main corpus display.
+            */
+
+            setCorpusTokenizedText(
+                formattedTokens
+            );
+
+            setCorpusMetrics(
+                newMetrics
+            );
+
+            /*
+                Update MBI display.
+            */
+
+            if (mbiResult) {
+
+                setMbiMetrics({
+                    precision:
+                        mbiResult.metrics.precision ?? 0,
+
+                    recall:
+                        mbiResult.metrics.recall ?? 0,
+
+                    f1:
+                        mbiResult.metrics.f1 ?? 0
+                });
+
+                setMbiError("");
+
+                setMbiUnavailable("");
+
+            }
+            else {
+
+                setMbiMetrics({
+                    precision: 0,
+                    recall: 0,
+                    f1: 0
+                });
+
+                if (
+                    hasMbiMetrics(
+                        newLanguage
+                    )
+                ) {
+
+                    setMbiUnavailable(
+                        `${newLanguage} does not have MBI metrics.`
+                    );
+
+                }
+                else {
+
+                    setMbiUnavailable("");
+
+                }
+
+            }
+
+            setLanguageStatus(
+                "Language ready."
+            );
 
         }
-
         catch (err) {
 
-            setError(err.message);
+            setError(
+                err.message
+            );
 
-            setLanguageStatus("Could not load language corpus.");
+            setLanguageStatus(
+                "Could not load language corpus."
+            );
 
         }
-
         finally {
 
             setSelectionLoading(false);
@@ -736,53 +805,106 @@ function Inspect() {
             return;
         }
 
-        if (selectedLanguages.includes(selectedLanguage)) {
+        /*
+            Languages can only be selected when the
+
+            default corpus is active.
+        */
+
+        if (source !== "default") {
+            return;
+        }
+
+        if (
+            selectedLanguages.includes(
+                selectedLanguage
+            )
+        ) {
 
             // Deselect language
 
-            setSelectedLanguages((previousLanguages) =>
+            const remainingLanguages =
+                selectedLanguages.filter(
+                    (item) =>
+                        item !== selectedLanguage
+                );
 
-                previousLanguages.filter(
-
-                    (item) => item !== selectedLanguage
-
-                )
-
+            setSelectedLanguages(
+                remainingLanguages
             );
 
             // Remove its stored results
 
-            setLanguageData((previousData) => {
+            setLanguageData(
+                (previousData) => {
 
-                const updatedData = {
+                    const updatedData = {
+                        ...previousData
+                    };
 
-                    ...previousData
+                    delete updatedData[
+                        selectedLanguage
+                    ];
 
-                };
+                    return updatedData;
 
-                delete updatedData[selectedLanguage];
-
-                return updatedData;
-
-            });
+                }
+            );
 
             // If the removed language was active,
 
             // make another selected language active.
 
-            if (language === selectedLanguage) {
+            if (
+                language === selectedLanguage
+            ) {
 
-                const remainingLanguages =
+                if (
+                    remainingLanguages.length > 0
+                ) {
 
-                    selectedLanguages.filter(
+                    const nextLanguage =
+                        remainingLanguages[0];
 
-                        (item) => item !== selectedLanguage
-
+                    setLanguage(
+                        nextLanguage
                     );
 
-                if (remainingLanguages.length > 0) {
+                    const remainingData =
+                        languageData[
+                            nextLanguage
+                        ];
 
-                    setLanguage(remainingLanguages[0]);
+                    if (remainingData) {
+
+                        setCorpusTokenizedText(
+                            remainingData.tokenizedText
+                        );
+
+                        setCorpusMetrics(
+                            remainingData.metrics
+                        );
+
+                        if (
+                            remainingData.mbi
+                        ) {
+
+                            setMbiMetrics(
+                                remainingData.mbi
+                            );
+
+                        }
+                        else {
+
+                            setMbiMetrics({
+                                precision: 0,
+                                recall: 0,
+                                f1: 0
+                            });
+
+                        }
+
+                    }
 
                 }
 
@@ -792,52 +914,62 @@ function Inspect() {
 
         }
 
-        let updatedLanguages = [...selectedLanguages];
+        let updatedLanguages =
+            [
+                ...selectedLanguages
+            ];
 
         // Maximum of 4 languages
 
-        if (updatedLanguages.length >= 4) {
+        if (
+            updatedLanguages.length >= 4
+        ) {
 
-            const removedLanguage = updatedLanguages.shift();
+            const removedLanguage =
+                updatedLanguages.shift();
 
-            setLanguageData((previousData) => {
+            setLanguageData(
+                (previousData) => {
 
-                const updatedData = {
+                    const updatedData = {
+                        ...previousData
+                    };
 
-                    ...previousData
+                    delete updatedData[
+                        removedLanguage
+                    ];
 
-                };
+                    return updatedData;
 
-                delete updatedData[removedLanguage];
-
-                return updatedData;
-
-            });
+                }
+            );
 
         }
 
-        updatedLanguages.push(selectedLanguage);
+        updatedLanguages.push(
+            selectedLanguage
+        );
 
-        setSelectedLanguages(updatedLanguages);
+        setSelectedLanguages(
+            updatedLanguages
+        );
 
-        await handleLanguageChange(selectedLanguage);
+        await handleLanguageChange(
+            selectedLanguage
+        );
 
     }
 
     function formatTokenizedText(tokenizedText) {
 
         if (!tokenizedText) {
-
             return [];
-
         }
 
         // Backend returned a list of tokens
 
         if (Array.isArray(tokenizedText)) {
-
             return tokenizedText;
-
         }
 
         // Backend returned text as a string
@@ -845,16 +977,16 @@ function Inspect() {
         if (typeof tokenizedText === "string") {
 
             return tokenizedText
-
                 .split(/\n+/)
-
                 .map((sentence) =>
-
-                    sentence.split(/\s+/).filter(Boolean)
-
+                    sentence
+                        .split(/\s+/)
+                        .filter(Boolean)
                 )
-
-                .filter((sentence) => sentence.length > 0);
+                .filter(
+                    (sentence) =>
+                        sentence.length > 0
+                );
 
         }
 
@@ -865,7 +997,8 @@ function Inspect() {
     /* Handled file slection from user computer. */
     async function handleFileChange(event) {
 
-        const file = event.target.files[0];
+        const file =
+            event.target.files[0];
 
         if (!file) {
             return;
@@ -874,30 +1007,44 @@ function Inspect() {
         /*
             Make sure the selected file is a text file.
         */
-        if (!file.name.toLowerCase().endsWith(".txt")) {
-            setError("Please select a .txt file.");
+
+        if (
+            !file.name
+                .toLowerCase()
+                .endsWith(".txt")
+        ) {
+
+            setError(
+                "Please select a .txt file."
+            );
+
             return;
+
         }
 
         try {
 
             setSelectionLoading(true);
+
             setLoading(true);
+
             setError("");
 
             /*
                 The uploaded file is processed using the
                 CURRENT language and CURRENT tokenizer.
             */
-            const result = await uploadCorpus(
-                file,
-                language,
-                tokenizer
-            );
+
+            const result =
+                await uploadCorpus(
+                    file,
+                    tokenizer
+                );
 
             /*
                 Format the tokenized text returned by FastAPI.
             */
+
             const formattedTokens =
                 formatTokenizedText(
                     result.tokenized_text
@@ -906,13 +1053,27 @@ function Inspect() {
             /*
                 Save the uploaded file information.
             */
+
             setSource("upload");
+
             setSelectedFile(file);
+
             setFileName(file.name);
+
+            /*
+                Uploaded corpora are not associated with any selected language.
+                Clear the selected languages and their
+                stored language-specific results.
+            */
+
+            setSelectedLanguages([]);
+
+            setLanguageData({});
 
             /*
                 Display the uploaded file's tokenized text.
             */
+
             setCorpusTokenizedText(
                 formattedTokens
             );
@@ -920,8 +1081,8 @@ function Inspect() {
             /*
                 Display the uploaded file's metrics.
             */
-            setCorpusMetrics({
 
+            setCorpusMetrics({
                 tokens:
                     result.metrics?.token_count ?? 0,
 
@@ -933,86 +1094,34 @@ function Inspect() {
 
                 token_premium:
                     result.metrics?.token_premium ?? null
-
             });
 
             /*
-                Store the result for the currently selected language.
+                Uploaded corpora do not have language-specific
+                MBI metrics.
             */
-            setLanguageData((previousData) => ({
 
-                ...previousData,
+            setMbiMetrics({
+                precision: 0,
+                recall: 0,
+                f1: 0
+            });
 
-                [language]: {
+            setMbiError("");
 
-                    tokenizedText:
-                        formattedTokens,
-
-                    metrics: {
-
-                        tokens:
-                            result.metrics?.token_count ?? 0,
-
-                        fertility:
-                            result.metrics?.fertility ?? 0,
-
-                        compression:
-                            result.metrics?.compression ?? 0,
-
-                        token_premium:
-                            result.metrics?.token_premium ?? null
-
-                    },
-
-                    mbi:
-                        previousData[language]?.mbi ?? null
-
-                }
-
-            }));
+            setMbiUnavailable("");
 
             /*
-                Load MBI metrics for the current language.
+                The tokenizer remains the active tokenizer.
             */
-            if (hasMbiMetrics(language)) {
 
-                try {
+            setTokenizer(
+                tokenizer
+            );
 
-                    await loadMbiMetrics(
-                        language,
-                        tokenizer
-                    );
-
-                }
-                catch (err) {
-
-                    /*
-                        MBI failure should not prevent the
-                        uploaded corpus from being displayed.
-                    */
-
-                    console.log(
-                        "MBI could not be loaded:",
-                        err.message
-                    );
-
-                }
-
-            }
-            else {
-
-                setMbiMetrics({
-
-                    precision: 0,
-                    recall: 0,
-                    f1: 0
-
-                });
-
-                setMbiError("");
-                setMbiUnavailable("");
-
-            }
+            setLanguageMenuOpen(
+                false
+            );
 
         }
         catch (err) {
@@ -1031,6 +1140,7 @@ function Inspect() {
         finally {
 
             setLoading(false);
+
             setSelectionLoading(false);
 
         }
@@ -1043,7 +1153,8 @@ function Inspect() {
             return;
         }
 
-        const newTokenizer = tokenizerInput.trim();
+        const newTokenizer =
+            tokenizerInput.trim();
 
         if (!newTokenizer) {
             return;
@@ -1054,7 +1165,11 @@ function Inspect() {
         }
 
         setSelectionLoading(true);
-        setTokenizerStatus("Loading tokenizer...");
+
+        setTokenizerStatus(
+            "Loading tokenizer..."
+        );
+
         setError("");
 
         try {
@@ -1063,202 +1178,66 @@ function Inspect() {
                 First check that the tokenizer entered by the user
                 is available in the backend.
             */
-            await getTokenizerInfo(newTokenizer);
+
+            await getTokenizerInfo(
+                newTokenizer
+            );
 
             /*
-                Use all currently selected languages.
-
-                If for some reason no languages are selected,
-                fall back to the active language.
+                UPLOAD MODE
             */
-            const languagesToProcess =
-                selectedLanguages.length > 0
-                    ? selectedLanguages
-                    : [language];
 
-            /*
-                Store the results for every selected language.
+            if (
+                source === "upload" &&
+                selectedFile
+            ) {
 
-                Each language is sent to the backend together with
-                the NEW tokenizer.
-            */
-            const updatedLanguageData = {};
-
-            for (const selectedLanguage of languagesToProcess) {
-
-                let result;
-
-                /*
-                    Default corpus:
-                    send the selected language AND the newly typed
-                    tokenizer to the backend.
-                */
-                if (source === "default") {
-
-                    result = await getDefaultCorpus(
-                        selectedLanguage,
-                        newTokenizer
-                    );
-
-                }
-
-                /*
-                    Uploaded corpus:
-                    send the uploaded file, selected language AND
-                    the newly typed tokenizer to the backend.
-                */
-                else if (selectedFile) {
-
-                    result = await uploadCorpus(
+                const result =
+                    await uploadCorpus(
                         selectedFile,
-                        selectedLanguage,
                         newTokenizer
                     );
 
-                }
+                /*
+                    Format the tokenized text returned by FastAPI.
+                */
+
+                const formattedTokens =
+                    formatTokenizedText(
+                        result.tokenized_text
+                    );
 
                 /*
-                    If there is no corpus available, there is nothing
-                    to tokenize for this language.
+                    Update the uploaded corpus tokenization.
                 */
-                else {
-
-                    continue;
-
-                }
-
-                /*
-                    Load MBI for this language using the NEW tokenizer.
-                */
-                let mbiResult = null;
-
-                if (hasMbiMetrics(selectedLanguage)) {
-
-                    try {
-
-                        mbiResult = await getMBI(
-                            newTokenizer,
-                            selectedLanguage
-                        );
-
-                    }
-                    catch (err) {
-
-                        /*
-                            Some languages may not have MBI metrics.
-                            This should not stop the tokenizer from
-                            being applied to the language.
-                        */
-                        mbiResult = null;
-
-                    }
-
-                }
-
-                /*
-                    Save the newly tokenized result and metrics for
-                    this language.
-                */
-                updatedLanguageData[selectedLanguage] = {
-
-                    tokenizedText:
-                        formatTokenizedText(
-                            result.tokenized_text
-                        ),
-
-                    metrics: {
-
-                        tokens:
-                            result.metrics.token_count ?? 0,
-
-                        fertility:
-                            result.metrics.fertility ?? 0,
-
-                        compression:
-                            result.metrics.compression ?? 0,
-
-                        token_premium:
-                            result.metrics.token_premium ?? null
-
-                    },
-
-                    mbi: mbiResult
-                        ? {
-
-                            precision:
-                                mbiResult.metrics.precision ?? 0,
-
-                            recall:
-                                mbiResult.metrics.recall ?? 0,
-
-                            f1:
-                                mbiResult.metrics.f1 ?? 0
-
-                        }
-                        : null
-
-                };
-
-            }
-
-            /*
-                Update all selected language results at once.
-            */
-            setLanguageData(updatedLanguageData);
-
-            /*
-                The typed tokenizer becomes the active tokenizer
-                for the entire Inspect page.
-            */
-            setTokenizer(newTokenizer);
-
-            /*
-                Also update the main corpus display to show the
-                currently active language's result.
-            */
-            if (updatedLanguageData[language]) {
 
                 setCorpusTokenizedText(
-                    updatedLanguageData[language].tokenizedText
+                    formattedTokens
                 );
 
-                setCorpusMetrics(
-                    updatedLanguageData[language].metrics
-                );
+                /*
+                    Update the uploaded corpus metrics.
+                */
 
-            }
+                setCorpusMetrics({
+                    tokens:
+                        result.metrics?.token_count ?? 0,
 
-            /*
-                Update the MBI display for the currently active language.
-            */
-            if (hasMbiMetrics(language)) {
+                    fertility:
+                        result.metrics?.fertility ?? 0,
 
-                const activeMbi =
-                    updatedLanguageData[language]?.mbi;
+                    compression:
+                        result.metrics?.compression ?? 0,
 
-                if (activeMbi) {
+                    token_premium:
+                        result.metrics?.token_premium ?? null
+                });
 
-                    setMbiMetrics(activeMbi);
-                    setMbiError("");
-                    setMbiUnavailable("");
-
-                }
-                else {
-
-                    setMbiMetrics({
-                        precision: 0,
-                        recall: 0,
-                        f1: 0
-                    });
-
-                    setMbiUnavailable(
-                        `${language} does not have MBI metrics.`
-                    );
-
-                }
-
-            }
-            else {
+                /*
+                    Uploaded corpora are not connected to a
+                    language, so there are no language-specific
+                    MBI metrics to load.
+                */
 
                 setMbiMetrics({
                     precision: 0,
@@ -1267,31 +1246,275 @@ function Inspect() {
                 });
 
                 setMbiError("");
+
                 setMbiUnavailable("");
 
             }
 
-            setTokenizerStatus("Tokenizer ready.");
+            /*
+                DEFAULT MODE
+            */
+
+            else {
+
+                const languagesToProcess =
+                    selectedLanguages.length > 0
+                        ? selectedLanguages
+                        : [language];
+
+                const updatedLanguageData = {};
+
+                /*
+                    Process each selected language separately.
+                */
+
+                for (
+                    const selectedLanguage
+                    of languagesToProcess
+                ) {
+
+                    const result =
+                        await getDefaultCorpus(
+                            selectedLanguage,
+                            newTokenizer
+                        );
+
+                    /*
+                        MBI is only available for languages
+                        that support it.
+                    */
+
+                    let mbiResult = null;
+
+                    if (
+                        hasMbiMetrics(
+                            selectedLanguage
+                        )
+                    ) {
+
+                        try {
+
+                            mbiResult =
+                                await getMBI(
+                                    newTokenizer,
+                                    selectedLanguage
+                                );
+
+                        }
+                        catch (err) {
+
+                            /*
+                                MBI failure should not prevent
+                                the tokenizer from being applied.
+                            */
+
+                            mbiResult = null;
+
+                        }
+                    }
+
+                    /*
+                        Store the tokenized result and metrics
+                        for this language.
+                    */
+
+                    updatedLanguageData[
+                        selectedLanguage
+                    ] = {
+
+                        tokenizedText:
+                            formatTokenizedText(
+                                result.tokenized_text
+                            ),
+
+                        metrics: {
+
+                            tokens:
+                                result.metrics
+                                    ?.token_count ?? 0,
+
+                            fertility:
+                                result.metrics
+                                    ?.fertility ?? 0,
+
+                            compression:
+                                result.metrics
+                                    ?.compression ?? 0,
+
+                            token_premium:
+                                result.metrics
+                                    ?.token_premium ?? null
+
+                        },
+
+                        mbi:
+                            mbiResult
+                                ? {
+
+                                    precision:
+                                        mbiResult.metrics
+                                            ?.precision ?? 0,
+
+                                    recall:
+                                        mbiResult.metrics
+                                            ?.recall ?? 0,
+
+                                    f1:
+                                        mbiResult.metrics
+                                            ?.f1 ?? 0
+
+                                }
+                                : null
+
+                    };
+
+                }
+
+                /*
+                    Update all selected language results.
+                */
+
+                setLanguageData(
+                    updatedLanguageData
+                );
+
+                /*
+                    Update the main corpus display with the
+                    currently active language.
+                */
+
+                if (
+                    updatedLanguageData[
+                        language
+                    ]
+                ) {
+
+                    setCorpusTokenizedText(
+                        updatedLanguageData[
+                            language
+                        ].tokenizedText
+                    );
+
+                    setCorpusMetrics(
+                        updatedLanguageData[
+                            language
+                        ].metrics
+                    );
+
+                    /*
+                        Update the MBI display for the
+                        currently active language.
+                    */
+
+                    const activeMbi =
+                        updatedLanguageData[
+                            language
+                        ].mbi;
+
+                    if (
+                        hasMbiMetrics(
+                            language
+                        )
+                    ) {
+
+                        if (activeMbi) {
+
+                            setMbiMetrics(
+                                activeMbi
+                            );
+
+                            setMbiError("");
+
+                            setMbiUnavailable("");
+
+                        }
+                        else {
+
+                            setMbiMetrics({
+                                precision: 0,
+                                recall: 0,
+                                f1: 0
+                            });
+
+                            setMbiUnavailable(
+                                `${language} does not have MBI metrics.`
+                            );
+
+                        }
+
+                    }
+                    else {
+
+                        setMbiMetrics({
+                            precision: 0,
+                            recall: 0,
+                            f1: 0
+                        });
+
+                        setMbiError("");
+
+                        setMbiUnavailable("");
+
+                    }
+
+                }
+
+            }
+
+            /*
+                The tokenizer has successfully been loaded.
+                Make it the active tokenizer for the Inspect page.
+            */
+
+            setTokenizer(
+                newTokenizer
+            );
+
+            /*
+                Keep the search box showing the active tokenizer.
+            */
+
+            setTokenizerInput(
+                newTokenizer
+            );
+
+            setTokenizerStatus(
+                "Tokenizer ready."
+            );
 
         }
         catch (err) {
 
-            setError(err.message);
-            setTokenizerStatus("Tokenizer not available.");
+            console.error(
+                "Tokenizer loading error:",
+                err
+            );
+
+            setError(
+                err.message ||
+                "Could not load tokenizer."
+            );
+
+            setTokenizerStatus(
+                "Tokenizer not available."
+            );
+
         }
         finally {
-            setSelectionLoading(false);
+
+            setSelectionLoading(
+                false
+            );
+
         }
+
     }
 
     /* Returns the corpus back to the default state */
-
     async function handleDefault() {
 
         if (selectionLoading) {
-
             return;
-
         }
 
         setSelectionLoading(true);
@@ -1300,90 +1523,173 @@ function Inspect() {
 
         try {
 
-            await loadDefaultCorpus(
+            /*
+                Load the default corpus for the current language
+                using the current tokenizer.
+            */
 
-                language,
+            const result =
+                await getDefaultCorpus(
+                    language,
+                    tokenizer
+                );
 
-                tokenizer
+            const formattedTokens =
+                formatTokenizedText(
+                    result.tokenized_text
+                );
 
+            const defaultMetrics = {
+                tokens:
+                    result.metrics.token_count ?? 0,
+
+                fertility:
+                    result.metrics.fertility ?? 0,
+
+                compression:
+                    result.metrics.compression ?? 0,
+
+                token_premium:
+                    result.metrics.token_premium ?? null
+            };
+
+            /* Restore MBI for the default language. */ 
+            let defaultMbi = null; 
+            
+            if ( hasMbiMetrics( language ) ) { 
+                try { 
+                    const defaultMbiResult = 
+                    await getMBI( tokenizer, language ); 
+                    
+                    defaultMbi = { 
+                        precision: defaultMbiResult.metrics.precision ?? 0, 
+                        
+                        recall: defaultMbiResult.metrics.recall ?? 0, 
+                        
+                        f1: defaultMbiResult.metrics.f1 ?? 0 
+                    }; 
+                } 
+                catch (err) { 
+                    defaultMbi = null; 
+                } 
+            }
+
+            setFileName(
+                "default"
             );
 
-            setFileName("default");
+            setSelectedFile(
+                null
+            );
 
-            setSelectedFile(null);
+            setSource(
+                "default"
+            );
 
-            setSource("default");
+            /*
+                Restore the current language as the
+                only selected language.
+            */
+
+            setSelectedLanguages([
+                language
+            ]);
+
+            /*
+                Store the default language result.
+            */
+
+            setLanguageData({
+                [language]: {
+                    tokenizedText:
+                        formattedTokens,
+
+                    metrics:
+                        defaultMetrics,
+
+                    mbi: defaultMbi
+                }
+            });
+
+            /*
+                Update the main corpus display.
+            */
+
+            setCorpusTokenizedText(
+                formattedTokens
+            );
+
+            setCorpusMetrics(
+                defaultMetrics
+            );
+
+
+            /* Update the MBI display. */ 
+            if (defaultMbi) { 
+                setMbiMetrics( defaultMbi ); 
+                
+                setMbiError(""); 
+                
+                setMbiUnavailable(""); 
+            } 
+            else { 
+                setMbiMetrics({ 
+                    precision: 0, 
+                    recall: 0, 
+                    f1: 0 
+                }); 
+                
+                if ( hasMbiMetrics( language ) ) { 
+                    setMbiUnavailable( 
+                        `${language} does not have MBI metrics.` 
+                    ); 
+                } 
+                else { 
+                    setMbiUnavailable(""); 
+                } 
+            }
+
+            /*
+                Clear the uploaded file input so the
+                same file can be selected again later.
+            */
 
             if (fileInputRef.current) {
 
-                fileInputRef.current.value = "";
+                fileInputRef.current.value =
+                    "";
 
             }
 
-            const result = await getDefaultCorpus(
-
-                language,
-
-                tokenizer
-
+            setLanguageMenuOpen(
+                false
             );
 
-            setLanguageData((previousData) => ({
-
-                ...previousData,
-
-                [language]: {
-
-                    tokenizedText:
-                        formatTokenizedText(
-
-                            result.tokenized_text
-
-                        ),
-
-                    metrics: {
-
-                        tokens:
-                            result.metrics.token_count ?? 0,
-
-                        fertility:
-                            result.metrics.fertility ?? 0,
-
-                        compression:
-                            result.metrics.compression ?? 0,
-
-                        token_premium:
-                            result.metrics.token_premium ?? null
-
-                    },
-
-                    mbi: previousData[language]?.mbi ?? null
-
-                }
-
-            }));
-
         }
-
         catch (err) {
 
-            setError(err.message);
+            setError(
+                err.message
+            );
 
         }
-
         finally {
 
-            setSelectionLoading(false);
+            setSelectionLoading(
+                false
+            );
 
         }
 
     }
 
     // Cycles through the 8 CSS colors for the tokens
-
     function renderTokens(tokens) {
 
-        if (!tokens || tokens.length === 0) {
+        if (
+            !tokens ||
+            tokens.length === 0
+        ) {
 
             return "Your tokenized text will appear here.";
 
@@ -1391,68 +1697,67 @@ function Inspect() {
 
         let sentences;
 
-        if (Array.isArray(tokens[0])) {
+        if (
+            Array.isArray(tokens[0])
+        ) {
 
-            sentences = tokens;
+            sentences =
+                tokens;
 
         }
-
         else {
 
-            sentences = [tokens];
+            sentences = [
+                tokens
+            ];
 
         }
 
         const visibleSentences = sentences.slice(0, 10);
-
         return (
-
             <>
+                {visibleSentences.map(
+                    (
+                        sentence,
+                        sentenceIndex
+                    ) => (
 
-                {visibleSentences.map((sentence, sentenceIndex) => (
+                        <div
+                            key={`sentence-${sentenceIndex}`}
+                            className="token-sentence"
+                        >
 
-                    <div
+                            {sentence.map(
+                                (
+                                    token,
+                                    tokenIndex
+                                ) => {
 
-                        key={`sentence-${sentenceIndex}`}
+                                    const colourIndex =
+                                        tokenIndex % 8;
 
-                        className="token-sentence"
+                                    return (
+                                        <span
+                                            key={`${sentenceIndex}-${tokenIndex}-${token}`}
+                                            className={`token-pill token-colour-${colourIndex}`}
+                                        >
+                                            {token}
+                                        </span>
+                                    );
 
-                    >
+                                }
+                            )}
 
-                        {sentence.map((token, tokenIndex) => {
+                        </div>
 
-                            const colourIndex = tokenIndex % 8;
-
-                            return (
-
-                                <span
-
-                                    key={`${sentenceIndex}-${tokenIndex}-${token}`}
-
-                                    className={`token-pill token-colour-${colourIndex}`}
-
-                                >
-
-                                    {token}
-
-                                </span>
-
-                            );
-
-                        })}
-
-                    </div>
-
-                ))}
-
+                    )
+                )}
             </>
-
         );
 
     }
 
     return (
-
         <>
 
             <section className="inspect-intro">
@@ -1460,23 +1765,16 @@ function Inspect() {
                 {/* Description of what the Inspect page does */}
 
                 <p className="inspect-label">
-
                     INSPECT
-
                 </p>
 
                 <h1>
-
                     From isiXhosa to Setswana, See the Language Beneath.
-
                 </h1>
 
                 <p className="inspect-description">
-
                     Pick a tokenizer, choose a language and explore how your
-
                     text is broken down into subword tokens the model can understand.
-
                 </p>
 
             </section>
@@ -1494,90 +1792,77 @@ function Inspect() {
                     <div className="filter-group tokenizer-filter">
 
                         <label htmlFor="tokenizer">
-
                             Tokenizer
-
                         </label>
 
                         <div className="tokenizer-search">
 
                             <input
-
                                 type="text"
-
                                 id="tokenizer"
-
                                 value={tokenizerInput}
-
                                 onChange={(event) => {
-
-                                    setTokenizerInput(event.target.value)
-
+                                    setTokenizerInput(
+                                        event.target.value
+                                    );
                                 }}
-
                                 onKeyDown={(event) => {
 
-                                    if (event.key === "Enter") {
+                                    if (
+                                        event.key === "Enter"
+                                    ) {
 
-                                        handleTokenizerInput(event);
+                                        handleTokenizerInput(
+                                            event
+                                        );
 
                                     }
 
                                 }}
-
                                 placeholder="Type tokenizer name..."
-
-                                disabled={selectionLoading}
-
+                                disabled={
+                                    selectionLoading
+                                }
                             />
 
                             <button
-
                                 type="button"
-
                                 className="search-button"
-
                                 onClick={() =>
-
-                                    handleTokenizerInput({ key: "Enter" })
-
+                                    handleTokenizerInput({
+                                        key: "Enter"
+                                    })
                                 }
-
-                                disabled={selectionLoading}
-
+                                disabled={
+                                    selectionLoading
+                                }
                             >
-
                                 Search
-
                             </button>
 
                         </div>
 
                         {/* Tokenizer status */}
 
-                        { tokenizerStatus && (
+                        {tokenizerStatus && (
 
                             <div
-
                                 className={`selection-status ${
-
-                                    tokenizerStatus === "Tokenizer not available."
-
+                                    tokenizerStatus ===
+                                    "Tokenizer not available."
                                         ? "is-error"
-
-                                        : tokenizerStatus === "Loading tokenizer..."
-
-                                            ? "is-loading"
-
-                                            : "is-ready"
-
+                                        : tokenizerStatus ===
+                                            "Loading tokenizer..."
+                                                ? "is-loading"
+                                                : "is-ready"
                                 }`}
-
                             >
 
                                 <span className="status-dot"></span>
 
-                                <span>{tokenizerStatus}</span>
+                                <span>
+                                    {tokenizerStatus}
+                                </span>
 
                             </div>
 
@@ -1590,126 +1875,103 @@ function Inspect() {
                     <div className="filter-group language-filter">
 
                         <label htmlFor="language">
-
                             Language
-
                         </label>
 
                         <div className="language-selector">
 
                             <button
-
                                 type="button"
-
                                 id="language"
-
                                 className="language-button"
-
                                 onClick={() =>
-
-                                    setLanguageMenuOpen(!languageMenuOpen)
-
+                                    setLanguageMenuOpen(
+                                        !languageMenuOpen
+                                    )
                                 }
-
-                                disabled={selectionLoading}
-
+                                disabled={
+                                    selectionLoading ||
+                                    source === "upload"
+                                }
                             >
 
                                 <span>
 
-                                    {selectedLanguages.length === 1
-
-                                        ? selectedLanguages[0]
-
-                                        : `${selectedLanguages.length} languages selected`
-
+                                    {source === "upload"
+                                        ? "Language disabled for upload"
+                                        : selectedLanguages.length === 1
+                                            ? selectedLanguages[0]
+                                            : `${selectedLanguages.length} languages selected`
                                     }
 
                                 </span>
 
                                 <span className="language-arrow">
-
                                     ▾
-
                                 </span>
 
                             </button>
 
-                            {languageMenuOpen && (
+                            {languageMenuOpen &&
+                                source === "default" && (
 
-                                <div className="language-menu">
+                                    <div className="language-menu">
 
-                                    <div className="language-menu-title">
+                                        <div className="language-menu-title">
+                                            CHOOSE A LANGUAGE
+                                        </div>
 
-                                        CHOOSE A LANGUAGE
+                                        <div className="language-menu-subtitle">
+                                            Choose up to 4 languages
+                                        </div>
+
+                                        <div className="language-options">
+
+                                            {languages.map(
+                                                (item) => (
+
+                                                    <button
+                                                        type="button"
+                                                        key={item}
+                                                        className={`language-option ${
+                                                            selectedLanguages.includes(
+                                                                item
+                                                            )
+                                                                ? "selected"
+                                                                : ""
+                                                        }`}
+                                                        onClick={() => {
+                                                            toggleLanguage(
+                                                                item
+                                                            );
+                                                        }}
+                                                        disabled={
+                                                            selectionLoading
+                                                        }
+                                                    >
+                                                        {item}
+                                                    </button>
+
+                                                )
+                                            )}
+
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            className="language-done-button"
+                                            onClick={() =>
+                                                setLanguageMenuOpen(
+                                                    false
+                                                )
+                                            }
+                                        >
+                                            Done
+                                        </button>
 
                                     </div>
 
-                                    <div className="language-menu-subtitle">
-
-                                        Choose up to 4 languages
-
-                                    </div>
-
-                                    <div className="language-options">
-
-                                        {languages.map((item) => (
-
-                                            <button
-
-                                                type="button"
-
-                                                key={item}
-
-                                                className={`language-option ${
-
-                                                    selectedLanguages.includes(item)
-
-                                                        ? "selected"
-
-                                                        : ""
-
-                                                }`}
-
-                                                onClick={() => {
-
-                                                    toggleLanguage(item);
-
-                                                }}
-
-                                                disabled={selectionLoading}
-
-                                            >
-
-                                                {item}
-
-                                            </button>
-
-                                        ))}
-
-                                    </div>
-
-                                    <button
-
-                                        type="button"
-
-                                        className="language-done-button"
-
-                                        onClick={() =>
-
-                                            setLanguageMenuOpen(false)
-
-                                        }
-
-                                    >
-
-                                        Done
-
-                                    </button>
-
-                                </div>
-
-                            )}
+                                )}
 
                         </div>
 
@@ -1718,29 +1980,22 @@ function Inspect() {
                         {languageStatus && (
 
                             <div
-
                                 className={`selection-status ${
-
-                                    languageStatus === "Could not load language corpus."
-
+                                    languageStatus ===
+                                    "Could not load language corpus."
                                         ? "is-error"
-
-                                        : languageStatus.startsWith("Loading ")
-
+                                        : languageStatus.startsWith(
+                                            "Loading "
+                                        )
                                             ? "is-loading"
-
                                             : "is-ready"
-
                                 }`}
-
                             >
 
                                 <span className="status-dot"></span>
 
                                 <span>
-
                                     {languageStatus}
-
                                 </span>
 
                             </div>
@@ -1758,28 +2013,28 @@ function Inspect() {
             <section className="corpus-box">
 
                 <div className="corpus-heading">
-
                     Mzansi Explorer • Corpus Tokenization
-
                 </div>
 
                 <p className="corpus-label">
 
-                    {fileName} • {language} • {tokenizer}
+                    {source === "upload"
+                        ? `${fileName} • Uploaded Corpus • ${tokenizer}`
+                        : `${fileName} • ${language} • ${tokenizer}`}
 
                 </p>
 
                 <div className="upload-container">
 
                     <input
-
                         type="file"
                         id="corpus-upload"
                         ref={fileInputRef}
                         accept=".txt,text/plain"
                         onChange={handleFileChange}
-                        disabled={selectionLoading}
-
+                        disabled={
+                            selectionLoading
+                        }
                     />
 
                     <label
@@ -1796,8 +2051,12 @@ function Inspect() {
                         <button
                             type="button"
                             className="default-button"
-                            onClick={handleDefault}
-                            disabled={selectionLoading}
+                            onClick={
+                                handleDefault
+                            }
+                            disabled={
+                                selectionLoading
+                            }
                         >
                             Default
                         </button>
@@ -1808,188 +2067,309 @@ function Inspect() {
 
                 <div
                     className={
-                        selectedLanguages.length > 1
-                            ? "language-tokenization-grid"
-                            : "language-tokenization-single"
+                        source === "upload"
+                            ? "language-tokenization-single"
+                            : selectedLanguages.length > 1
+                                ? "language-tokenization-grid"
+                                : "language-tokenization-single"
                     }
                 >
-                    {selectedLanguages.map((selectedLanguage) => {
 
-                        const data = languageData[selectedLanguage];
-                        if (!data) {
-                            return null;
-                        }
+                    {source === "upload" ? (
 
-                        return (
-                            <div
-                                key={selectedLanguage}
-                                className="language-tokenization-block"
-                            >
+                        <div
+                            className="language-tokenization-block"
+                        >
 
-                                {/* Tokenization Result */}
+                            {/* Tokenization Result */}
 
-                                <div className="tokenization-result">
+                            <div className="tokenization-result">
 
-                                    <div className="tokenization-language">
-
-                                        {selectedLanguage}
-
-                                    </div>
-
-                                    <div className="tokenization-text">
-
-                                        {renderTokens(
-
-                                            data.tokenizedText
-
-                                        )}
-
-                                    </div>
-
+                                <div className="tokenization-language">
+                                    Uploaded Corpus
                                 </div>
 
-                                {/* Tokenization metrics */}
+                                <div className="tokenization-text">
 
-                                <div className="tokenization-metrics">
-
-                                    {/* Row 1 - Existing metrics */}
-
-                                    <div className="metric-row">
-
-                                        <div className="metric-card">
-
-                                            <span className="metric-name">
-
-                                                Tokens
-
-                                            </span>
-
-                                            <span className="metric-value">
-
-                                                {data.metrics.tokens}
-
-                                            </span>
-
-                                        </div>
-
-                                        <div className="metric-card">
-
-                                            <span className="metric-name">
-
-                                                Fertility
-
-                                            </span>
-
-                                            <span className="metric-value">
-
-                                                {Number(
-
-                                                    data.metrics.fertility
-
-                                                ).toFixed(2)}
-
-                                            </span>
-
-                                        </div>
-
-                                        <div className="metric-card">
-
-                                            <span className="metric-name">
-
-                                                Compression
-
-                                            </span>
-
-                                            <span className="metric-value">
-
-                                                {Number(
-
-                                                    data.metrics.compression
-
-                                                ).toFixed(2)}
-
-                                            </span>
-
-                                        </div>
-
-                                        <div className="metric-card">
-
-                                            <span className="metric-name">
-
-                                                Token Premium
-
-                                            </span>
-
-                                            <span className="metric-value">
-
-                                                {data.metrics.token_premium === null
-
-                                                    ? "N/A"
-
-                                                    : Number(
-
-                                                        data.metrics.token_premium
-
-                                                    ).toFixed(2)
-
-                                                }
-
-                                            </span>
-
-                                        </div>
-
-                                    </div>
-
-                                    {/* Row 2 - Placeholder metrics */}
-                                    {hasMbiMetrics(selectedLanguage) && (
-                                        <div className="metric-row metric-row-centered">
-                                            <div className="metric-card">
-                                                <span className="metric-name">
-                                                    Precision
-                                                </span>
-
-                                                <span className="metric-value">
-                                                    {data.mbi === null
-                                                        ? "N/A"
-                                                        : Number(
-                                                            data.mbi.precision
-                                                        ).toFixed(2)}
-                                                </span>
-                                            </div>
-
-                                            <div className="metric-card">
-                                                <span className="metric-name">
-                                                    F1
-                                                </span>
-
-                                                <span className="metric-value">
-                                                    {data.mbi === null
-                                                        ? "N/A"
-                                                        : Number(
-                                                            data.mbi.f1
-                                                        ).toFixed(2)}
-                                                </span>
-                                            </div>
-
-                                            <div className="metric-card">
-                                                <span className="metric-name">
-                                                    Recall
-                                                </span>
-
-                                                <span className="metric-value">
-                                                    {data.mbi === null
-                                                        ? "N/A"
-                                                        : Number(
-                                                            data.mbi.recall
-                                                        ).toFixed(2)}
-                                                </span>
-                                            </div>
-                                        </div>
+                                    {renderTokens(
+                                        corpusTokenizedText
                                     )}
+
                                 </div>
+
                             </div>
-                        );
-                    })}
+
+                            {/* Tokenization metrics */}
+
+                            <div className="tokenization-metrics">
+
+                                {/* Row 1 - Existing metrics */}
+
+                                <div className="metric-row">
+
+                                    <div className="metric-card">
+
+                                        <span className="metric-name">
+                                            Tokens
+                                        </span>
+
+                                        <span className="metric-value">
+                                            {corpusMetrics.tokens}
+                                        </span>
+
+                                    </div>
+
+                                    <div className="metric-card">
+
+                                        <span className="metric-name">
+                                            Fertility
+                                        </span>
+
+                                        <span className="metric-value">
+
+                                            {Number(
+                                                corpusMetrics.fertility
+                                            ).toFixed(2)}
+
+                                        </span>
+
+                                    </div>
+
+                                    <div className="metric-card">
+
+                                        <span className="metric-name">
+                                            Compression
+                                        </span>
+
+                                        <span className="metric-value">
+
+                                            {Number(
+                                                corpusMetrics.compression
+                                            ).toFixed(2)}
+
+                                        </span>
+
+                                    </div>
+
+                                    <div className="metric-card">
+
+                                        <span className="metric-name">
+                                            Token Premium
+                                        </span>
+
+                                        <span className="metric-value">
+
+                                            {corpusMetrics.token_premium ===
+                                            null
+                                                ? "N/A"
+                                                : Number(
+                                                    corpusMetrics.token_premium
+                                                ).toFixed(2)
+                                            }
+
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    ) : (
+
+                        selectedLanguages.map(
+                            (selectedLanguage) => {
+
+                                const data =
+                                    languageData[
+                                        selectedLanguage
+                                    ];
+
+                                if (!data) {
+                                    return null;
+                                }
+
+                                return (
+
+                                    <div
+                                        key={selectedLanguage}
+                                        className="language-tokenization-block"
+                                    >
+
+                                        {/* Tokenization Result */}
+
+                                        <div className="tokenization-result">
+
+                                            <div className="tokenization-language">
+                                                {selectedLanguage}
+                                            </div>
+
+                                            <div className="tokenization-text">
+
+                                                {renderTokens(
+                                                    data.tokenizedText
+                                                )}
+
+                                            </div>
+
+                                        </div>
+
+                                        {/* Tokenization metrics */}
+
+                                        <div className="tokenization-metrics">
+
+                                            {/* Row 1 - Existing metrics */}
+
+                                            <div className="metric-row">
+
+                                                <div className="metric-card">
+
+                                                    <span className="metric-name">
+                                                        Tokens
+                                                    </span>
+
+                                                    <span className="metric-value">
+                                                        {data.metrics.tokens}
+                                                    </span>
+
+                                                </div>
+
+                                                <div className="metric-card">
+
+                                                    <span className="metric-name">
+                                                        Fertility
+                                                    </span>
+
+                                                    <span className="metric-value">
+
+                                                        {Number(
+                                                            data.metrics.fertility
+                                                        ).toFixed(2)}
+
+                                                    </span>
+
+                                                </div>
+
+                                                <div className="metric-card">
+
+                                                    <span className="metric-name">
+                                                        Compression
+                                                    </span>
+
+                                                    <span className="metric-value">
+
+                                                        {Number(
+                                                            data.metrics.compression
+                                                        ).toFixed(2)}
+
+                                                    </span>
+
+                                                </div>
+
+                                                <div className="metric-card">
+
+                                                    <span className="metric-name">
+                                                        Token Premium
+                                                    </span>
+
+                                                    <span className="metric-value">
+
+                                                        {data.metrics.token_premium ===
+                                                        null
+                                                            ? "N/A"
+                                                            : Number(
+                                                                data.metrics.token_premium
+                                                            ).toFixed(2)
+                                                        }
+
+                                                    </span>
+
+                                                </div>
+
+                                            </div>
+
+                                            {/* Row 2 - Placeholder metrics */}
+
+                                            {hasMbiMetrics(
+                                                selectedLanguage
+                                            ) && (
+
+                                                <div className="metric-row metric-row-centered">
+
+                                                    <div className="metric-card">
+
+                                                        <span className="metric-name">
+                                                            Precision
+                                                        </span>
+
+                                                        <span className="metric-value">
+
+                                                            {data.mbi === null
+                                                                ? "N/A"
+                                                                : Number(
+                                                                    data.mbi.precision
+                                                                ).toFixed(2)
+                                                            }
+
+                                                        </span>
+
+                                                    </div>
+
+                                                    <div className="metric-card">
+
+                                                        <span className="metric-name">
+                                                            F1
+                                                        </span>
+
+                                                        <span className="metric-value">
+
+                                                            {data.mbi === null
+                                                                ? "N/A"
+                                                                : Number(
+                                                                    data.mbi.f1
+                                                                ).toFixed(2)
+                                                            }
+
+                                                        </span>
+
+                                                    </div>
+
+                                                    <div className="metric-card">
+
+                                                        <span className="metric-name">
+                                                            Recall
+                                                        </span>
+
+                                                        <span className="metric-value">
+
+                                                            {data.mbi === null
+                                                                ? "N/A"
+                                                                : Number(
+                                                                    data.mbi.recall
+                                                                ).toFixed(2)
+                                                            }
+
+                                                        </span>
+
+                                                    </div>
+
+                                                </div>
+
+                                            )}
+
+                                        </div>
+
+                                    </div>
+
+                                );
+
+                            }
+                        )
+
+                    )}
+
                 </div>
 
                 {mbiUnavailable && (
@@ -1998,7 +2378,9 @@ function Inspect() {
 
                         <span className="status-dot"></span>
 
-                        <span>{mbiUnavailable}</span>
+                        <span>
+                            {mbiUnavailable}
+                        </span>
 
                     </div>
 
@@ -2007,9 +2389,7 @@ function Inspect() {
                 {mbiError && (
 
                     <div className="inspect-error">
-
                         {mbiError}
-
                     </div>
 
                 )}
@@ -2021,27 +2401,20 @@ function Inspect() {
             <section className="text-input-box">
 
                 <div className="text-input-heading">
-
                     Mzansi Explorer • Type Anything
-
                 </div>
 
                 {/* Text entered by the user */}
 
                 <textarea
-
                     className="text-input-area"
-
                     value={inputText}
-
                     onChange={(event) =>
-
-                        setInputText(event.target.value)
-
+                        setInputText(
+                            event.target.value
+                        )
                     }
-
                     placeholder="Type or paste your text here..."
-
                 />
 
                 {/*Tokenization result */}
@@ -2050,8 +2423,9 @@ function Inspect() {
 
                     <div className="typed-result-text">
 
-                        {renderTokens(typedTokenizedText) ||
-
+                        {renderTokens(
+                            typedTokenizedText
+                        ) ||
                             "Your tokenized text will appear here."}
 
                     </div>
@@ -2083,9 +2457,11 @@ function Inspect() {
                             </span>
 
                             <span className="typed-metric-value">
+
                                 {Number(
                                     textMetrics.fertility
                                 ).toFixed(2)}
+
                             </span>
 
                         </div>
@@ -2099,9 +2475,11 @@ function Inspect() {
                             </span>
 
                             <span className="typed-metric-value">
+
                                 {Number(
                                     textMetrics.compression
                                 ).toFixed(2)}
+
                             </span>
 
                         </div>
@@ -2119,3 +2497,4 @@ function Inspect() {
 }
 
 export default Inspect;
+
