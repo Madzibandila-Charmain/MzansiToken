@@ -1023,108 +1023,248 @@ function Inspect() {
     async function handleTokenizerInput(event) {
 
         if (event.key !== "Enter") {
-
             return;
-
         }
 
         const newTokenizer = tokenizerInput.trim();
 
         if (!newTokenizer) {
-
             return;
-
         }
 
         if (selectionLoading) {
-
             return;
-
         }
 
         setSelectionLoading(true);
-
         setTokenizerStatus("Loading tokenizer...");
-
         setError("");
 
         try {
 
-            // Check/load the tokenizer entered by the user
-
+            /*
+                First check that the tokenizer entered by the user
+                is available in the backend.
+            */
             await getTokenizerInfo(newTokenizer);
 
             /*
-            * The tokenizer name typed by the user is sent
-            * to the backend when we load the corpus.
-            */
+                Use all currently selected languages.
 
+                If for some reason no languages are selected,
+                fall back to the active language.
+            */
+            const languagesToProcess =
+                selectedLanguages.length > 0
+                    ? selectedLanguages
+                    : [language];
+
+            /*
+                Store the results for every selected language.
+
+                Each language is sent to the backend together with
+                the NEW tokenizer.
+            */
+            const updatedLanguageData = {};
+
+            for (const selectedLanguage of languagesToProcess) {
+
+                let result;
+
+                /*
+                    Default corpus:
+                    send the selected language AND the newly typed
+                    tokenizer to the backend.
+                */
+                if (source === "default") {
+
+                    result = await getDefaultCorpus(
+                        selectedLanguage,
+                        newTokenizer
+                    );
+
+                }
+
+                /*
+                    Uploaded corpus:
+                    send the uploaded file, selected language AND
+                    the newly typed tokenizer to the backend.
+                */
+                else if (selectedFile) {
+
+                    result = await uploadCorpus(
+                        selectedFile,
+                        selectedLanguage,
+                        newTokenizer
+                    );
+
+                }
+
+                /*
+                    If there is no corpus available, there is nothing
+                    to tokenize for this language.
+                */
+                else {
+
+                    continue;
+
+                }
+
+                /*
+                    Load MBI for this language using the NEW tokenizer.
+                */
+                let mbiResult = null;
+
+                if (hasMbiMetrics(selectedLanguage)) {
+
+                    try {
+
+                        mbiResult = await getMBI(
+                            newTokenizer,
+                            selectedLanguage
+                        );
+
+                    }
+                    catch (err) {
+
+                        /*
+                            Some languages may not have MBI metrics.
+                            This should not stop the tokenizer from
+                            being applied to the language.
+                        */
+                        mbiResult = null;
+
+                    }
+
+                }
+
+                /*
+                    Save the newly tokenized result and metrics for
+                    this language.
+                */
+                updatedLanguageData[selectedLanguage] = {
+
+                    tokenizedText:
+                        formatTokenizedText(
+                            result.tokenized_text
+                        ),
+
+                    metrics: {
+
+                        tokens:
+                            result.metrics.token_count ?? 0,
+
+                        fertility:
+                            result.metrics.fertility ?? 0,
+
+                        compression:
+                            result.metrics.compression ?? 0,
+
+                        token_premium:
+                            result.metrics.token_premium ?? null
+
+                    },
+
+                    mbi: mbiResult
+                        ? {
+
+                            precision:
+                                mbiResult.metrics.precision ?? 0,
+
+                            recall:
+                                mbiResult.metrics.recall ?? 0,
+
+                            f1:
+                                mbiResult.metrics.f1 ?? 0
+
+                        }
+                        : null
+
+                };
+
+            }
+
+            /*
+                Update all selected language results at once.
+            */
+            setLanguageData(updatedLanguageData);
+
+            /*
+                The typed tokenizer becomes the active tokenizer
+                for the entire Inspect page.
+            */
             setTokenizer(newTokenizer);
 
-            if (source === "default") {
+            /*
+                Also update the main corpus display to show the
+                currently active language's result.
+            */
+            if (updatedLanguageData[language]) {
 
-                await loadDefaultCorpus(
+                setCorpusTokenizedText(
+                    updatedLanguageData[language].tokenizedText
+                );
 
-                    language,
-
-                    newTokenizer
-
+                setCorpusMetrics(
+                    updatedLanguageData[language].metrics
                 );
 
             }
 
-            else if (selectedFile) {
+            /*
+                Update the MBI display for the currently active language.
+            */
+            if (hasMbiMetrics(language)) {
 
-                await processUploadedCorpus(
+                const activeMbi =
+                    updatedLanguageData[language]?.mbi;
 
-                    selectedFile,
+                if (activeMbi) {
 
-                    language,
+                    setMbiMetrics(activeMbi);
+                    setMbiError("");
+                    setMbiUnavailable("");
 
-                    newTokenizer
+                }
+                else {
 
-                );
+                    setMbiMetrics({
+                        precision: 0,
+                        recall: 0,
+                        f1: 0
+                    });
 
-                await loadMbiMetrics(
+                    setMbiUnavailable(
+                        `${language} does not have MBI metrics.`
+                    );
 
-                    language,
-
-                    newTokenizer
-
-                );
+                }
 
             }
-
             else {
 
-                await loadMbiMetrics(
+                setMbiMetrics({
+                    precision: 0,
+                    recall: 0,
+                    f1: 0
+                });
 
-                    language,
-
-                    newTokenizer
-
-                );
+                setMbiError("");
+                setMbiUnavailable("");
 
             }
 
             setTokenizerStatus("Tokenizer ready.");
 
         }
-
         catch (err) {
 
             setError(err.message);
-
             setTokenizerStatus("Tokenizer not available.");
-
         }
-
         finally {
-
             setSelectionLoading(false);
-
         }
-
     }
 
     /* Returns the corpus back to the default state */
