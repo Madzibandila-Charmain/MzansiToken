@@ -104,10 +104,8 @@ export async function getDefaultCorpus(
 /*
  * UPLOAD CORPUS
  */
-
 export async function uploadCorpus(
     file,
-    language,
     tokenizer,
     signal
 ) {
@@ -120,11 +118,6 @@ export async function uploadCorpus(
     );
 
     formData.append(
-        "language",
-        language
-    );
-
-    formData.append(
         "tokenizer",
         tokenizer
     );
@@ -133,9 +126,7 @@ export async function uploadCorpus(
         `${API_BASE_URL}/inspect/upload`,
         {
             method: "POST",
-
             body: formData,
-
             signal,
         }
     );
@@ -144,6 +135,7 @@ export async function uploadCorpus(
         response,
         "Could not process the uploaded corpus."
     );
+
 }
 
 
