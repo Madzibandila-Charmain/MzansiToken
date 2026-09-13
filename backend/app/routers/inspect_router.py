@@ -78,7 +78,7 @@ def inspect_default(request: InspectRequest):
 @router.post("/inspect/upload")
 async def inspect_upload(
     file: UploadFile = File(...),
-    language: str = Form(...),
+    
     tokenizer: str = Form(...),
 ):
     """
@@ -89,8 +89,8 @@ async def inspect_upload(
     if not file.filename or not file.filename.lower().endswith(".txt"):
         raise HTTPException(status_code=400, detail="Only .txt files are supported.")
 
-    if language not in corpus:
-        raise HTTPException(status_code=400, detail=f"Unsupported language: {language}")
+    #if language not in corpus:
+        #raise HTTPException(status_code=400, detail=f"Unsupported language: {language}")
 
     validate_tokenizer(tokenizer)
 
@@ -115,11 +115,10 @@ async def inspect_upload(
     sentences = [line.strip() for line in text.splitlines() if line.strip()]
 
     tokenized = tokenize_corpus(tokenizer_model, sentences)
-    metrics = calculate_efficiency_metrics_one_language(tokenized, sentences, tokenizer, language, tokenizer_model, corpus, basis="per_word",)
+    metrics = calculate_efficiency_metrics_one_language(tokenized, sentences, tokenizer, "Uploaded Corpus", tokenizer_model, corpus, basis="per_word",)
 
     return {
         "filename": file.filename,
-        "language": language,
         "tokenizer": tokenizer,
         "tokenized_text": tokenized,
         "metrics": metrics,
