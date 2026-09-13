@@ -610,68 +610,7 @@ function Inspect() {
             setLoading(false);
         }
     }
-
-    //Connects the upload button to the backend
-    async function processUploadedCorpus(
-
-        file,
-        selectedLanguage,
-        selectedTokenizer
-
-    ) {
-
-        try {
-
-            setLoading(true);
-            setError("");
-
-            const result = await uploadCorpus(
-                file,
-                selectedLanguage,
-                selectedTokenizer
-            );
-
-            setSource("upload")
-
-            setSelectedFile(file);
-
-            setFileName(file.name);
-
-            setCorpusTokenizedText(
-
-                formatTokenizedText(
-                    result.tokenized_text
-                )
-            );
-
-            setCorpusMetrics({
-
-                tokens:
-                    result.metrics.token_count ?? 0,
-
-                fertility:
-                    result.metrics.fertility ?? 0,
-
-                compression:
-                    result.metrics.compression ?? 0,
-
-                token_premium: 0
-
-            });
-
-        }
-
-        catch (err) {
-            setError(err.message);
-            throw err;
-        }
-
-        finally {
-            setLoading(false);
-        }
-
-    }
-
+    
     async function handleLanguageChange(newLanguage) {
 
         if (selectionLoading) {
@@ -924,51 +863,82 @@ function Inspect() {
     }
 
     /* Handled file slection from user computer. */
-
     async function handleFileChange(event) {
 
         const file = event.target.files[0];
 
         if (!file) {
-
             return;
+        }
 
+        /*
+            Make sure the selected file is a text file.
+        */
+        if (!file.name.toLowerCase().endsWith(".txt")) {
+            setError("Please select a .txt file.");
+            return;
         }
 
         try {
 
+            setSelectionLoading(true);
             setLoading(true);
-
             setError("");
 
-            await processUploadedCorpus(
-
-                file,
-
-                language,
-
-                tokenizer
-
-            );
-
-            await loadMbiMetrics(
-
-                language,
-
-                tokenizer
-
-            );
-
+            /*
+                The uploaded file is processed using the
+                CURRENT language and CURRENT tokenizer.
+            */
             const result = await uploadCorpus(
-
                 file,
-
                 language,
-
                 tokenizer
-
             );
 
+            /*
+                Format the tokenized text returned by FastAPI.
+            */
+            const formattedTokens =
+                formatTokenizedText(
+                    result.tokenized_text
+                );
+
+            /*
+                Save the uploaded file information.
+            */
+            setSource("upload");
+            setSelectedFile(file);
+            setFileName(file.name);
+
+            /*
+                Display the uploaded file's tokenized text.
+            */
+            setCorpusTokenizedText(
+                formattedTokens
+            );
+
+            /*
+                Display the uploaded file's metrics.
+            */
+            setCorpusMetrics({
+
+                tokens:
+                    result.metrics?.token_count ?? 0,
+
+                fertility:
+                    result.metrics?.fertility ?? 0,
+
+                compression:
+                    result.metrics?.compression ?? 0,
+
+                token_premium:
+                    result.metrics?.token_premium ?? null
+
+            });
+
+            /*
+                Store the result for the currently selected language.
+            */
             setLanguageData((previousData) => ({
 
                 ...previousData,
@@ -976,45 +946,92 @@ function Inspect() {
                 [language]: {
 
                     tokenizedText:
-                        formatTokenizedText(
-
-                            result.tokenized_text
-
-                        ),
+                        formattedTokens,
 
                     metrics: {
 
                         tokens:
-                            result.metrics.token_count ?? 0,
+                            result.metrics?.token_count ?? 0,
 
                         fertility:
-                            result.metrics.fertility ?? 0,
+                            result.metrics?.fertility ?? 0,
 
                         compression:
-                            result.metrics.compression ?? 0,
+                            result.metrics?.compression ?? 0,
 
                         token_premium:
-                            result.metrics.token_premium ?? null
+                            result.metrics?.token_premium ?? null
 
                     },
 
-                    mbi: previousData[language]?.mbi ?? null
+                    mbi:
+                        previousData[language]?.mbi ?? null
 
                 }
 
             }));
 
-        }
+            /*
+                Load MBI metrics for the current language.
+            */
+            if (hasMbiMetrics(language)) {
 
+                try {
+
+                    await loadMbiMetrics(
+                        language,
+                        tokenizer
+                    );
+
+                }
+                catch (err) {
+
+                    /*
+                        MBI failure should not prevent the
+                        uploaded corpus from being displayed.
+                    */
+
+                    console.log(
+                        "MBI could not be loaded:",
+                        err.message
+                    );
+
+                }
+
+            }
+            else {
+
+                setMbiMetrics({
+
+                    precision: 0,
+                    recall: 0,
+                    f1: 0
+
+                });
+
+                setMbiError("");
+                setMbiUnavailable("");
+
+            }
+
+        }
         catch (err) {
 
-            setError(err.message);
+            console.error(
+                "Upload corpus error:",
+                err
+            );
+
+            setError(
+                err.message ||
+                "Could not process the uploaded corpus."
+            );
 
         }
-
         finally {
 
             setLoading(false);
+            setSelectionLoading(false);
 
         }
 
@@ -1757,29 +1774,19 @@ function Inspect() {
                     <input
 
                         type="file"
-
                         id="corpus-upload"
-
                         ref={fileInputRef}
-
-                        accept=".txt"
-
+                        accept=".txt,text/plain"
                         onChange={handleFileChange}
-
                         disabled={selectionLoading}
 
                     />
 
                     <label
-
                         htmlFor="corpus-upload"
-
                         className="upload-button"
-
                     >
-
                         Upload your corpus(text)
-
                     </label>
 
                     {/* Shows Default button */}
@@ -1787,19 +1794,12 @@ function Inspect() {
                     {fileName !== "default" && (
 
                         <button
-
                             type="button"
-
                             className="default-button"
-
                             onClick={handleDefault}
-
                             disabled={selectionLoading}
-
                         >
-
                             Default
-
                         </button>
 
                     )}
