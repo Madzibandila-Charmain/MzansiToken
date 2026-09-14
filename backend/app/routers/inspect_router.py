@@ -127,13 +127,12 @@ def tokenize_text_post(request: TokenizeTextRequest):
     """
     Tokenize text typed by the user and return full efficiency metrics.
 
-    React sends: {"text": "...", "language": "isiZulu", "tokenizer": "gpt2"}
+    React sends: {"text": "...", "tokenizer": "gpt2"}
 
-    Separate from GET /tokenize-text/{model_name} in tokenizer_router, which
-    returns tokens only. Same URL, different HTTP method — they do not clash.
+    No language is required - typed text can be any language, or a mixture, and the per-word premium does not need to know which.
+    Separate from GET /tokenize-text/{model_name} in tokenizer_router, which returns tokens only. Same URL, different HTTP method - they do not clash.
     """
     text = request.text
-    language = request.language
     model_name = request.tokenizer
 
     if not text.strip():
@@ -141,9 +140,6 @@ def tokenize_text_post(request: TokenizeTextRequest):
 
     if len(text) > MAX_TEXT_CHARS:
         raise HTTPException(status_code=400, detail=f"Text is too long: {len(text):,} characters. The limit is {MAX_TEXT_CHARS:,}.",)
-    
-    if language not in corpus:
-        raise HTTPException(status_code=400, detail=f"Unsupported language: {language}")
 
     validate_tokenizer(model_name)
 
@@ -153,10 +149,9 @@ def tokenize_text_post(request: TokenizeTextRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
     tokens = tokenize_text(tokenizer, text)
-    metrics = calculate_efficiency_metrics_one_language([tokens], [text], model_name, language, tokenizer, corpus, basis="per_word",)
-    
+    metrics = calculate_efficiency_metrics_one_language([tokens], [text], model_name, None, tokenizer, corpus, basis="per_word",)
+
     return {
-        "language": language,
         "tokenizer": model_name,
         "tokenized_text": tokens,
         "metrics": metrics,
