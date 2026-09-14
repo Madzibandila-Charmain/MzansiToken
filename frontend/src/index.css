@@ -716,70 +716,76 @@ footer {
 ======================== */
 
 /* Main corpus box */
+
 .corpus-box {
     width: calc(100% - 40px);
     max-width: 1250px;
-
     margin: 0 auto 80px;
     padding: 32px 36px;
-
     box-sizing: border-box;
 
     display: grid;
     grid-template-columns: 1fr auto auto;
     align-items: center;
-
     column-gap: 24px;
 
-    background: #f8f8f8da;
+    background: oklch(0.99 0.008 242 / 0.82);
 
-    border: 1px solid #e2e2e2;
+    border: 1px solid oklch(0.86 0.03 240);
     border-radius: 16px;
 
-    box-shadow: 
-        0 4px 12px rgba(0, 0, 0, 0.06),
-        0 1px 3px rgba(0, 0, 0, 0.04);
+    box-shadow:
+        0 18px 45px oklch(0.25 0.025 252 / 0.08),
+        0 4px 14px oklch(0.25 0.025 252 / 0.04);
+
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
 }
+
+/* Corpus heading */
 
 .corpus-heading {
     margin: 0;
 
-    font-size: 14px;
-    font-weight: 700;
-
-    letter-spacing: 0.5px;
+    font-family: "Space Grotesk", sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
 
     color: oklch(0.69 0.19 44);
 
     white-space: nowrap;
 }
 
+/* Corpus label */
+
 .corpus-label {
     margin: 0;
 
     font-size: 14px;
-    color: #666666;
+    color: oklch(0.45 0.025 252);
 
     white-space: nowrap;
 }
 
+/* Upload area */
+
 .upload-container {
     display: flex;
     align-items: center;
-
     gap: 12px;
 }
 
 .upload-container input[type="file"] {
     position: absolute;
-
     width: 1px;
     height: 1px;
-
     opacity: 0;
     overflow: hidden;
     pointer-events: none;
 }
+
+/* Upload button */
 
 .upload-button {
     display: flex;
@@ -790,69 +796,102 @@ footer {
     min-height: 62px;
 
     padding: 12px 22px;
-
     box-sizing: border-box;
 
-    border: 2px dashed oklch(0.69 0.19 44);
-    border-radius: 10px;
+    border: 1px dashed oklch(0.86 0.03 240);
+    border-radius: 12px;
 
-    gap: 9px;
+    background: oklch(0.94 0.022 240 / 0.65);
 
-    background: oklch(0.97 0.025 70);
+    gap: 8px;
 
     font-size: 13px;
     font-weight: 600;
-
     text-align: center;
-    color:#111111;
+
+    color: #111111;
+
     cursor: pointer;
 
     transition:
         background-color 0.2s ease,
         border-color 0.2s ease,
-        transform 0.2s ease;
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 .upload-button:hover {
-    background-color: oklch(0.96 0.050 80);
-    border-color:oklch(0.76 0.18 55);
+    background: oklch(0.97 0.025 70);
+    border-color: oklch(0.69 0.19 44);
     color: #111111;
+
     transform: translateY(-1px);
+
+    box-shadow:
+        0 8px 20px oklch(0.25 0.025 252 / 0.08);
 }
 
+/* Upload icon */
+
+.upload-icon {
+    width: 15px;
+    height: 15px;
+    display: block;
+    flex-shrink: 0;
+}
+
+/* Default corpus button */
+
 .default-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 210px;
     min-height: 62px;
-    padding: 0 18px;
 
-    border: 2px dashed #d9d9d9;
-    border-radius: 10px;
+    padding: 12px 22px;
+    box-sizing: border-box;
 
-    background: #ffffff;
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 12px;
+
+    background: oklch(0.94 0.022 240 / 0.65);
 
     font-size: 13px;
     font-weight: 600;
 
-    color: #555555;
+    color: oklch(0.25 0.025 252);
 
     cursor: pointer;
 
     transition:
         background-color 0.2s ease,
         border-color 0.2s ease,
-        color 0.2s ease;
+        color 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 .default-button:hover {
-    background-color: #f5f5f5;
-    border-color: #aaaaaa;
-    color: #222222;
+    background: oklch(0.99 0.008 242 / 0.82);
+    border-color: oklch(0.69 0.19 44);
+    color: oklch(0.25 0.025 252);
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 8px 20px oklch(0.25 0.025 252 / 0.08);
 }
 
-/*Upload button keyboard focus */
+/* Upload button keyboard focus */
+
 .upload-container input[type="file"]:focus-visible + .upload-button {
-    outline: 2px solid #999999;
+    outline: 2px solid oklch(0.69 0.19 44);
     outline-offset: 3px;
 }
+
+/* Responsive */
 
 @media (max-width: 800px) {
 
@@ -865,11 +904,11 @@ footer {
         white-space: normal;
     }
 
-    .upload-button {
+    .upload-button,
+    .default-button {
         width: 100%;
         box-sizing: border-box;
     }
-
 }
 
 /* =====================
@@ -877,29 +916,50 @@ footer {
 ======================== */
 
 /* Container for the tokenization result */
+
 .tokenization-result {
     grid-column: 1 / -1;
-    margin-top: 28px;
+
+    margin-top: 20px;
+    padding: 20px;
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 14px;
+
+    background:
+        linear-gradient(
+            135deg,
+            oklch(0.94 0.022 240 / 0.82),
+            oklch(0.97 0.025 70 / 0.72)
+        );
+
+    box-shadow:
+        0 8px 24px oklch(0.25 0.025 252 / 0.05),
+        inset 0 1px 0 oklch(1 0 0 / 0.45);
+
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 /* Read-only tokenization output */
+
 .tokenization-text {
     width: 100%;
     height: 300px;
 
-    padding: 18px;
-
+    padding: 16px;
     box-sizing: border-box;
 
-    background: #ffffff;
+    background: oklch(0.99 0.008 242 / 0.82);
 
-    border: 1px solid #dedede;
+    border: 1px solid oklch(0.86 0.03 240);
     border-radius: 10px;
 
+    font-family: "DM Sans", sans-serif;
     font-size: 14px;
-    line-height: 1.8;
+    line-height: 1.7;
 
-    color: #333333;
+    color: oklch(0.25 0.025 252);
 
     white-space: normal;
     word-break: normal;
@@ -939,8 +999,10 @@ footer {
 }
 
 /* Individual metric card */
+
 .metric-card {
     flex: 1;
+
     min-height: 100px;
     min-width: 0;
 
@@ -951,9 +1013,13 @@ footer {
 
     box-sizing: border-box;
 
-    background: #ffffff;
-    border: 1px solid #e2e2e2;
+    background: oklch(0.94 0.022 240 / 0.62);
+
+    border: 1px solid oklch(0.86 0.03 240);
     border-radius: 12px;
+
+    box-shadow:
+        0 4px 12px oklch(0.25 0.025 252 / 0.04);
 
     cursor: pointer;
 
@@ -965,30 +1031,41 @@ footer {
 }
 
 /* Metric name */
+
 .metric-name {
     margin-bottom: 8px;
+
+    font-family: "DM Sans", sans-serif;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: 0.5px;
-    color: #777777;
+
+    color: oklch(0.45 0.025 252);
 }
 
 /* Metric value */
+
 .metric-value {
+    font-family: "Space Grotesk", sans-serif;
     font-size: 24px;
-    font-weight: 700;
-    color: #111111;
+    font-weight: 600;
+
+    color: oklch(0.25 0.025 252);
 }
 
 /* Metric card hover */
+
 .metric-card:hover {
-    background-color: #fafafa;
-    border-color: #bdbdbd;
+    border-color: oklch(0.69 0.19 44);
+
+    background: oklch(0.99 0.008 242 / 0.82);
+
     transform: translateY(-2px);
+
     box-shadow:
-        0 6px 16px rgba(0, 0, 0, 0.07),
-        0 2px 5px rgba(0, 0, 0, 0.04);
+        0 10px 24px oklch(0.25 0.025 252 / 0.08);
 }
+
 /* =====================
     TOKENIZATION RESULT
 ======================== */
@@ -1178,20 +1255,24 @@ footer {
 
 .token-pill {
     display: inline-block;
+    align-items: center;
 
-    padding: 4px 8px;
-    margin: 3px 2px;
+    padding: 5px 8px;
+    margin: 3px;
 
     border-radius: 7px;
 
-    border: 1px solid rgba(0, 0, 0, 0.10);
+    border: 1px solid oklch(0.86 0.03 240);
 
-    font-size: 14px;
-    line-height: 1.5;
+    font-size: 12px;
+    line-height: 1.2;
 
-    color: #333333;
+    color: oklch(0.25 0.025 252);
 
-    white-space: pre;
+    transition:
+        border-color 0.2s ease,
+        background-color 0.2s ease,
+        transform 0.2s ease;
 }
 
 /* Small visual separation when a new word begins */
