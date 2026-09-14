@@ -318,7 +318,7 @@ footer {
     bottom: -9px;
     height: 2px;
 
-    background:#111111;
+    background: oklch(0.69 0.19 44);
 
     border-radius: 10px;
 }
@@ -508,8 +508,12 @@ footer {
     border: none;
     border-radius: 8px;
     background-color: oklch(0.69 0.19 44);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: #ffffff;
     font-weight: 600;
+    gap: 9px;
     font-size: 14px;
     cursor: pointer;
     transition:
@@ -526,6 +530,18 @@ footer {
     background-color: #bdbdbd;
     cursor: not-allowed;
     transform: none;
+}
+
+.search-button-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.upload-icon {
+    width: 16px;
+    height: 16px;
+    display: block;
+    flex-shrink: 0;
 }
 
 /* =========================
@@ -777,16 +793,18 @@ footer {
 
     box-sizing: border-box;
 
-    border: 2px dashed #c8c8c8;
+    border: 2px dashed oklch(0.69 0.19 44);
     border-radius: 10px;
 
-    background: #ffffff;
+    gap: 9px;
+
+    background: oklch(0.97 0.025 70);
 
     font-size: 13px;
     font-weight: 600;
 
     text-align: center;
-    color: #333333;
+    color:#111111;
     cursor: pointer;
 
     transition:
@@ -796,9 +814,10 @@ footer {
 }
 
 .upload-button:hover {
-    background-color: #fafafa;
-    border-color: #999999;
-    color: #222222;
+    background-color: oklch(0.96 0.050 80);
+    border-color:oklch(0.76 0.18 55);
+    color: #111111;
+    transform: translateY(-1px);
 }
 
 .default-button {
