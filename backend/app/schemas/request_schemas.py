@@ -10,7 +10,9 @@ class InspectRequest(BaseModel):
 
 
 class TokenizeTextRequest(BaseModel):
-    """Data sent by React when the user types custom text."""
+    """
+    Data sent by React when the user types custom text.
+    No language: typed text can be any language, or a mixture, and the per-word premium does not need to know which.
+    """
     text: str
-    language: str
     tokenizer: str
