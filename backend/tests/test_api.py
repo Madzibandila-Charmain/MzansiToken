@@ -173,7 +173,7 @@ def test_upload_over_the_size_cap_is_rejected():
 def test_typed_text_over_the_character_cap_is_rejected():
     response = client.post(
         "/tokenize-text",
-        json={"text": "a" * 20_001, "language": "isiZulu", "tokenizer": "gpt2"},
+        json={"text": "a" * 20_001, "tokenizer": "gpt2"},
     )
     assert response.status_code == 400
     assert "too long" in response.json()["detail"].lower()
@@ -183,6 +183,6 @@ def test_typed_text_at_the_character_cap_is_accepted():
     # Off-by-one: exactly at the limit must still work.
     response = client.post(
         "/tokenize-text",
-        json={"text": "word " * 4000, "language": "isiZulu", "tokenizer": "gpt2"},
+        json={"text": "word " * 4000, "tokenizer": "gpt2"},
     )
     assert response.status_code == 200
