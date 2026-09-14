@@ -1758,7 +1758,9 @@ function Inspect() {
     }
 
     return (
-        <>
+        <div className="app-shell">
+
+            <div className="ambient-gradient"></div>
 
             <section className="inspect-intro">
 
@@ -2490,7 +2492,7 @@ function Inspect() {
 
             </section>
 
-        </>
+        </div>
 
     );
 

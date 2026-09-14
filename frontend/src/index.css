@@ -4,6 +4,211 @@
     Date: 17 August 2026
 */
 
+/*
+    MzansiToken animated background
+*/
+
+body {
+
+    margin: 0;
+
+    background: oklch(0.965 0.012 242);
+
+    color: oklch(0.25 0.025 252);
+
+    font-family: "DM Sans", sans-serif;
+
+}
+
+#root {
+
+    position: relative;
+
+    min-height: 100vh;
+
+    overflow-x: hidden;
+
+}
+
+@keyframes ambient-shift {
+    0%, 100% {
+        transform:
+            translate3d(-7%, -8%, 0)
+            rotate(-10deg)
+            scale(1);
+
+        border-radius:
+            42% 58% 68% 32% /
+            44% 38% 62% 56%;
+    }
+
+    50% {
+        transform:
+            translate3d(14%, 10%, 0)
+            rotate(13deg)
+            scale(1.16);
+
+        border-radius:
+            62% 38% 34% 66% /
+            36% 58% 42% 64%;
+    }
+}
+
+.app-shell {
+    position: relative;
+    min-height: 100vh;
+
+    /* Only hide horizontal overflow.
+       This allows the Inspect page to scroll normally. */
+    overflow-x: hidden;
+
+    background:
+        linear-gradient(
+            145deg,
+            oklch(0.975 0.015 226),
+            oklch(0.965 0.012 242) 46%,
+            oklch(0.975 0.025 70)
+        );
+}
+
+/* Main moving luminous orange shape */
+.ambient-gradient {
+    position: fixed;
+
+    z-index: 0;
+
+    top: 6%;
+    left: -12%;
+
+    width: min(72vw, 920px);
+    aspect-ratio: 1.35;
+
+    pointer-events: none;
+
+    opacity: 0.9;
+
+    filter: blur(26px);
+
+    background:
+        radial-gradient(
+            circle at 30% 32%,
+            oklch(0.84 0.16 61 / 0.92) 0 16%,
+            transparent 38%
+        ),
+
+        radial-gradient(
+            circle at 70% 56%,
+            oklch(0.72 0.2 43 / 0.72) 0 21%,
+            transparent 49%
+        ),
+
+        conic-gradient(
+            from 205deg at 48% 48%,
+            oklch(0.89 0.12 74 / 0.74),
+            oklch(0.72 0.2 43 / 0.58),
+            oklch(0.92 0.09 88 / 0.68),
+            oklch(0.89 0.12 74 / 0.74)
+        );
+
+    animation:
+        ambient-shift 16s ease-in-out infinite;
+}
+
+/* Orange ring inside the moving shape */
+.ambient-gradient::before {
+    content: "";
+
+    position: absolute;
+
+    inset: 13% 12% 18% 18%;
+
+    border:
+        clamp(18px, 3vw, 42px)
+        solid
+        oklch(0.72 0.2 43 / 0.42);
+
+    border-radius:
+        64% 36% 70% 30% /
+        38% 58% 42% 62%;
+
+    transform: rotate(15deg);
+}
+
+/* Soft blue glow */
+.ambient-gradient::after {
+    content: "";
+
+    position: absolute;
+
+    width: 58%;
+    aspect-ratio: 1;
+
+    right: -48%;
+    bottom: -34%;
+
+    border-radius:
+        34% 66% 56% 44% /
+        58% 34% 66% 42%;
+
+    background:
+        radial-gradient(
+            circle at 42% 40%,
+            oklch(0.78 0.14 220 / 0.5),
+            transparent 66%
+        );
+}
+
+/* Soft overlay across the whole background */
+.app-shell::after {
+    content: "";
+
+    position: fixed;
+
+    z-index: 0;
+
+    inset: 0;
+
+    pointer-events: none;
+
+    background:
+        linear-gradient(
+            180deg,
+            oklch(1 0 0 / 0.06),
+            oklch(0.96 0.015 242 / 0.34) 76%
+        );
+}
+
+/* =========================================================
+   KEEP ALL PAGE CONTENT ABOVE THE BACKGROUND
+   ========================================================= */
+
+.app-shell > *:not(.ambient-gradient) {
+    position: relative;
+    z-index: 1;
+}
+
+.site-header,
+
+main,
+
+footer {
+
+    position: relative;
+
+    z-index: 1;
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .ambient-gradient {
+
+        animation: none;
+
+    }
+
+}
+
 /* MzansiToken header */
 .site-header {
     width: 100%;
@@ -14,7 +219,10 @@
     justify-content: space-between;
 
     padding: 0 55px;
-    background: #ffffff;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(120, 150, 180, 0.20);
 
     border-bottom: 1px solid #eeeeee;
 
