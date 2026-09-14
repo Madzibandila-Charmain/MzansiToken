@@ -10,7 +10,7 @@ Routes:
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from app.schemas.request_schemas import InspectRequest, TokenizeTextRequest
-from app.services.flores_state import _metrics_cache, corpus
+from app.services.flores_state import corpus
 from app.services.metrics import calculate_efficiency_metrics_one_language
 from app.services.tokenizer import tokenize_corpus, tokenize_text
 from app.services.tokenizer_state import get_or_load_tokenizer, validate_tokenizer
@@ -78,24 +78,21 @@ def inspect_default(request: InspectRequest):
 @router.post("/inspect/upload")
 async def inspect_upload(
     file: UploadFile = File(...),
-    
     tokenizer: str = Form(...),
 ):
     """
     Tokenize a user-uploaded .txt file and compute its metrics.
 
-    React sends multipart/form-data: file, language, tokenizer.
+    React sends multipart/form-data: file, tokenizer.
+
+    No language is required - an uploaded file can be any language, or a mixture, and the per-word premium does not need to know which.
     """
     if not file.filename or not file.filename.lower().endswith(".txt"):
         raise HTTPException(status_code=400, detail="Only .txt files are supported.")
 
-    #if language not in corpus:
-        #raise HTTPException(status_code=400, detail=f"Unsupported language: {language}")
-
     validate_tokenizer(tokenizer)
 
-    # Read and check the file before loading the tokenizer - no point
-    # downloading a model for a request we are about to reject.
+    # Read and check the file before loading the tokenizer - no point downloading a model for a request we are about to reject.
     contents = await read_capped(file, MAX_UPLOAD_BYTES)
 
     try:
@@ -115,7 +112,7 @@ async def inspect_upload(
     sentences = [line.strip() for line in text.splitlines() if line.strip()]
 
     tokenized = tokenize_corpus(tokenizer_model, sentences)
-    metrics = calculate_efficiency_metrics_one_language(tokenized, sentences, tokenizer, "Uploaded Corpus", tokenizer_model, corpus, basis="per_word",)
+    metrics = calculate_efficiency_metrics_one_language(tokenized, sentences, tokenizer, None, tokenizer_model, corpus, basis="per_word",)
 
     return {
         "filename": file.filename,
