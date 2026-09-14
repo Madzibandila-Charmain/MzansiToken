@@ -164,7 +164,7 @@ def test_upload_over_the_size_cap_is_rejected():
     response = client.post(
         "/inspect/upload",
         files={"file": ("big.txt", big, "text/plain")},
-        data={"language": "isiZulu", "tokenizer": "gpt2"},
+        data={"tokenizer": "gpt2"},
     )
     assert response.status_code == 413
     assert "too large" in response.json()["detail"].lower()
