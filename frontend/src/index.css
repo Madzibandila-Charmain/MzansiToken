@@ -368,20 +368,20 @@ footer {
     font-weight: 700;
     letter-spacing: 3px;
 
-    color: #888888;
+    color: oklch(0.69 0.19 44);
 }
 
 /* Main Heading */
 .inspect-intro h1 {
     margin: 0;
 
-    font-size: 48px;
-    font-weight: 750;
+    font-size: 45px;
+    font-weight: 550;
 
     letter-spacing: -1.5px;
     line-height: 1.1;
 
-    color: #111111;
+    color: oklch(0.25 0.025 252);
 }
 
 /* Desription */
@@ -507,19 +507,25 @@ footer {
     padding: 0 20px;
     border: none;
     border-radius: 8px;
-    background-color: #1976d2;
-    color: white;
+    background-color: oklch(0.69 0.19 44);
+    color: #ffffff;
+    font-weight: 600;
     font-size: 14px;
     cursor: pointer;
+    transition:
+        background-color 0.2s ease,
+        transform 0.2s ease;
 }
 
 .search-button:hover {
-    background-color: #1565c0;
+    background-color: oklch(0.76 0.18 55);
+    transform: translateY(-1px);
 }
 
 .search-button:disabled {
     background-color: #bdbdbd;
     cursor: not-allowed;
+    transform: none;
 }
 
 /* =========================
@@ -727,7 +733,7 @@ footer {
 
     letter-spacing: 0.5px;
 
-    color: #222222;
+    color: oklch(0.69 0.19 44);
 
     white-space: nowrap;
 }
