@@ -18,6 +18,28 @@ import {
 
 import { useAppState } from "../context/AppStateContext";
 
+import MetricsChart from "../components/MetricsChart";
+
+const GPT2_SPACE = "\u0120";
+const SENTENCEPIECE_SPACE = "\u2581";
+const WORDPIECE_PREFIX = "##";
+
+function readable(token) {
+
+    if (
+        token.startsWith(GPT2_SPACE) ||
+        token.startsWith(SENTENCEPIECE_SPACE)
+    ) {
+        return { text: token.slice(1), newWord: true };
+    }
+
+    if (token.startsWith(WORDPIECE_PREFIX)) {
+        return { text: token.slice(2), newWord: false };
+    }
+
+    return { text: token, newWord: false };
+}
+
 function Inspect() {
 
     /* Shared application state. These values are stored in AppStateContext so they remain unchanged when the user moves between different pages. */
@@ -1154,7 +1176,7 @@ function Inspect() {
         }
 
         const newTokenizer =
-            tokenizerInput.trim();
+            (event.value ?? tokenizerInput).trim();
 
         if (!newTokenizer) {
             return;
@@ -1736,12 +1758,20 @@ function Inspect() {
                                     const colourIndex =
                                         tokenIndex % 8;
 
+                                    const { text, newWord } =
+                                        readable(
+                                            Array.isArray(token)
+                                                ? token.join("")
+                                                : String(token)
+                                        );
+
                                     return (
                                         <span
                                             key={`${sentenceIndex}-${tokenIndex}-${token}`}
-                                            className={`token-pill token-colour-${colourIndex}`}
+                                            className={`token-pill token-colour-${colourIndex}` + (newWord ? " token-new-word" : "")}
+                                            title={token}
                                         >
-                                            {token}
+                                            {text}
                                         </span>
                                     );
 
@@ -1858,6 +1888,52 @@ function Inspect() {
                             </button>
 
                         </div>
+
+                        {/* Shortcut pills for the supported tokenizers.
+                            The list comes from GET /options, which this page
+                            already loads into `tokenizers`. Typing your own
+                            still works - these are a shortcut, not a limit. */}
+
+                        {tokenizers.length > 0 && (
+
+                            <div className="tokenizer-pills">
+
+                                {tokenizers.map(
+                                    (name) => (
+
+                                        <button
+                                            key={name}
+                                            type="button"
+                                            className={`tokenizer-pill ${
+                                                tokenizer === name
+                                                    ? "is-selected"
+                                                    : ""
+                                            }`}
+                                            onClick={() => {
+
+                                                setTokenizerInput(
+                                                    name
+                                                );
+
+                                                handleTokenizerInput({
+                                                    key: "Enter",
+                                                    value: name
+                                                });
+
+                                            }}
+                                            disabled={
+                                                selectionLoading
+                                            }
+                                        >
+                                            {name}
+                                        </button>
+
+                                    )
+                                )}
+
+                            </div>
+
+                        )}
 
                         {/* Tokenizer status */}
 
@@ -2439,6 +2515,7 @@ function Inspect() {
                 )}
 
             </section>
+            <MetricsChart tokenizer={tokenizer} />
 
             {/* Text input box */}
 
