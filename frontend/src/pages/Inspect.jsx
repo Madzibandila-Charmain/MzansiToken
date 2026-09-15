@@ -1,4 +1,3 @@
-
 /*
     Inspect Page
     Author: Madzibandila Charmain
@@ -20,9 +19,14 @@ import { useAppState } from "../context/AppStateContext";
 
 import MetricsChart from "../components/MetricsChart";
 
+import { languageColour } from "../components/languageColours";
+
 const GPT2_SPACE = "\u0120";
 const SENTENCEPIECE_SPACE = "\u2581";
 const WORDPIECE_PREFIX = "##";
+
+/* Two side by side is what fits without scrolling. */
+const MAX_INSPECT_LANGUAGES = 2;
 
 function readable(token) {
 
@@ -941,10 +945,11 @@ function Inspect() {
                 ...selectedLanguages
             ];
 
-        // Maximum of 4 languages
+        /* Inspect reads two languages side by side. Compare is the page
+           for four - here a third selection pushes the oldest one out. */
 
         if (
-            updatedLanguages.length >= 4
+            updatedLanguages.length >= MAX_INSPECT_LANGUAGES
         ) {
 
             const removedLanguage =
@@ -1805,8 +1810,8 @@ function Inspect() {
                 </h1>
 
                 <p className="inspect-description">
-                    Pick a tokenizer, choose a language and explore how your
-                    text is broken down into subword tokens the model can understand.
+                    Read one or two languages token by token, then see all of them
+                    at once underneath &mdash; no scrolling back and forth.
                 </p>
 
             </section>
@@ -1967,106 +1972,70 @@ function Inspect() {
 
                     <div className="filter-group language-filter">
 
-                        <label htmlFor="language">
-                            Language
+                        <label>
+                            Read closely &mdash; pick up to two
                         </label>
 
-                        <div className="language-selector">
+                        {/* One pill per language. The dot is the same colour the
+                            language gets in the charts below, so the eye can follow
+                            one language all the way down the page. */}
 
-                            <button
-                                type="button"
-                                id="language"
-                                className="language-button"
-                                onClick={() =>
-                                    setLanguageMenuOpen(
-                                        !languageMenuOpen
-                                    )
-                                }
-                                disabled={
-                                    selectionLoading ||
-                                    source === "upload"
-                                }
-                            >
+                        <div className="language-pills">
 
-                                <span>
+                            {languages.map(
+                                (item) => (
 
-                                    {source === "upload"
-                                        ? "Language disabled for upload"
-                                        : selectedLanguages.length === 1
-                                            ? selectedLanguages[0]
-                                            : `${selectedLanguages.length} languages selected`
-                                    }
+                                    <button
+                                        type="button"
+                                        key={item}
+                                        className={`language-pill ${
+                                            selectedLanguages.includes(
+                                                item
+                                            )
+                                                ? "is-selected"
+                                                : ""
+                                        }`}
+                                        onClick={() => {
+                                            toggleLanguage(
+                                                item
+                                            );
+                                        }}
+                                        disabled={
+                                            selectionLoading ||
+                                            source === "upload"
+                                        }
+                                    >
 
-                                </span>
+                                        <span
+                                            className="pill-dot"
+                                            style={{
+                                                background:
+                                                    languageColour(item)
+                                            }}
+                                        ></span>
 
-                                <span className="language-arrow">
-                                    ▾
-                                </span>
+                                        {item}
 
-                            </button>
+                                    </button>
 
-                            {languageMenuOpen &&
-                                source === "default" && (
-
-                                    <div className="language-menu">
-
-                                        <div className="language-menu-title">
-                                            CHOOSE A LANGUAGE
-                                        </div>
-
-                                        <div className="language-menu-subtitle">
-                                            Choose up to 4 languages
-                                        </div>
-
-                                        <div className="language-options">
-
-                                            {languages.map(
-                                                (item) => (
-
-                                                    <button
-                                                        type="button"
-                                                        key={item}
-                                                        className={`language-option ${
-                                                            selectedLanguages.includes(
-                                                                item
-                                                            )
-                                                                ? "selected"
-                                                                : ""
-                                                        }`}
-                                                        onClick={() => {
-                                                            toggleLanguage(
-                                                                item
-                                                            );
-                                                        }}
-                                                        disabled={
-                                                            selectionLoading
-                                                        }
-                                                    >
-                                                        {item}
-                                                    </button>
-
-                                                )
-                                            )}
-
-                                        </div>
-
-                                        <button
-                                            type="button"
-                                            className="language-done-button"
-                                            onClick={() =>
-                                                setLanguageMenuOpen(
-                                                    false
-                                                )
-                                            }
-                                        >
-                                            Done
-                                        </button>
-
-                                    </div>
-
-                                )}
+                                )
+                            )}
 
                         </div>
+
+                        {source === "upload" && (
+
+                            <div className="selection-status">
+
+                                <span className="status-dot"></span>
+
+                                <span>
+                                    Language is off while an uploaded corpus is active.
+                                </span>
+
+                            </div>
+
+                        )}
 
                         {/* Language status */}
 
@@ -2206,7 +2175,20 @@ function Inspect() {
                             <div className="tokenization-result">
 
                                 <div className="tokenization-language">
+
+                                    <span
+                                        className="swatch"
+                                        style={{ background: "#8b93a0" }}
+                                    ></span>
+
                                     Uploaded Corpus
+
+                                    <span className="count">
+                                        {Number(
+                                            corpusMetrics.tokens
+                                        ).toLocaleString()} tokens
+                                    </span>
+
                                 </div>
 
                                 <div className="tokenization-text">
@@ -2323,7 +2305,25 @@ function Inspect() {
                                         <div className="tokenization-result">
 
                                             <div className="tokenization-language">
+
+                                                <span
+                                                    className="swatch"
+                                                    style={{
+                                                        background:
+                                                            languageColour(
+                                                                selectedLanguage
+                                                            )
+                                                    }}
+                                                ></span>
+
                                                 {selectedLanguage}
+
+                                                <span className="count">
+                                                    {Number(
+                                                        data.metrics.tokens
+                                                    ).toLocaleString()} tokens
+                                                </span>
+
                                             </div>
 
                                             <div className="tokenization-text">
