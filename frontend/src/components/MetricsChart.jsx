@@ -237,12 +237,20 @@ function MetricsChart({ tokenizer }) {
         const pad = Math.min(0.016, span / 8);
         const mid = angle + span / 2;
 
+        /* The share, printed on the slice itself when the slice is wide
+           enough to hold it. Anything narrower is left to the legend. */
+        const labelRadius = (DONUT_INNER + DONUT_OUTER) / 2;
+
         const slice = {
             name: name,
             path: sector(DONUT_INNER, DONUT_OUTER, angle + pad, angle + span - pad),
             dx: Math.cos(mid) * 12,
             dy: Math.sin(mid) * 12,
-            delay: index * 55
+            delay: index * 55,
+            share: (data[name].token_count / total * 100).toFixed(1) + "%",
+            roomForLabel: span > 0.34,
+            labelX: CENTRE + labelRadius * Math.cos(mid),
+            labelY: CENTRE + labelRadius * Math.sin(mid) + 4
         };
 
         angle = angle + span;
@@ -364,6 +372,20 @@ function MetricsChart({ tokenizer }) {
                         aria-label="Share of total tokens by language"
                     >
                         {donutSlices.map((slice) => wedge(slice, 1))}
+
+                        {donutSlices
+                            .filter((slice) => slice.roomForLabel)
+                            .map((slice) => (
+                                <text
+                                    key={slice.name}
+                                    className="chart-slice-label"
+                                    x={slice.labelX}
+                                    y={slice.labelY}
+                                    textAnchor="middle"
+                                >
+                                    {slice.share}
+                                </text>
+                            ))}
 
                         <text
                             className="chart-hub"

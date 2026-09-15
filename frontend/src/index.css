@@ -2253,3 +2253,15 @@ body {
 .metric-value {
     font-size: 20px;
 }
+
+
+/* The share printed on each doughnut slice. */
+.chart-slice-label {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    font-weight: 500;
+
+    fill: #fdf9f9;
+
+    pointer-events: none;
+}
