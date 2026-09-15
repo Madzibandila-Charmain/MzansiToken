@@ -2049,3 +2049,207 @@ body {
 .chart-tip .val {
     font-family: "IBM Plex Mono", ui-monospace, monospace;
 }
+
+
+
+/* =========================================================
+   INSPECT additions, part 2 - Mukovhe Ranwashe (RNWMUK001)
+   Pills instead of dropdowns, and the side-by-side reading
+   panels. Appended, so nothing above is edited.
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   CONTROL BAR
+   Two groups side by side, each one a label above its pills.
+   --------------------------------------------------------- */
+
+.inspect-filters {
+    display: grid;
+    grid-template-columns: minmax(280px, 340px) 1fr;
+    gap: 26px;
+    align-items: start;
+    width: 100%;
+}
+
+@media (max-width: 860px) {
+    .inspect-filters {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+}
+
+.filter-group > label {
+    display: block;
+
+    margin-bottom: 8px;
+
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+
+    color: oklch(0.45 0.025 252);
+}
+
+/* ---------------------------------------------------------
+   PILLS
+   The tokenizer row and the language row share one look, so
+   the page reads as one control surface instead of two.
+   --------------------------------------------------------- */
+
+.tokenizer-pills,
+.language-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    margin-top: 10px;
+}
+
+.language-pills {
+    margin-top: 0;
+}
+
+.tokenizer-pill,
+.language-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+
+    padding: 7px 13px;
+
+    background: oklch(1 0 0 / 0.72);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 999px;
+
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+
+    color: oklch(0.25 0.025 252);
+
+    cursor: pointer;
+
+    transition:
+        transform 0.15s ease,
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        background-color 0.15s ease;
+}
+
+.tokenizer-pill:hover:not(:disabled),
+.language-pill:hover:not(:disabled) {
+    transform: translateY(-2px);
+
+    border-color: oklch(0.69 0.19 44);
+
+    box-shadow: 0 5px 14px oklch(0.25 0.025 252 / 0.12);
+}
+
+.tokenizer-pill.is-selected,
+.language-pill.is-selected {
+    background: oklch(0.25 0.025 252);
+    border-color: oklch(0.25 0.025 252);
+
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.tokenizer-pill:disabled,
+.language-pill:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+/* The dot carries the colour this language has in the charts. */
+.pill-dot {
+    width: 9px;
+    height: 9px;
+
+    flex: none;
+
+    border-radius: 50%;
+
+    box-shadow: 0 0 0 1px oklch(1 0 0 / 0.5);
+}
+
+/* ---------------------------------------------------------
+   READING PANELS
+   One card per language, two across when two are selected.
+   Each card is capped so the charts underneath stay on screen.
+   --------------------------------------------------------- */
+
+.language-tokenization-grid {
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 18px;
+}
+
+.language-tokenization-block {
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+}
+
+.tokenization-result {
+    margin-top: 0;
+}
+
+.tokenization-language {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+
+    margin-bottom: 10px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.tokenization-language .swatch {
+    width: 11px;
+    height: 11px;
+
+    flex: none;
+
+    border-radius: 3px;
+}
+
+.tokenization-language .count {
+    margin-left: auto;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+    font-weight: 400;
+
+    color: oklch(0.45 0.025 252);
+}
+
+/* Height-capped instead of fixed, so one short sentence does not
+   leave a large empty box and a long corpus still scrolls inside. */
+.tokenization-text {
+    height: auto;
+    min-height: 110px;
+    max-height: 230px;
+}
+
+/* Metrics belong to the card above them, not to the page. */
+.tokenization-metrics {
+    margin-top: 12px;
+    gap: 12px;
+}
+
+.metric-row {
+    gap: 10px;
+}
+
+.metric-card {
+    min-height: 76px;
+    padding: 10px 6px;
+}
+
+.metric-value {
+    font-size: 20px;
+}
