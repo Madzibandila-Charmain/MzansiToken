@@ -1549,3 +1549,503 @@ footer {
     display: block;
     margin-bottom: 8px;
 }
+
+
+
+/* =========================================================
+   INSPECT additions - Mukovhe Ranwashe (RNWMUK001)
+   Appended to Charmaine's stylesheet. Nothing above this line
+   is edited; these rules come later so they win on their own.
+   1. Lava-lamp background   2. Type pairing
+   3. Brighter token pills   4. Chart panel
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   1. LAVA LAMP
+   Charmaine's single ambient shape becomes three, each on its
+   own timer. Different periods is the whole trick - they never
+   line up the same way twice, so it reads as liquid.
+   No JSX change: her one <div class="ambient-gradient"> already
+   has a ::before and an ::after, so those become blobs two and
+   three.
+   --------------------------------------------------------- */
+
+.ambient-gradient {
+    filter: blur(44px);
+    opacity: 0.72;
+    animation: lava-a 19s ease-in-out infinite;
+    will-change: transform, border-radius;
+}
+
+/* Blob two - cool blue, drifts the other way */
+.ambient-gradient::before {
+    content: "";
+    position: absolute;
+    inset: auto -34% -30% auto;
+
+    width: 78%;
+    aspect-ratio: 1;
+
+    border: 0;                                   /* was the orange ring */
+
+    background: radial-gradient(
+        circle at 46% 44%,
+        oklch(0.78 0.15 220 / 0.82) 0 42%,
+        transparent 70%
+    );
+
+    filter: blur(22px);
+
+    animation: lava-b 27s ease-in-out infinite;
+    will-change: transform, border-radius;
+}
+
+/* Blob three - a slow pink one behind the other two */
+.ambient-gradient::after {
+    content: "";
+    position: absolute;
+
+    width: 62%;
+    aspect-ratio: 1.1;
+
+    right: -20%;
+    top: 26%;
+
+    background: radial-gradient(
+        circle at 50% 50%,
+        oklch(0.80 0.16 330 / 0.6) 0 44%,
+        transparent 72%
+    );
+
+    filter: blur(26px);
+
+    animation: lava-c 34s ease-in-out infinite;
+    will-change: transform, border-radius;
+}
+
+@keyframes lava-a {
+    0%, 100% {
+        transform: translate3d(-4%, -6%, 0) rotate(-10deg) scale(1);
+        border-radius: 42% 58% 68% 32% / 44% 38% 62% 56%;
+    }
+    33% {
+        transform: translate3d(10%, 12%, 0) rotate(8deg) scale(1.18);
+        border-radius: 66% 34% 38% 62% / 34% 62% 38% 66%;
+    }
+    66% {
+        transform: translate3d(4%, -10%, 0) rotate(-4deg) scale(1.06);
+        border-radius: 36% 64% 52% 48% / 60% 40% 60% 40%;
+    }
+}
+
+@keyframes lava-b {
+    0%, 100% {
+        transform: translate3d(6%, 4%, 0) scale(1);
+        border-radius: 34% 66% 56% 44% / 58% 34% 66% 42%;
+    }
+    50% {
+        transform: translate3d(-12%, -14%, 0) scale(1.24);
+        border-radius: 62% 38% 32% 68% / 40% 64% 36% 60%;
+    }
+}
+
+@keyframes lava-c {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) scale(1);
+        border-radius: 50% 50% 46% 54% / 54% 46% 54% 46%;
+    }
+    40% {
+        transform: translate3d(-18%, 16%, 0) scale(1.3);
+        border-radius: 70% 30% 60% 40% / 36% 66% 34% 64%;
+    }
+    75% {
+        transform: translate3d(14%, -12%, 0) scale(0.92);
+        border-radius: 38% 62% 34% 66% / 64% 38% 62% 36%;
+    }
+}
+
+/* If the user has asked their operating system to stop animation,
+   every moving thing on the page freezes. */
+@media (prefers-reduced-motion: reduce) {
+    .ambient-gradient,
+    .ambient-gradient::before,
+    .ambient-gradient::after {
+        animation: none;
+    }
+
+    .chart-pop,
+    .chart-grow,
+    .chart-label {
+        transition: none;
+    }
+}
+
+
+/* ---------------------------------------------------------
+   2. TYPE
+   Plus Jakarta Sans for reading, Bricolage Grotesque for
+   headings, IBM Plex Mono for tokens. Monospace matters on the
+   pills: every token is the same character width, so you can
+   see that one language's chunks are shorter without reading
+   them. Falls back to Charmaine's fonts if the webfont is slow.
+
+   The fonts are loaded by a <link> in frontend/index.html, NOT by
+   an @import here - an @import is only legal at the very top of a
+   stylesheet, so one added down here would be silently ignored.
+   --------------------------------------------------------- */
+
+body {
+    font-family: "Plus Jakarta Sans", "DM Sans", sans-serif;
+}
+
+.inspect-intro h1,
+.corpus-heading,
+.text-input-heading,
+.metric-value,
+.typed-metric-value,
+.chart-title {
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    letter-spacing: -0.015em;
+}
+
+.metric-value,
+.typed-metric-value {
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* ---------------------------------------------------------
+   3. BRIGHTER TOKEN PILLS
+   Same eight slots, same cycling, more colour in each. The
+   hover lift makes it obvious the pill is a single unit.
+   --------------------------------------------------------- */
+
+.token-pill {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    border-color: oklch(0 0 0 / 0.08);
+
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+.token-pill:hover {
+    transform: translateY(-2px) scale(1.06);
+
+    box-shadow: 0 5px 12px oklch(0.25 0.025 252 / 0.18);
+}
+
+.token-colour-0 { background: #ffc9c9; }
+.token-colour-1 { background: #d8f3a3; }
+.token-colour-2 { background: #b8e0ff; }
+.token-colour-3 { background: #ffe08a; }
+.token-colour-4 { background: #dcc6ff; }
+.token-colour-5 { background: #a8f0d0; }
+.token-colour-6 { background: #ffc2e2; }
+.token-colour-7 { background: #c3cbff; }
+
+
+/* ---------------------------------------------------------
+   4. CHART PANEL
+   Sits under the corpus box and shows all eight languages at
+   once. Colours are a fixed wheel, assigned in order and never
+   cycled; the order was checked with a colour-blindness
+   simulator so no two neighbouring slices collapse together.
+   --------------------------------------------------------- */
+
+.charts-box {
+    width: calc(100% - 40px);
+    max-width: 1250px;
+
+    margin: 0 auto 80px;
+    padding: 28px 32px;
+
+    box-sizing: border-box;
+
+    background: oklch(0.99 0.008 242 / 0.82);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 16px;
+
+    box-shadow:
+        0 18px 45px oklch(0.25 0.025 252 / 0.08),
+        0 4px 14px oklch(0.25 0.025 252 / 0.04);
+
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.charts-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px;
+
+    margin-bottom: 14px;
+}
+
+.charts-head h2 {
+    margin: 0;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+}
+
+.charts-head p {
+    margin: 0;
+
+    font-size: 13px;
+    color: oklch(0.62 0.02 252);
+}
+
+.charts-grid {
+    display: grid;
+    gap: 16px;
+
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+}
+
+.chart-card {
+    padding: 14px 14px 4px;
+
+    background: oklch(1 0 0 / 0.62);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 16px;
+}
+
+.chart-card h3 {
+    margin: 0 0 1px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.chart-card > p {
+    margin: 0 0 6px;
+
+    font-size: 12px;
+    color: oklch(0.62 0.02 252);
+}
+
+.chart-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+
+    overflow: visible;
+}
+
+/* Each wedge is a .chart-pop wrapping a .chart-grow. Two nested
+   groups so the hover slide and the value-driven length never
+   fight over the same transform. */
+.chart-pop {
+    cursor: pointer;
+
+    transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.chart-grow {
+    transition: transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.chart-wedge {
+    stroke: #ffffff;
+    stroke-width: 2.4;
+    stroke-linejoin: round;
+}
+
+.chart-pop.is-on .chart-wedge {
+    filter: drop-shadow(0 4px 10px oklch(0.25 0.025 252 / 0.3));
+}
+
+.chart-pop.is-dim {
+    opacity: 0.26;
+}
+
+.chart-hub {
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+
+    fill: oklch(0.25 0.025 252);
+}
+
+.chart-hub-sub {
+    font-size: 11px;
+
+    fill: oklch(0.62 0.02 252);
+}
+
+.chart-label {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+
+    fill: oklch(0.45 0.025 252);
+
+    pointer-events: none;
+
+    transition: transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* The dashed circle marking English = 1.00x */
+.chart-baseline-ring {
+    fill: none;
+
+    stroke: oklch(0.62 0.02 252);
+    stroke-width: 1;
+    stroke-dasharray: 3 4;
+
+    pointer-events: none;
+}
+
+/* Measure switcher */
+.chart-switch {
+    display: inline-flex;
+    gap: 4px;
+
+    margin-bottom: 6px;
+    padding: 4px;
+
+    background: oklch(0.92 0.015 242 / 0.7);
+    border-radius: 12px;
+}
+
+.chart-switch button {
+    padding: 6px 12px;
+
+    border: 0;
+    border-radius: 9px;
+
+    background: transparent;
+
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+
+    color: oklch(0.45 0.025 252);
+
+    cursor: pointer;
+}
+
+.chart-switch button[aria-pressed="true"] {
+    background: #ffffff;
+
+    color: oklch(0.25 0.025 252);
+
+    box-shadow: 0 1px 4px oklch(0.25 0.025 252 / 0.14);
+}
+
+/* Legend - also the direct labels, which is what lets the two
+   lighter colours stay in the palette. */
+.chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    margin-top: 14px;
+}
+
+.chart-chip {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+
+    padding: 5px 12px 5px 8px;
+
+    background: oklch(1 0 0 / 0.72);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 999px;
+
+    font-size: 12.5px;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+.chart-chip:hover {
+    transform: translateY(-2px);
+
+    box-shadow: 0 5px 14px oklch(0.25 0.025 252 / 0.12);
+}
+
+.chart-chip .swatch {
+    width: 11px;
+    height: 11px;
+
+    flex: none;
+
+    border-radius: 50%;
+}
+
+.chart-chip b {
+    font-variant-numeric: tabular-nums;
+}
+
+.chart-chip .family {
+    color: oklch(0.62 0.02 252);
+}
+
+/* The sentence that says out loud what the two charts disagree about */
+.chart-note {
+    max-width: 92ch;
+
+    margin: 16px 0 0;
+    padding: 13px 16px;
+
+    background: oklch(1 0 0 / 0.72);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-left: 4px solid #2f6fd0;
+    border-radius: 13px;
+
+    font-size: 13.5px;
+
+    color: oklch(0.45 0.025 252);
+}
+
+.chart-note b {
+    color: oklch(0.25 0.025 252);
+}
+
+/* Hover card */
+.chart-tip {
+    position: fixed;
+    z-index: 30;
+
+    padding: 9px 12px;
+
+    background: oklch(0.25 0.025 252);
+
+    border-radius: 10px;
+
+    font-size: 12.5px;
+    line-height: 1.5;
+
+    color: #ffffff;
+
+    pointer-events: none;
+
+    opacity: 0;
+
+    transition: opacity 0.12s ease;
+}
+
+.chart-tip.is-visible {
+    opacity: 1;
+}
+
+.chart-tip .key {
+    color: oklch(0.74 0.012 252);
+}
+
+.chart-tip .val {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
