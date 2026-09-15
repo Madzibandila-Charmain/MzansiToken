@@ -31,56 +31,86 @@ body {
 }
 
 @keyframes ambient-shift {
+
     0%, 100% {
+
         transform:
+
             translate3d(-7%, -8%, 0)
+
             rotate(-10deg)
+
             scale(1);
 
         border-radius:
+
             42% 58% 68% 32% /
+
             44% 38% 62% 56%;
+
     }
 
     50% {
+
         transform:
+
             translate3d(14%, 10%, 0)
+
             rotate(13deg)
+
             scale(1.16);
 
         border-radius:
+
             62% 38% 34% 66% /
+
             36% 58% 42% 64%;
+
     }
+
 }
 
 .app-shell {
+
     position: relative;
+
     min-height: 100vh;
 
     /* Only hide horizontal overflow.
        This allows the Inspect page to scroll normally. */
+
     overflow-x: hidden;
 
     background:
+
         linear-gradient(
+
             145deg,
+
             oklch(0.975 0.015 226),
+
             oklch(0.965 0.012 242) 46%,
+
             oklch(0.975 0.025 70)
+
         );
+
 }
 
 /* Main moving luminous orange shape */
+
 .ambient-gradient {
+
     position: fixed;
 
     z-index: 0;
 
     top: 6%;
+
     left: -12%;
 
     width: min(72vw, 920px);
+
     aspect-ratio: 1.35;
 
     pointer-events: none;
@@ -90,32 +120,51 @@ body {
     filter: blur(26px);
 
     background:
+
         radial-gradient(
+
             circle at 30% 32%,
+
             oklch(0.84 0.16 61 / 0.92) 0 16%,
+
             transparent 38%
+
         ),
 
         radial-gradient(
+
             circle at 70% 56%,
+
             oklch(0.72 0.2 43 / 0.72) 0 21%,
+
             transparent 49%
+
         ),
 
         conic-gradient(
+
             from 205deg at 48% 48%,
+
             oklch(0.89 0.12 74 / 0.74),
+
             oklch(0.72 0.2 43 / 0.58),
+
             oklch(0.92 0.09 88 / 0.68),
+
             oklch(0.89 0.12 74 / 0.74)
+
         );
 
     animation:
+
         ambient-shift 16s ease-in-out infinite;
+
 }
 
 /* Orange ring inside the moving shape */
+
 .ambient-gradient::before {
+
     content: "";
 
     position: absolute;
@@ -123,43 +172,63 @@ body {
     inset: 13% 12% 18% 18%;
 
     border:
+
         clamp(18px, 3vw, 42px)
+
         solid
+
         oklch(0.72 0.2 43 / 0.42);
 
     border-radius:
+
         64% 36% 70% 30% /
+
         38% 58% 42% 62%;
 
     transform: rotate(15deg);
+
 }
 
 /* Soft blue glow */
+
 .ambient-gradient::after {
+
     content: "";
 
     position: absolute;
 
     width: 58%;
+
     aspect-ratio: 1;
 
     right: -48%;
+
     bottom: -34%;
 
     border-radius:
+
         34% 66% 56% 44% /
+
         58% 34% 66% 42%;
 
     background:
+
         radial-gradient(
+
             circle at 42% 40%,
+
             oklch(0.78 0.14 220 / 0.5),
+
             transparent 66%
+
         );
+
 }
 
 /* Soft overlay across the whole background */
+
 .app-shell::after {
+
     content: "";
 
     position: fixed;
@@ -171,11 +240,17 @@ body {
     pointer-events: none;
 
     background:
+
         linear-gradient(
+
             180deg,
+
             oklch(1 0 0 / 0.06),
+
             oklch(0.96 0.015 242 / 0.34) 76%
+
         );
+
 }
 
 /* =========================================================
@@ -183,8 +258,11 @@ body {
    ========================================================= */
 
 .app-shell > *:not(.ambient-gradient) {
+
     position: relative;
+
     z-index: 1;
+
 }
 
 .site-header,
@@ -210,117 +288,169 @@ footer {
 }
 
 /* MzansiToken header */
+
 .site-header {
+
     width: 100%;
+
     height: 88px;
 
     display: flex;
+
     align-items: center;
+
     justify-content: space-between;
 
     padding: 0 55px;
+
     background: rgba(255, 255, 255, 0.72);
+
     backdrop-filter: blur(14px);
+
     -webkit-backdrop-filter: blur(14px);
+
     border-bottom: 1px solid rgba(120, 150, 180, 0.20);
 
     border-bottom: 1px solid #eeeeee;
 
     box-sizing: border-box;
+
 }
 
 /* LOGO*/
 
 .logo {
+
     display: flex;
+
     align-items: center;
+
     gap: 13px;
+
 }
 
 .brand-mark {
+
     width: 38px;
+
     height: 38px;
 
     display: flex;
+
     align-items: center;
+
     justify-content: center;
 
     border-radius: 50%;
 
     background-color: #111111;
+
     color: #ffffff;
 
     font-size: 15px;
+
     font-weight: 700;
+
     letter-spacing: -0.5px;
+
 }
 
 /* LOGO Text */
+
 .brand-text {
+
     display: flex;
+
     flex-direction: column;
+
     gap: 3px;
+
 }
 
 .logo-name {
+
     font-size: 21px;
+
     font-weight: 800;
 
     letter-spacing: 2.5px;
 
     color: #111111;
+
 }
 
 /* Navigation */
 
 .main-nav {
+
     display: flex;
+
     align-items: center;
+
     gap: 38px;
+
 }
 
 .main-nav a {
+
     position: relative;
 
     text-decoration: none;
 
     font-size: 14px;
+
     font-weight: 500;
 
     color: #777777;
 
     transition:
+
         color 0.25s ease,
+
         transform 0.25s ease;
+
 }
 
 /* Navigation Hover */
+
 .main-nav a:hover {
+
     color: #111111;
+
     transform: translateY(-1px);
+
 }
 
 /* Active page */
+
 .main-nav a.active {
+
     color: #111111;
+
     font-weight: 700;
+
 }
 
-/*Small line underneath active page */
+/*Small line underneath active page*/
+
 .main-nav a.active::after {
+
     content: "";
 
     position: absolute;
 
     left: 0;
+
     right: 0;
 
     bottom: -9px;
+
     height: 2px;
 
     background: oklch(0.69 0.19 44);
 
     border-radius: 10px;
+
 }
 
 /* Responsive */
@@ -328,6 +458,7 @@ footer {
 @media (max-width: 700px) {
 
     .site-header {
+
         height: auto;
 
         padding: 22px 25px;
@@ -337,14 +468,17 @@ footer {
         align-items: flex-start;
 
         gap: 20px;
+
     }
 
     .main-nav {
+
         width: 100%;
 
         justify-content: space-between;
 
         gap: 15px;
+
     }
 
 }
@@ -354,46 +488,65 @@ footer {
 ================== */
 
 .inspect-intro {
+
     max-width: 900px;
+
     margin: 0 auto;
+
     padding: 95px 20px 65px;
+
     text-align: center;
+
 }
 
 /* Small label */
+
 .inspect-label {
+
     margin: 0 0 18px;
 
     font-size: 12px;
+
     font-weight: 700;
+
     letter-spacing: 3px;
 
     color: oklch(0.69 0.19 44);
+
 }
 
 /* Main Heading */
+
 .inspect-intro h1 {
+
     margin: 0;
 
     font-size: 45px;
+
     font-weight: 550;
 
     letter-spacing: -1.5px;
+
     line-height: 1.1;
 
     color: oklch(0.25 0.025 252);
+
 }
 
 /* Desription */
+
 .inspect-description {
+
     max-width: 540px;
 
     margin: 22px auto 0;
 
     font-size: 17px;
+
     line-height: 1.7;
 
     color: #6f6f6f;
+
 }
 
 /* ==================
@@ -401,11 +554,15 @@ footer {
 ===================== */
 
 /* Main box */
+
 .inspect-controls {
+
     width: calc(100% - 40px);
+
     max-width: 1250px;
 
     margin: 0 auto 80px;
+
     padding: 36px;
 
     box-sizing: border-box;
@@ -413,6 +570,7 @@ footer {
     background: #f8f8f8da;
 
     border: 1px solid #e2e2e2;
+
     border-radius: 16px;
 
     box-shadow: 
@@ -420,37 +578,55 @@ footer {
         0 1px 3px rgba(0, 0, 0, 0.04);
 
     display: flex;
+
     align-items: flex-end;
+
     gap: 28px;
+
 }
 
 .inspect-filters {
+
     width: 100%;
 
     display: grid;
+
     grid-template-columns: 1fr 1fr;
+
     column-gap: 80px;
+
 }
 
 .filter-group {
+
     display: flex;
+
     flex-direction: column;
+
     gap: 9px;
+
     min-width: 0;
+
 }
 
 .filter-group label{
+
     font-size: 12px;
+
     font-weight: 700;
 
     letter-spacing: 0.5px;
 
     color: #555555;
+
 }
 
 .filter-group select,
+
 .filter-group input {
+
     width: 100%;
+
     height: 44px;
 
     box-sizing: border-box;
@@ -458,90 +634,233 @@ footer {
     padding: 0 14px;
 
     border: 1px solid #d9d9d9;
+
     border-radius: 8px;
 
     background-color: #ffffff;
 
     font-size: 14px;
+
     color: #333333;
 
     outline: none;
+
 }
 
 .filter-group select {
+
     cursor: pointer;
+
 }
 
 .filter-group input {
+
     cursor: text;
+
 }
 
 .filter-group select:focus,
+
 .filter-group input:focus {
+
     border-color: #aaaaaa;
+
 }
 
 .filter-group select:disabled,
+
 .filter-group input:disabled {
+
     background-color: #f5f5f5;
+
     color: #888888;
+
     cursor: not-allowed;
+
     opacity: 0.8;
+
+}
+
+/* =========================
+   TOKENIZER PILLS
+========================= */
+
+.tokenizer-pills {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 6px;
+
+    margin-top: 10px;
+
+}
+
+.tokenizer-pill {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    padding: 7px 13px;
+
+    background: oklch(1 0 0 / 0.72);
+
+    border: 1px solid oklch(0.86 0.03 240);
+
+    border-radius: 999px;
+
+    font: inherit;
+
+    font-size: 12.5px;
+
+    font-weight: 500;
+
+    color: oklch(0.25 0.025 252);
+
+    cursor: pointer;
+
+    transition:
+
+        transform 0.15s ease,
+
+        border-color 0.15s ease,
+
+        box-shadow 0.15s ease,
+
+        background-color 0.15s ease;
+
+}
+
+.tokenizer-pill:hover:not(:disabled) {
+
+    transform: translateY(-2px);
+
+    border-color: oklch(0.69 0.19 44);
+
+    box-shadow:
+
+        0 5px 14px oklch(0.25 0.025 252 / 0.12);
+
+}
+
+.tokenizer-pill.is-selected {
+
+    background: oklch(0.25 0.025 252);
+
+    border-color: oklch(0.25 0.025 252);
+
+    color: #ffffff;
+
+    font-weight: 600;
+
+}
+
+.tokenizer-pill:disabled {
+
+    opacity: 0.45;
+
+    cursor: default;
+
 }
 
 .tokenizer-search {
+
     display: flex;
+
     align-items: center;
+
     gap: 10px;
+
     width: 100%;
+
     box-sizing: border-box;
+
 }
 
 .tokenizer-search input {
+
     flex: 1;
+
     min-width: 0;
+
 }
 
 .search-button {
+
     height: 44px;
+
     padding: 0 20px;
+
     border: none;
+
     border-radius: 8px;
+
     background-color: oklch(0.69 0.19 44);
+
     display: flex;
+
     align-items: center;
+
     justify-content: center;
+
     color: #ffffff;
+
     font-weight: 600;
+
     gap: 9px;
+
     font-size: 14px;
+
     cursor: pointer;
+
     transition:
+
         background-color 0.2s ease,
+
         transform 0.2s ease;
+
 }
 
 .search-button:hover {
+
     background-color: oklch(0.76 0.18 55);
+
     transform: translateY(-1px);
+
 }
 
 .search-button:disabled {
+
     background-color: #bdbdbd;
+
     cursor: not-allowed;
+
     transform: none;
+
 }
 
 .search-button-icon {
+
     width: 14px;
+
     height: 14px;
+
 }
 
 .upload-icon {
+
     width: 16px;
+
     height: 16px;
+
     display: block;
+
     flex-shrink: 0;
+
 }
 
 /* =========================
@@ -549,166 +868,281 @@ footer {
 ========================= */
 
 .language-filter {
+
     position: relative;
+
 }
 
 .language-selector {
+
     position: relative;
+
     width: 100%;
+
 }
 
 .language-button {
+
     width: 100%;
+
     height: 44px;
+
     box-sizing: border-box;
+
     padding: 0 14px;
 
     display: flex;
+
     align-items: center;
+
     justify-content: space-between;
 
     border: 1px solid #d9d9d9;
+
     border-radius: 8px;
+
     background-color: #ffffff;
 
     font-size: 14px;
+
     color: #333333;
 
     cursor: pointer;
+
     outline: none;
+
 }
 
 .language-button:hover {
+
     border-color: #aaaaaa;
+
 }
 
 .language-button:disabled {
+
     background-color: #f5f5f5;
+
     color: #888888;
+
     cursor: not-allowed;
+
     opacity: 0.8;
+
 }
 
 .language-arrow {
+
     font-size: 13px;
+
     color: #777777;
+
 }
 
 /* Floating language menu */
 
 .language-menu {
+
     position: absolute;
+
     top: calc(100% + 8px);
+
     right: 0;
 
     width: 280px;
+
     padding: 14px;
 
     box-sizing: border-box;
 
     background: #ffffff;
+
     border: 1px solid #d9d9d9;
+
     border-radius: 10px;
 
     box-shadow:
+
         0 8px 20px rgba(0, 0, 0, 0.10),
+
         0 2px 6px rgba(0, 0, 0, 0.06);
 
     z-index: 1000;
+
 }
 
 /* Menu heading */
 
 .language-menu-title {
+
     margin-bottom: 5px;
 
     font-size: 11px;
+
     font-weight: 700;
+
     letter-spacing: 2px;
 
     color: #777777;
+
 }
 
 .language-menu-subtitle {
+
     margin-bottom: 12px;
 
     font-size: 11px;
+
     color: #999999;
+
 }
 
 /* Language pills */
 
 .language-options {
-    display: flex;
-    flex-wrap: wrap;
+
+    display: grid;
+
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+
     gap: 7px;
+
+    width: 100%;
+
 }
 
 .language-option {
-    padding: 7px 12px;
+
+    width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 7px 8px;
 
     border: 1px solid #d5d5d5;
+
     border-radius: 18px;
 
     background: #ffffff;
 
     font-size: 12px;
+
     color: #555555;
 
     cursor: pointer;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 7px;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+}
+
+.language-option .pill-dot {
+
+    width: 8px;
+
+    height: 8px;
+
+    border-radius: 50%;
+
+    flex-shrink: 0;
+
 }
 
 .language-option:hover {
+
     border-color: #1976d2;
+
     color: #1976d2;
+
 }
 
 .language-option.selected {
+
     border-color: #1976d2;
+
     background-color: #eef6ff;
+
     color: #075fa8;
+
     font-weight: 600;
+
 }
 
 .language-option:disabled {
+
     cursor: not-allowed;
+
     opacity: 0.6;
+
 }
 
 /* Done button */
 
 .language-done-button {
+
     width: 100%;
+
     height: 30px;
 
     margin-top: 12px;
 
     border: none;
+
     border-radius: 6px;
 
-    background-color: #08639b;
+    background-color: oklch(63.988% 0.12907 252.853);
+
     color: #ffffff;
 
     font-size: 12px;
+
     font-weight: 600;
 
     cursor: pointer;
+
+    transition:
+
+        background-color 0.2s ease,
+
+        transform 0.2s ease;
+
 }
 
 .language-done-button:hover {
-    background-color: #075580;
+
+    background-color: oklch(68.78% 0.08613 252.846);
+
 }
 
 @media (max-width: 700px) {
+
     .inspect-controls {
+
         padding: 24px;
+
     }
 
     .inspect-filters {
+
         width: 100%;
+
         grid-template-columns: 1fr;
+
         gap: 18px;
+
     }
+
 }
 
 /* =====================
@@ -718,87 +1152,125 @@ footer {
 /* Main corpus box */
 
 .corpus-box {
+
     width: calc(100% - 40px);
+
     max-width: 1250px;
+
     margin: 0 auto 80px;
+
     padding: 32px 36px;
+
     box-sizing: border-box;
 
     display: grid;
+
     grid-template-columns: 1fr auto auto;
+
     align-items: center;
+
     column-gap: 24px;
 
     background: oklch(0.99 0.008 242 / 0.82);
 
     border: 1px solid oklch(0.86 0.03 240);
+
     border-radius: 16px;
 
     box-shadow:
+
         0 18px 45px oklch(0.25 0.025 252 / 0.08),
+
         0 4px 14px oklch(0.25 0.025 252 / 0.04);
 
     backdrop-filter: blur(14px);
+
     -webkit-backdrop-filter: blur(14px);
+
 }
 
 /* Corpus heading */
 
 .corpus-heading {
+
     margin: 0;
 
     font-family: "Space Grotesk", sans-serif;
+
     font-size: 15px;
+
     font-weight: 600;
+
     letter-spacing: 0.3px;
 
     color: oklch(0.69 0.19 44);
 
     white-space: nowrap;
+
 }
 
 /* Corpus label */
 
 .corpus-label {
+
     margin: 0;
 
     font-size: 14px;
+
     color: oklch(0.45 0.025 252);
 
     white-space: nowrap;
+
 }
 
 /* Upload area */
 
 .upload-container {
+
     display: flex;
+
     align-items: center;
+
     gap: 12px;
+
 }
 
 .upload-container input[type="file"] {
+
     position: absolute;
+
     width: 1px;
+
     height: 1px;
+
     opacity: 0;
+
     overflow: hidden;
+
     pointer-events: none;
+
 }
 
 /* Upload button */
 
 .upload-button {
+
     display: flex;
+
     align-items: center;
+
     justify-content: center;
 
     min-width: 210px;
+
     min-height: 62px;
 
     padding: 12px 22px;
+
     box-sizing: border-box;
 
     border: 1px dashed oklch(0.86 0.03 240);
+
     border-radius: 12px;
 
     background: oklch(0.94 0.022 240 / 0.65);
@@ -806,7 +1278,9 @@ footer {
     gap: 8px;
 
     font-size: 13px;
+
     font-weight: 600;
+
     text-align: center;
 
     color: #111111;
@@ -814,51 +1288,73 @@ footer {
     cursor: pointer;
 
     transition:
+
         background-color 0.2s ease,
+
         border-color 0.2s ease,
+
         transform 0.2s ease,
+
         box-shadow 0.2s ease;
+
 }
 
 .upload-button:hover {
+
     background: oklch(0.97 0.025 70);
+
     border-color: oklch(0.69 0.19 44);
+
     color: #111111;
 
     transform: translateY(-1px);
 
     box-shadow:
+
         0 8px 20px oklch(0.25 0.025 252 / 0.08);
+
 }
 
 /* Upload icon */
 
 .upload-icon {
+
     width: 15px;
+
     height: 15px;
+
     display: block;
+
     flex-shrink: 0;
+
 }
 
 /* Default corpus button */
 
 .default-button {
+
     display: flex;
+
     align-items: center;
+
     justify-content: center;
 
     min-width: 210px;
+
     min-height: 62px;
 
     padding: 12px 22px;
+
     box-sizing: border-box;
 
     border: 1px solid oklch(0.86 0.03 240);
+
     border-radius: 12px;
 
     background: oklch(0.94 0.022 240 / 0.65);
 
     font-size: 13px;
+
     font-weight: 600;
 
     color: oklch(0.25 0.025 252);
@@ -866,29 +1362,43 @@ footer {
     cursor: pointer;
 
     transition:
+
         background-color 0.2s ease,
+
         border-color 0.2s ease,
+
         color 0.2s ease,
+
         transform 0.2s ease,
+
         box-shadow 0.2s ease;
+
 }
 
 .default-button:hover {
+
     background: oklch(0.99 0.008 242 / 0.82);
+
     border-color: oklch(0.69 0.19 44);
+
     color: oklch(0.25 0.025 252);
 
     transform: translateY(-1px);
 
     box-shadow:
+
         0 8px 20px oklch(0.25 0.025 252 / 0.08);
+
 }
 
 /* Upload button keyboard focus */
 
 .upload-container input[type="file"]:focus-visible + .upload-button {
+
     outline: 2px solid oklch(0.69 0.19 44);
+
     outline-offset: 3px;
+
 }
 
 /* Responsive */
@@ -896,19 +1406,29 @@ footer {
 @media (max-width: 800px) {
 
     .corpus-box {
+
         grid-template-columns: 1fr;
+
         row-gap: 18px;
+
     }
 
     .corpus-label {
+
         white-space: normal;
+
     }
 
     .upload-button,
+
     .default-button {
+
         width: 100%;
+
         box-sizing: border-box;
+
     }
+
 }
 
 /* =====================
@@ -918,54 +1438,75 @@ footer {
 /* Container for the tokenization result */
 
 .tokenization-result {
+
     grid-column: 1 / -1;
 
     margin-top: 20px;
+
     padding: 20px;
 
     border: 1px solid oklch(0.86 0.03 240);
+
     border-radius: 14px;
 
     background:
+
         linear-gradient(
+
             135deg,
+
             oklch(0.94 0.022 240 / 0.82),
+
             oklch(0.97 0.025 70 / 0.72)
+
         );
 
     box-shadow:
+
         0 8px 24px oklch(0.25 0.025 252 / 0.05),
+
         inset 0 1px 0 oklch(1 0 0 / 0.45);
 
     backdrop-filter: blur(10px);
+
     -webkit-backdrop-filter: blur(10px);
+
 }
 
 /* Read-only tokenization output */
 
 .tokenization-text {
+
     width: 100%;
+
     height: 300px;
 
     padding: 16px;
+
     box-sizing: border-box;
 
     background: oklch(0.99 0.008 242 / 0.82);
 
     border: 1px solid oklch(0.86 0.03 240);
+
     border-radius: 10px;
 
     font-family: "DM Sans", sans-serif;
+
     font-size: 14px;
+
     line-height: 1.7;
 
     color: oklch(0.25 0.025 252);
 
     white-space: normal;
+
     word-break: normal;
 
     overflow-y: auto;
+
     overflow-x: hidden;
+
 }
 
 /* ======================
@@ -973,42 +1514,65 @@ footer {
 ========================= */
 
 /* Container for all metric rows */
+
 .tokenization-metrics {
+
     grid-column: 1 / -1;
+
     display: flex;
+
     flex-direction: column;
+
     gap: 20px;
+
     margin-top: 18px;
+
 }
 
 /* Each row of metric cards */
+
 .metric-row {
+
     display: flex;
+
     width: 100%;
+
     gap: 16px;
+
 }
 
 /* First row - 4 cards */
+
 .metric-row:first-child {
+
     justify-content: space-between;
+
 }
 
 /* Second row - 3 cards centred */
+
 .metric-row-centered {
+
     justify-content: center;
+
 }
 
 /* Individual metric card */
 
 .metric-card {
+
     flex: 1;
 
     min-height: 100px;
+
     min-width: 0;
 
     display: flex;
+
     flex-direction: column;
+
     align-items: center;
+
     justify-content: center;
 
     box-sizing: border-box;
@@ -1016,46 +1580,63 @@ footer {
     background: oklch(0.94 0.022 240 / 0.62);
 
     border: 1px solid oklch(0.86 0.03 240);
+
     border-radius: 12px;
 
     box-shadow:
+
         0 4px 12px oklch(0.25 0.025 252 / 0.04);
 
     cursor: pointer;
 
     transition:
+
         background-color 0.2s ease,
+
         border-color 0.2s ease,
+
         box-shadow 0.2s ease,
+
         transform 0.2s ease;
+
 }
 
 /* Metric name */
 
 .metric-name {
+
     margin-bottom: 8px;
 
     font-family: "DM Sans", sans-serif;
+
     font-size: 12px;
+
     font-weight: 600;
+
     letter-spacing: 0.5px;
 
     color: oklch(0.45 0.025 252);
+
 }
 
 /* Metric value */
 
 .metric-value {
+
     font-family: "Space Grotesk", sans-serif;
+
     font-size: 24px;
+
     font-weight: 600;
 
     color: oklch(0.25 0.025 252);
+
 }
 
 /* Metric card hover */
 
 .metric-card:hover {
+
     border-color: oklch(0.69 0.19 44);
 
     background: oklch(0.99 0.008 242 / 0.82);
@@ -1063,7 +1644,9 @@ footer {
     transform: translateY(-2px);
 
     box-shadow:
+
         0 10px 24px oklch(0.25 0.025 252 / 0.08);
+
 }
 
 /* =====================
@@ -1071,31 +1654,39 @@ footer {
 ======================== */
 
 .text-input-box {
+
     width: calc(100% - 40px);
+
     max-width: 1250px;
 
     margin: 0 auto 80px;
+
     padding: 32px 36px;
 
     box-sizing: border-box;
 
     display: flex;
+
     flex-direction: column;
 
     background: #f8f8f8da;
 
     border: 1px solid #e2e2e2;
+
     border-radius: 16px;
 
     box-shadow: 
         0 4px 12px rgba(0, 0, 0, 0.06),
         0 1px 3px rgba(0, 0, 0, 0.04);
+
 }
 
 .text-input-heading {
+
     margin: 0 0 24px;
 
     font-size: 14px;
+
     font-weight: 600;
 
     letter-spacing: 0.3px;
@@ -1103,6 +1694,7 @@ footer {
     color: oklch(0.69 0.19 44);
 
     white-space: nowrap;
+
 }
 
 /* =================
@@ -1110,47 +1702,63 @@ footer {
 ==================== */
 
 .text-input-area {
+
     width: 100%;
+
     height: 180px;
 
     max-height: 180px;
 
     padding: 18px;
+
     box-sizing: border-box;
 
     resize: none;
 
     border: 1px solid oklch(0.86 0.03 240);
+
     border-radius: 12px;
 
     background: oklch(0.94 0.022 240 / 0.62);
 
     font-family: inherit;
+
     font-size: 14px;
+
     line-height: 1.7;
 
     color: oklch(0.25 0.025 252);
 
     outline: none;
+
     overflow-y: auto;
 
     transition:
+
         background-color 0.2s ease,
+
         border-color 0.2s ease,
+
         box-shadow 0.2s ease;
+
 }
 
 .text-input-area:focus {
+
     border-color: oklch(0.69 0.19 44);
 
     background: oklch(0.99 0.008 242 / 0.82);
 
     box-shadow:
+
         0 0 0 3px oklch(0.69 0.19 44 / 0.12);
+
 }
 
 .text-input-area::placeholder {
+
     color: oklch(0.55 0.02 252);
+
 }
 
 /* ========================
@@ -1158,54 +1766,75 @@ footer {
 =========================== */
 
 .typed-tokenization-result {
+
     margin-top: 28px;
 
     padding: 20px;
 
     border: 1px solid oklch(0.86 0.03 240);
+
     border-radius: 14px;
 
     background:
+
         linear-gradient(
+
             135deg,
+
             oklch(0.94 0.022 240 / 0.82),
+
             oklch(0.97 0.025 70 / 0.72)
+
         );
 
     box-shadow:
+
         0 8px 24px oklch(0.25 0.025 252 / 0.05),
+
         inset 0 1px 0 oklch(1 0 0 / 0.45);
 
     backdrop-filter: blur(10px);
+
     -webkit-backdrop-filter: blur(10px);
+
 }
 
 .typed-result-text {
+
     width: 100%;
+
     min-height: 50px;
+
     max-height: 300px;
 
     padding: 18px;
+
     box-sizing: border-box;
 
     background: oklch(0.99 0.008 242 / 0.82);
 
     border: 1px solid oklch(0.86 0.03 240);
+
     border-radius: 10px;
 
     font-size: 14px;
+
     line-height: 1.8;
 
     color: oklch(0.25 0.025 252);
 
     white-space: normal;
+
     word-break: normal;
 
     overflow-y: auto;
+
     overflow-x: hidden;
 
     box-shadow:
+
         inset 0 1px 0 oklch(1 0 0 / 0.35);
+
 }
 
 /* =========================
@@ -1213,66 +1842,91 @@ footer {
 ============================ */
 
 .typed-tokenization-metrics {
+
     width: 100%;
 
     display: flex;
+
     flex-direction: row;
+
     align-items: stretch;
 
     gap: 16px;
+
     margin-top: 18px;
+
 }
 
 .typed-metric-card {
+
     flex: 1;
 
     min-height: 100px;
 
     display: flex;
+
     flex-direction: column;
 
     align-items: center;
+
     justify-content: center;
 
     box-sizing: border-box;
+
     background: oklch(0.94 0.022 240 / 0.62);
 
     border: 1px solid oklch(0.86 0.03 240);
+
     border-radius: 12px;
 
     box-shadow:
+
         0 4px 12px oklch(0.25 0.025 252 / 0.04);
 
     cursor: default;
 
     transition:
+
         background-color 0.2s ease,
+
         border-color 0.2s ease,
+
         box-shadow 0.2s ease,
+
         transform 0.2s ease;
+
 }
 
 /* Metric name */
+
 .typed-metric-name {
+
     margin-bottom: 8px;
 
     font-size: 12px;
+
     font-weight: 600;
 
     letter-spacing: 0.5px;
 
     color: oklch(0.45 0.025 252);
+
 }
 
 /* Metric value */
+
 .typed-metric-value {
+
     font-size: 24px;
+
     font-weight: 600;
 
     color: oklch(0.25 0.025 252);
+
 }
 
 .typed-metric-card:hover {
+
     background-color: oklch(0.99 0.008 242 / 0.82);
 
     border-color: oklch(0.69 0.19 44);
@@ -1280,7 +1934,9 @@ footer {
     transform: translateY(-2px);
 
     box-shadow:
+
         0 10px 24px oklch(0.25 0.025 252 / 0.08);
+
 }
 
 /* ==========================
@@ -1288,10 +1944,13 @@ footer {
 ========================== */
 
 .token-pill {
+
     display: inline-block;
+
     align-items: center;
 
     padding: 5px 8px;
+
     margin: 3px;
 
     border-radius: 7px;
@@ -1299,19 +1958,27 @@ footer {
     border: 1px solid oklch(0.86 0.03 240);
 
     font-size: 12px;
+
     line-height: 1.2;
 
     color: oklch(0.25 0.025 252);
 
     transition:
+
         border-color 0.2s ease,
+
         background-color 0.2s ease,
+
         transform 0.2s ease;
+
 }
 
 /* Small visual separation when a new word begins */
+
 .token-new-word {
+
     margin-left: 6px;
+
 }
 
 /* ==========================
@@ -1319,58 +1986,91 @@ footer {
 ========================== */
 
 /* Token colour 1 */
+
 .token-colour-0 {
+
     background: #fde2e2;
+
 }
 
 /* Token colour 2 */
+
 .token-colour-1 {
+
     background: #e2f0cb;
+
 }
 
 /* Token colour 3 */
+
 .token-colour-2 {
+
     background: #d9eaf7;
+
 }
 
 /* Token colour 4 */
+
 .token-colour-3 {
+
     background: #fcecc9;
+
 }
 
 /* Token colour 5 */
+
 .token-colour-4 {
+
     background: #e8def8;
+
 }
 
 /* Token colour 6 */
+
 .token-colour-5 {
+
     background: #d9f2e6;
+
 }
 
 /* Token colour 7 */
+
 .token-colour-6 {
+
     background: #f8d8e8;
+
 }
 
 /* Token colour 8 */
+
 .token-colour-7 {
+
     background: #dfe3f5;
+
 }
 
 
 /* Placeholder text */
+
 .token-placeholder {
+
     color: #999999;
+
     font-size: 14px;
+
 }
 
 
 /* Loading text */
+
 .token-loading {
+
     color: #777777;
+
     font-size: 14px;
+
     font-style: italic;
+
 }
 
 /* ==========================
@@ -1378,7 +2078,9 @@ footer {
    ========================== */
 
 .inspect-error {
+
     width: calc(100% - 40px);
+
     max-width: 1000px;
 
     margin: -50px auto 30px;
@@ -1388,6 +2090,7 @@ footer {
     box-sizing: border-box;
 
     border: 1px solid #e5caca;
+
     border-radius: 8px;
 
     background: #fff5f5;
@@ -1395,6 +2098,7 @@ footer {
     color: #a33;
 
     font-size: 14px;
+
 }
 
 /* ==========================
@@ -1402,51 +2106,73 @@ footer {
 ========================== */
 
 .selection-status {
+
     display: flex;
+
     align-items: center;
+
     gap: 8px;
 
     min-height: 24px;
+
     margin-top: 9px;
 
     white-space: nowrap;
 
     font-size: 13px;
+
     font-weight: 600;
+
 }
 
 .status-dot {
+
     width: 8px;
+
     height: 8px;
 
     border-radius: 50%;
 
     flex-shrink: 0;
+
 }
 
 .selection-status.is-loading {
+
     color: #777777;
+
 }
 
 .selection-status.is-loading .status-dot {
+
     background: #e0a11a;
+
     animation: status-pulse 1.2s ease-in-out infinite;
+
 }
 
 .selection-status.is-ready {
+
     color: #4f7d5a;
+
 }
 
 .selection-status.is-ready .status-dot {
+
     background: #5b9b68;
+
 }
 
 .selection-status.is-error {
+
     color: #a33;
+
 }
 
 .selection-status.is-error .status-dot {
+
     background: #c74848;
+
 }
 
 .language-tokenization-grid {
@@ -1494,223 +2220,310 @@ footer {
 ===================== */
 
 .rank-add-button {
+
     height: 44px;
+
     padding: 0 18px;
 
     border: 1px solid #d9d9d9;
+
     border-radius: 8px;
 
     background: #ffffff;
 
     font-size: 14px;
+
     font-weight: 600;
 
     color: #222222;
+
     cursor: pointer;
 
     transition:
+
         background-color 0.2s ease,
+
         border-color 0.2s ease,
+
         color 0.2s ease;
+
 }
 
 .rank-add-button:hover {
+
     background-color: #f7f7f7;
+
     border-color: #bdbdbd;
+
 }
 
 .rank-add-button:disabled {
+
     background-color: #f5f5f5;
+
     border-color: #e1e1e1;
+
     color: #a0a0a0;
+
     cursor: not-allowed;
+
 }
 
 .rank-table-wrap {
+
     width: calc(100% - 40px);
+
     max-width: 1000px;
+
     margin: 0 auto 80px;
+
     overflow-x: auto;
+
 }
 
 @keyframes status-pulse {
+
     0%,
+
     100% {
+
         opacity: 0.45;
+
     }
 
     50% {
+
         opacity: 1;
+
     }
+
 }
 
 /* New line for every sentence */
+
 .token-sentence {
+
     display: block;
+
     margin-bottom: 8px;
+
 }
 
 
-
-/* =========================================================
-   INSPECT additions - Mukovhe Ranwashe (RNWMUK001)
-   Appended to Charmaine's stylesheet. Nothing above this line
-   is edited; these rules come later so they win on their own.
-   1. Lava-lamp background   2. Type pairing
-   3. Brighter token pills   4. Chart panel
-   ========================================================= */
-
-/* ---------------------------------------------------------
-   1. LAVA LAMP
-   Charmaine's single ambient shape becomes three, each on its
-   own timer. Different periods is the whole trick - they never
-   line up the same way twice, so it reads as liquid.
-   No JSX change: her one <div class="ambient-gradient"> already
-   has a ::before and an ::after, so those become blobs two and
-   three.
-   --------------------------------------------------------- */
-
 .ambient-gradient {
+
     filter: blur(44px);
+
     opacity: 0.72;
+
     animation: lava-a 19s ease-in-out infinite;
+
     will-change: transform, border-radius;
+
 }
 
 /* Blob two - cool blue, drifts the other way */
+
 .ambient-gradient::before {
+
     content: "";
+
     position: absolute;
+
     inset: auto -34% -30% auto;
 
     width: 78%;
+
     aspect-ratio: 1;
 
     border: 0;                                   /* was the orange ring */
 
     background: radial-gradient(
+
         circle at 46% 44%,
+
         oklch(0.78 0.15 220 / 0.82) 0 42%,
+
         transparent 70%
+
     );
 
     filter: blur(22px);
 
     animation: lava-b 27s ease-in-out infinite;
+
     will-change: transform, border-radius;
+
 }
 
 /* Blob three - a slow pink one behind the other two */
+
 .ambient-gradient::after {
+
     content: "";
+
     position: absolute;
 
     width: 62%;
+
     aspect-ratio: 1.1;
 
     right: -20%;
+
     top: 26%;
 
     background: radial-gradient(
+
         circle at 50% 50%,
+
         oklch(0.80 0.16 330 / 0.6) 0 44%,
+
         transparent 72%
+
     );
 
     filter: blur(26px);
 
     animation: lava-c 34s ease-in-out infinite;
+
     will-change: transform, border-radius;
+
 }
 
 @keyframes lava-a {
+
     0%, 100% {
+
         transform: translate3d(-4%, -6%, 0) rotate(-10deg) scale(1);
+
         border-radius: 42% 58% 68% 32% / 44% 38% 62% 56%;
+
     }
+
     33% {
+
         transform: translate3d(10%, 12%, 0) rotate(8deg) scale(1.18);
+
         border-radius: 66% 34% 38% 62% / 34% 62% 38% 66%;
+
     }
+
     66% {
+
         transform: translate3d(4%, -10%, 0) rotate(-4deg) scale(1.06);
+
         border-radius: 36% 64% 52% 48% / 60% 40% 60% 40%;
+
     }
+
 }
 
 @keyframes lava-b {
+
     0%, 100% {
+
         transform: translate3d(6%, 4%, 0) scale(1);
+
         border-radius: 34% 66% 56% 44% / 58% 34% 66% 42%;
+
     }
+
     50% {
+
         transform: translate3d(-12%, -14%, 0) scale(1.24);
+
         border-radius: 62% 38% 32% 68% / 40% 64% 36% 60%;
+
     }
+
 }
 
 @keyframes lava-c {
+
     0%, 100% {
+
         transform: translate3d(0, 0, 0) scale(1);
+
         border-radius: 50% 50% 46% 54% / 54% 46% 54% 46%;
+
     }
+
     40% {
+
         transform: translate3d(-18%, 16%, 0) scale(1.3);
+
         border-radius: 70% 30% 60% 40% / 36% 66% 34% 64%;
+
     }
+
     75% {
+
         transform: translate3d(14%, -12%, 0) scale(0.92);
+
         border-radius: 38% 62% 34% 66% / 64% 38% 62% 36%;
+
     }
+
 }
 
 /* If the user has asked their operating system to stop animation,
    every moving thing on the page freezes. */
+
 @media (prefers-reduced-motion: reduce) {
+
     .ambient-gradient,
+
     .ambient-gradient::before,
+
     .ambient-gradient::after {
+
         animation: none;
+
     }
 
     .chart-pop,
+
     .chart-grow,
+
     .chart-label {
+
         transition: none;
+
     }
+
 }
 
 
-/* ---------------------------------------------------------
-   2. TYPE
-   Plus Jakarta Sans for reading, Bricolage Grotesque for
-   headings, IBM Plex Mono for tokens. Monospace matters on the
-   pills: every token is the same character width, so you can
-   see that one language's chunks are shorter without reading
-   them. Falls back to Charmaine's fonts if the webfont is slow.
-
-   The fonts are loaded by a <link> in frontend/index.html, NOT by
-   an @import here - an @import is only legal at the very top of a
-   stylesheet, so one added down here would be silently ignored.
-   --------------------------------------------------------- */
-
 body {
+
     font-family: "Plus Jakarta Sans", "DM Sans", sans-serif;
+
 }
 
 .inspect-intro h1,
+
 .corpus-heading,
+
 .text-input-heading,
+
 .metric-value,
+
 .typed-metric-value,
+
 .chart-title {
+
     font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+
     letter-spacing: -0.015em;
+
 }
 
 .metric-value,
+
 .typed-metric-value {
+
     font-variant-numeric: tabular-nums;
+
 }
 
 
@@ -1721,44 +2534,53 @@ body {
    --------------------------------------------------------- */
 
 .token-pill {
+
     font-family: "IBM Plex Mono", ui-monospace, monospace;
+
     font-size: 12px;
+
     border-color: oklch(0 0 0 / 0.08);
 
     transition:
+
         transform 0.15s ease,
+
         box-shadow 0.15s ease;
+
 }
 
 .token-pill:hover {
+
     transform: translateY(-2px) scale(1.06);
 
     box-shadow: 0 5px 12px oklch(0.25 0.025 252 / 0.18);
+
 }
 
 .token-colour-0 { background: #ffc9c9; }
+
 .token-colour-1 { background: #d8f3a3; }
+
 .token-colour-2 { background: #b8e0ff; }
+
 .token-colour-3 { background: #ffe08a; }
+
 .token-colour-4 { background: #dcc6ff; }
+
 .token-colour-5 { background: #a8f0d0; }
+
 .token-colour-6 { background: #ffc2e2; }
+
 .token-colour-7 { background: #c3cbff; }
 
-
-/* ---------------------------------------------------------
-   4. CHART PANEL
-   Sits under the corpus box and shows all eight languages at
-   once. Colours are a fixed wheel, assigned in order and never
-   cycled; the order was checked with a colour-blindness
-   simulator so no two neighbouring slices collapse together.
-   --------------------------------------------------------- */
-
 .charts-box {
+
     width: calc(100% - 40px);
+
     max-width: 1250px;
 
     margin: 0 auto 80px;
+
     padding: 28px 32px;
 
     box-sizing: border-box;
@@ -1766,122 +2588,177 @@ body {
     background: oklch(0.99 0.008 242 / 0.82);
 
     border: 1px solid oklch(0.86 0.03 240);
+
     border-radius: 16px;
 
     box-shadow:
+
         0 18px 45px oklch(0.25 0.025 252 / 0.08),
+
         0 4px 14px oklch(0.25 0.025 252 / 0.04);
 
     backdrop-filter: blur(14px);
+
     -webkit-backdrop-filter: blur(14px);
+
 }
 
 .charts-head {
+
     display: flex;
+
     flex-wrap: wrap;
+
     align-items: baseline;
+
     gap: 10px;
 
     margin-bottom: 14px;
+
 }
 
 .charts-head h2 {
+
     margin: 0;
 
     font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+
     font-size: 19px;
+
     font-weight: 700;
+
 }
 
 .charts-head p {
+
     margin: 0;
 
     font-size: 13px;
+
     color: oklch(0.62 0.02 252);
+
 }
 
 .charts-grid {
+
     display: grid;
+
     gap: 16px;
 
     grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+
 }
 
 .chart-card {
+
     padding: 14px 14px 4px;
 
     background: oklch(1 0 0 / 0.62);
 
     border: 1px solid oklch(0.86 0.03 240);
+
     border-radius: 16px;
+
 }
 
 .chart-card h3 {
+
     margin: 0 0 1px;
 
     font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+
     font-size: 14px;
+
     font-weight: 700;
+
 }
 
 .chart-card > p {
+
     margin: 0 0 6px;
 
     font-size: 12px;
+
     color: oklch(0.62 0.02 252);
+
 }
 
 .chart-svg {
+
     display: block;
+
     width: 100%;
+
     height: auto;
 
     overflow: visible;
+
 }
 
 /* Each wedge is a .chart-pop wrapping a .chart-grow. Two nested
    groups so the hover slide and the value-driven length never
    fight over the same transform. */
+
 .chart-pop {
+
     cursor: pointer;
 
     transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+
 }
 
 .chart-grow {
+
     transition: transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+
 }
 
 .chart-wedge {
+
     stroke: #ffffff;
+
     stroke-width: 2.4;
+
     stroke-linejoin: round;
+
 }
 
 .chart-pop.is-on .chart-wedge {
+
     filter: drop-shadow(0 4px 10px oklch(0.25 0.025 252 / 0.3));
+
 }
 
 .chart-pop.is-dim {
+
     opacity: 0.26;
+
 }
 
 .chart-hub {
+
     font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+
     font-size: 19px;
+
     font-weight: 700;
 
     fill: oklch(0.25 0.025 252);
+
 }
 
 .chart-hub-sub {
+
     font-size: 11px;
 
     fill: oklch(0.62 0.02 252);
+
 }
 
 .chart-label {
+
     font-family: "IBM Plex Mono", ui-monospace, monospace;
+
     font-size: 11px;
 
     fill: oklch(0.45 0.025 252);
@@ -1889,69 +2766,96 @@ body {
     pointer-events: none;
 
     transition: transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+
 }
 
 /* The dashed circle marking English = 1.00x */
+
 .chart-baseline-ring {
+
     fill: none;
 
     stroke: oklch(0.62 0.02 252);
+
     stroke-width: 1;
+
     stroke-dasharray: 3 4;
 
     pointer-events: none;
+
 }
 
 /* Measure switcher */
+
 .chart-switch {
+
     display: inline-flex;
+
     gap: 4px;
 
     margin-bottom: 6px;
+
     padding: 4px;
 
     background: oklch(0.92 0.015 242 / 0.7);
+
     border-radius: 12px;
+
 }
 
 .chart-switch button {
+
     padding: 6px 12px;
 
     border: 0;
+
     border-radius: 9px;
 
     background: transparent;
 
     font: inherit;
+
     font-size: 12.5px;
+
     font-weight: 600;
 
     color: oklch(0.45 0.025 252);
 
     cursor: pointer;
+
 }
 
 .chart-switch button[aria-pressed="true"] {
+
     background: #ffffff;
 
     color: oklch(0.25 0.025 252);
 
     box-shadow: 0 1px 4px oklch(0.25 0.025 252 / 0.14);
+
 }
 
 /* Legend - also the direct labels, which is what lets the two
    lighter colours stay in the palette. */
+
 .chart-legend {
+
     display: flex;
+
     flex-wrap: wrap;
+
     gap: 6px;
 
     margin-top: 14px;
+
 }
 
 .chart-chip {
+
     display: flex;
+
     align-items: center;
+
     gap: 7px;
 
     padding: 5px 12px 5px 8px;
@@ -1959,6 +2863,7 @@ body {
     background: oklch(1 0 0 / 0.72);
 
     border: 1px solid oklch(0.86 0.03 240);
+
     border-radius: 999px;
 
     font-size: 12.5px;
@@ -1966,58 +2871,81 @@ body {
     cursor: pointer;
 
     transition:
+
         transform 0.15s ease,
+
         box-shadow 0.15s ease;
+
 }
 
 .chart-chip:hover {
+
     transform: translateY(-2px);
 
     box-shadow: 0 5px 14px oklch(0.25 0.025 252 / 0.12);
+
 }
 
 .chart-chip .swatch {
+
     width: 11px;
+
     height: 11px;
 
     flex: none;
 
     border-radius: 50%;
+
 }
 
 .chart-chip b {
+
     font-variant-numeric: tabular-nums;
+
 }
 
 .chart-chip .family {
+
     color: oklch(0.62 0.02 252);
+
 }
 
 /* The sentence that says out loud what the two charts disagree about */
+
 .chart-note {
+
     max-width: 92ch;
 
     margin: 16px 0 0;
+
     padding: 13px 16px;
 
     background: oklch(1 0 0 / 0.72);
 
     border: 1px solid oklch(0.86 0.03 240);
+
     border-left: 4px solid #2f6fd0;
+
     border-radius: 13px;
 
     font-size: 13.5px;
 
     color: oklch(0.45 0.025 252);
+
 }
 
 .chart-note b {
+
     color: oklch(0.25 0.025 252);
+
 }
 
 /* Hover card */
+
 .chart-tip {
+
     position: fixed;
+
     z-index: 30;
 
     padding: 9px 12px;
@@ -2027,6 +2955,7 @@ body {
     border-radius: 10px;
 
     font-size: 12.5px;
+
     line-height: 1.5;
 
     color: #ffffff;
@@ -2036,238 +2965,164 @@ body {
     opacity: 0;
 
     transition: opacity 0.12s ease;
+
 }
 
 .chart-tip.is-visible {
+
     opacity: 1;
+
 }
 
 .chart-tip .key {
+
     color: oklch(0.74 0.012 252);
+
 }
 
 .chart-tip .val {
-    font-family: "IBM Plex Mono", ui-monospace, monospace;
-}
 
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+
+}
 
 
 /* =========================================================
-   INSPECT additions, part 2 - Mukovhe Ranwashe (RNWMUK001)
-   Pills instead of dropdowns, and the side-by-side reading
-   panels. Appended, so nothing above is edited.
+   READING PANELS
    ========================================================= */
 
-/* ---------------------------------------------------------
-   CONTROL BAR
-   Two groups side by side, each one a label above its pills.
-   --------------------------------------------------------- */
-
-.inspect-filters {
-    display: grid;
-    grid-template-columns: minmax(280px, 340px) 1fr;
-    gap: 26px;
-    align-items: start;
-    width: 100%;
-}
-
-@media (max-width: 860px) {
-    .inspect-filters {
-        grid-template-columns: 1fr;
-        gap: 20px;
-    }
-}
-
-.filter-group > label {
-    display: block;
-
-    margin-bottom: 8px;
-
-    font-size: 11.5px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-
-    color: oklch(0.45 0.025 252);
-}
-
-/* ---------------------------------------------------------
-   PILLS
-   The tokenizer row and the language row share one look, so
-   the page reads as one control surface instead of two.
-   --------------------------------------------------------- */
-
-.tokenizer-pills,
-.language-pills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-
-    margin-top: 10px;
-}
-
-.language-pills {
-    margin-top: 0;
-}
-
-.tokenizer-pill,
-.language-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-
-    padding: 7px 13px;
-
-    background: oklch(1 0 0 / 0.72);
-
-    border: 1px solid oklch(0.86 0.03 240);
-    border-radius: 999px;
-
-    font: inherit;
-    font-size: 12.5px;
-    font-weight: 500;
-
-    color: oklch(0.25 0.025 252);
-
-    cursor: pointer;
-
-    transition:
-        transform 0.15s ease,
-        border-color 0.15s ease,
-        box-shadow 0.15s ease,
-        background-color 0.15s ease;
-}
-
-.tokenizer-pill:hover:not(:disabled),
-.language-pill:hover:not(:disabled) {
-    transform: translateY(-2px);
-
-    border-color: oklch(0.69 0.19 44);
-
-    box-shadow: 0 5px 14px oklch(0.25 0.025 252 / 0.12);
-}
-
-.tokenizer-pill.is-selected,
-.language-pill.is-selected {
-    background: oklch(0.25 0.025 252);
-    border-color: oklch(0.25 0.025 252);
-
-    color: #ffffff;
-    font-weight: 600;
-}
-
-.tokenizer-pill:disabled,
-.language-pill:disabled {
-    opacity: 0.45;
-    cursor: default;
-}
-
-/* The dot carries the colour this language has in the charts. */
-.pill-dot {
-    width: 9px;
-    height: 9px;
-
-    flex: none;
-
-    border-radius: 50%;
-
-    box-shadow: 0 0 0 1px oklch(1 0 0 / 0.5);
-}
-
-/* ---------------------------------------------------------
-   READING PANELS
-   One card per language, two across when two are selected.
-   Each card is capped so the charts underneath stay on screen.
-   --------------------------------------------------------- */
-
 .language-tokenization-grid {
+
     grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+
     gap: 18px;
+
 }
 
 .language-tokenization-block {
+
     display: flex;
+
     flex-direction: column;
 
     min-width: 0;
+
 }
 
 .tokenization-result {
+
     margin-top: 0;
+
 }
 
 .tokenization-language {
+
     display: flex;
+
     align-items: center;
+
     gap: 9px;
 
     margin-bottom: 10px;
 
     font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+
     font-size: 15px;
+
     font-weight: 700;
+
 }
 
 .tokenization-language .swatch {
+
     width: 11px;
+
     height: 11px;
 
     flex: none;
 
     border-radius: 3px;
+
 }
 
 .tokenization-language .count {
+
     margin-left: auto;
 
     font-family: "IBM Plex Mono", ui-monospace, monospace;
+
     font-size: 11.5px;
+
     font-weight: 400;
 
     color: oklch(0.45 0.025 252);
+
 }
 
 /* Height-capped instead of fixed, so one short sentence does not
    leave a large empty box and a long corpus still scrolls inside. */
+
 .tokenization-text {
+
     height: auto;
+
     min-height: 110px;
+
     max-height: 230px;
+
 }
 
 /* Metrics belong to the card above them, not to the page. */
+
 .tokenization-metrics {
+
     margin-top: 12px;
+
     gap: 12px;
+
 }
 
 .metric-row {
+
     gap: 10px;
+
 }
 
 .metric-card {
+
     min-height: 76px;
+
     padding: 10px 6px;
+
 }
 
 .metric-value {
+
     font-size: 20px;
+
 }
 
 
 /* The share printed on each doughnut slice. */
+
 .chart-slice-label {
+
     font-family: "IBM Plex Mono", ui-monospace, monospace;
+
     font-size: 10.5px;
+
     font-weight: 500;
 
     fill: #fdf9f9;
 
     pointer-events: none;
+
 }
 
 /* Placeholder shown while a tokenizer's metrics are being fetched. */
+
 .chart-skeleton {
+
     height: 300px;
 
     margin: 8px auto 14px;
@@ -2275,27 +3130,41 @@ body {
     border-radius: 14px;
 
     background: linear-gradient(
+
         100deg,
+
         oklch(0.94 0.02 242 / 0.5) 30%,
+
         oklch(0.97 0.012 242 / 0.8) 50%,
+
         oklch(0.94 0.02 242 / 0.5) 70%
+
     );
+
     background-size: 300% 100%;
 
     animation: chart-shimmer 1.4s ease-in-out infinite;
+
 }
 
 .chart-skeleton.is-ring {
+
     width: min(300px, 88%);
 
     border-radius: 50%;
+
 }
 
 @keyframes chart-shimmer {
+
     from { background-position: 150% 0; }
+
     to   { background-position: -50% 0; }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
+
     .chart-skeleton { animation: none; }
+
 }

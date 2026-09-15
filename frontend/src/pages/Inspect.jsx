@@ -1976,55 +1976,109 @@ function Inspect() {
                             Read closely &mdash; pick up to two
                         </label>
 
-                        {/* One pill per language. The dot is the same colour the
-                            language gets in the charts below, so the eye can follow
-                            one language all the way down the page. */}
+                        <div className="language-selector">
 
-                        <div className="language-pills">
+                            <button
+                                type="button"
+                                className="language-button"
+                                onClick={() =>
+                                    setLanguageMenuOpen(
+                                        !languageMenuOpen
+                                    )
+                                }
+                                disabled={
+                                    selectionLoading ||
+                                    source === "upload"
+                                }
+                            >
 
-                            {languages.map(
-                                (item) => (
+                                <span>
+
+                                    {selectedLanguages.length === 0
+                                        ? "Select languages"
+                                        : selectedLanguages.join(", ")
+                                    }
+
+                                </span>
+
+                                <span className="language-arrow">
+                                    {languageMenuOpen ? "▲" : "▼"}
+                                </span>
+
+                            </button>
+
+                            {languageMenuOpen && (
+                                <div className="language-menu">
+
+                                    <div className="language-menu-title">
+                                        LANGUAGES
+                                    </div>
+
+                                    <div className="language-menu-subtitle">
+                                        Select up to two languages
+                                    </div>
+
+                                    <div className="language-options">
+
+                                        {languages.map(
+                                            (item) => (
+
+                                                <button
+                                                    type="button"
+                                                    key={item}
+                                                    className={`language-option ${
+                                                        selectedLanguages.includes(
+                                                            item
+                                                        )
+                                                            ? "selected"
+                                                            : ""
+                                                    }`}
+                                                    onClick={() => {
+                                                        toggleLanguage(
+                                                            item
+                                                        );
+                                                    }}
+                                                    disabled={
+                                                        selectionLoading ||
+                                                        source === "upload"
+                                                    }
+                                                >
+
+                                                    <span
+                                                        className="pill-dot"
+                                                        style={{
+                                                            background:
+                                                                languageColour(
+                                                                    item
+                                                                )
+                                                        }}
+                                                    ></span>
+
+                                                    {item}
+
+                                                </button>
+
+                                            )
+                                        )}
+
+                                    </div>
 
                                     <button
                                         type="button"
-                                        key={item}
-                                        className={`language-pill ${
-                                            selectedLanguages.includes(
-                                                item
-                                            )
-                                                ? "is-selected"
-                                                : ""
-                                        }`}
-                                        onClick={() => {
-                                            toggleLanguage(
-                                                item
-                                            );
-                                        }}
-                                        disabled={
-                                            selectionLoading ||
-                                            source === "upload"
+                                        className="language-done-button"
+                                        onClick={() =>
+                                            setLanguageMenuOpen(false)
                                         }
                                     >
-
-                                        <span
-                                            className="pill-dot"
-                                            style={{
-                                                background:
-                                                    languageColour(item)
-                                            }}
-                                        ></span>
-
-                                        {item}
-
+                                        Done
                                     </button>
 
-                                )
+                                </div>
                             )}
 
                         </div>
 
                         {source === "upload" && (
-
                             <div className="selection-status">
 
                                 <span className="status-dot"></span>
@@ -2034,13 +2088,11 @@ function Inspect() {
                                 </span>
 
                             </div>
-
                         )}
 
                         {/* Language status */}
 
                         {languageStatus && (
-
                             <div
                                 className={`selection-status ${
                                     languageStatus ===
@@ -2061,7 +2113,6 @@ function Inspect() {
                                 </span>
 
                             </div>
-
                         )}
 
                     </div>
