@@ -108,6 +108,11 @@ function MetricsChart({ tokenizer }) {
     /* Starts false so the slices grow in from nothing on first paint. */
     const [grown, setGrown] = useState(false);
 
+    /* True while a tokenizer is being fetched. The old numbers are cleared
+       the moment it goes true - these charts belong to one tokenizer, so
+       showing last one's figures under a new name would be a lie. */
+    const [loading, setLoading] = useState(false);
+
     const requestRef = useRef(0);
 
     useEffect(() => {
@@ -127,6 +132,8 @@ function MetricsChart({ tokenizer }) {
 
         setGrown(false);
         setError("");
+        setLoading(true);
+        setData(null);
 
         getMetrics(tokenizer)
             .then((result) => {
@@ -136,6 +143,7 @@ function MetricsChart({ tokenizer }) {
                 }
 
                 setData(result);
+                setLoading(false);
 
                 /* Next frame, so the transition has something to run from. */
                 requestAnimationFrame(() => setGrown(true));
@@ -148,6 +156,7 @@ function MetricsChart({ tokenizer }) {
                 }
 
                 setData(null);
+                setLoading(false);
                 setError(err.message || "Could not load metrics.");
 
             });
@@ -159,6 +168,32 @@ function MetricsChart({ tokenizer }) {
         return (
             <section className="charts-box">
                 <div className="inspect-error">{error}</div>
+            </section>
+        );
+
+    }
+
+    if (loading) {
+
+        return (
+            <section className="charts-box">
+
+                <div className="charts-head">
+                    <h2>All eight languages at once</h2>
+                    <p>Loading {tokenizer}&hellip;</p>
+                </div>
+
+                {/* Empty frames in the right shape, so the page does not
+                    jump when the real charts arrive. */}
+                <div className="charts-grid">
+                    <div className="chart-card">
+                        <div className="chart-skeleton is-ring"></div>
+                    </div>
+                    <div className="chart-card">
+                        <div className="chart-skeleton is-ring"></div>
+                    </div>
+                </div>
+
             </section>
         );
 
@@ -305,6 +340,67 @@ function MetricsChart({ tokenizer }) {
 
     const wordRank = byWord.indexOf(cheapest) + 1;
     const costRank = byTokens.indexOf(bestPerWord) + 1;
+
+    /*
+        The sentence has to stay true for any tokenizer, so it is built
+        from the numbers rather than written out. Three cases:
+
+        - the two measures agree, and there is nothing to explain;
+        - they disagree across language families, which is the orthography
+          story (conjunctive Nguni versus disjunctive Sotho-Tswana);
+        - they disagree inside one family, where that explanation would be
+          wrong, so it is not offered.
+    */
+    const agree = bestPerWord === cheapest;
+
+    const sameFamily =
+        FAMILY[bestPerWord] &&
+        FAMILY[bestPerWord] === FAMILY[cheapest];
+
+    let note;
+
+    if (southAfrican.length < 2) {
+
+        note = null;
+
+    }
+    else if (agree) {
+
+        note = (
+            <>
+                <b>{bestPerWord}</b> has both the shortest petal and the
+                smallest slice &mdash; for this tokenizer the per-word score
+                and the actual bill agree.
+            </>
+        );
+
+    }
+    else {
+
+        note = (
+            <>
+                On the wheel <b>{bestPerWord}</b> has the shortest petal
+                &mdash; the best tokens-per-word score. On the doughnut it
+                still takes {costRank === 1
+                    ? "the biggest slice of all"
+                    : `the ${costRank}${ordinal(costRank)} biggest slice`}.
+                {" "}
+                <b>{cheapest}</b> does the opposite: {wordRank === 1
+                    ? "the worst score per word"
+                    : `${wordRank}${ordinal(wordRank)} per word`}, yet the
+                smallest slice of the bill.
+                {" "}
+                {sameFamily
+                    ? `Per-word divides by written words, so it rewards a language
+                       for writing longer ones - which is not the same thing as
+                       costing less to tokenize.`
+                    : `Per-word divides by spaces, and ${FAMILY[bestPerWord]} and
+                       ${FAMILY[cheapest]} do not put their spaces in the same
+                       places.`}
+            </>
+        );
+
+    }
 
     /* ---------- one wedge, used by both charts ---------- */
 
@@ -491,16 +587,9 @@ function MetricsChart({ tokenizer }) {
                 ))}
             </div>
 
-            <p className="chart-note">
-                On the wheel <b>{bestPerWord}</b> has the shortest petal
-                &mdash; the best tokens-per-word score. On the doughnut it
-                still takes the {costRank}{ordinal(costRank)} biggest slice.
-                {" "}
-                <b>{cheapest}</b> does the opposite: {wordRank}
-                {ordinal(wordRank)} per word, yet the smallest slice of the
-                bill. Per-word divides by spaces, and the two families do not
-                put their spaces in the same places.
-            </p>
+            {note && (
+                <p className="chart-note">{note}</p>
+            )}
 
             {/* Hover card */}
             <div
