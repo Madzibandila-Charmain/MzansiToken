@@ -18,37 +18,9 @@ import { useEffect, useRef, useState } from "react";
 
 import { getMetrics } from "../api/client";
 
-/*
-    Fixed colour wheel. Assigned in this order and never cycled.
-    The order was checked with a colour-blindness simulator so no
-    two neighbouring slices collapse into the same colour.
-*/
-const WHEEL = [
-    "#2f6fd0",
-    "#e31c8d",
-    "#e8a62e",
-    "#2ba3b5",
-    "#7b3fa0",
-    "#d2601a",
-    "#4fa3e0",
-    "#5aa544"
-];
-
-const BASELINE = "#8b93a0";
-
-const FAMILY = {
-    isiZulu: "Nguni",
-    isiXhosa: "Nguni",
-    siSwati: "Nguni",
-    isiNdebele: "Nguni",
-    Sepedi: "Sotho-Tswana",
-    Sesotho: "Sotho-Tswana",
-    Setswana: "Sotho-Tswana",
-    Xitsonga: "Tswa-Ronga",
-    Tshivenda: "Venda",
-    Afrikaans: "West Germanic",
-    English: "baseline"
-};
+/* One shared source of truth for language colours and families, so the
+   pills, the reading panels and these charts can never disagree. */
+import { languageColour, FAMILY, LANGUAGE_ORDER } from "./languageColours";
 
 const MEASURES = [
     {
@@ -196,7 +168,11 @@ function MetricsChart({ tokenizer }) {
         return null;
     }
 
-    /* English last, so it always lands on the grey slot. */
+    /*
+        Slices go round in the same order the palette was validated in,
+        and English last. That keeps neighbouring slices the pairs that
+        were checked for colour-blind separation.
+    */
     const names = Object.keys(data).sort((a, b) => {
 
         if (a === "English") {
@@ -207,22 +183,16 @@ function MetricsChart({ tokenizer }) {
             return -1;
         }
 
-        return 0;
+        const left = LANGUAGE_ORDER.indexOf(a);
+        const right = LANGUAGE_ORDER.indexOf(b);
+
+        return (left === -1 ? 99 : left) - (right === -1 ? 99 : right);
     });
 
     const colours = {};
-    let slot = 0;
 
     names.forEach((name) => {
-
-        if (name === "English") {
-            colours[name] = BASELINE;
-        }
-        else {
-            colours[name] = WHEEL[slot % WHEEL.length];
-            slot = slot + 1;
-        }
-
+        colours[name] = languageColour(name);
     });
 
     const total = names.reduce(
