@@ -15,14 +15,24 @@ function App() {
 
             <AppStateProvider>
 
-                <Header />
+                <div className="app-shell">
 
-                <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/inspect" element={<Inspect />} />
-                    <Route path="/compare" element={<Compare />} />
-                    <Route path="/rank" element={<Rank />} />
-                </Routes>
+                    <div className="ambient-gradient"></div>
+
+                    <Header />
+
+                    <main>
+
+                        <Routes>
+                            <Route path="/" element={<Home />} />
+                            <Route path="/inspect" element={<Inspect />} />
+                            <Route path="/compare" element={<Compare />} />
+                            <Route path="/rank" element={<Rank />} />
+                        </Routes>
+
+                    </main>
+
+                </div>
 
             </AppStateProvider>
 
