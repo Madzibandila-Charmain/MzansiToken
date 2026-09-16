@@ -6,78 +6,49 @@
 
 
 .compare-page {
-
     min-height: 100vh;
-
-    padding: 50px 8%;
-
+    padding: 0;
     color: #171717;
-
 }
-
 
 /*
-    COMPARE HEADER
+    COMPARE INTRO
 */
-
-.compare-header {
-
-    width: 100%;
-
+.compare-intro {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 95px 20px 65px;
+    text-align: center;
 }
 
-.compare-eyebrow {
-
-    margin: 0 0 24px 0;
-
-    font-size: 0.75rem;
-
-    font-weight: 600;
-
-    letter-spacing: 0.12em;
-
-    color: #777;
-
-}
-
-.compare-header h1 {
-
-    margin: 0;
-
-    font-size: clamp(3rem, 6vw, 3rem);
-
-    line-height: 0.3;
-
+.compare-label {
+    margin: 0 0 18px;
+    font-size: 12px;
     font-weight: 700;
-
-    letter-spacing: -0.06em;
-
+    letter-spacing: 3px;
+    color: oklch(0.69 0.19 44);
 }
 
-.compare-bottom-row {
-
-    display: flex;
-
-    align-items: flex-end;
-
-    justify-content: space-between;
-
-    gap: 30px;
-
-    margin-top: 10px;
-
+.compare-intro h1 {
+    margin: 0;
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 45px;
+    font-weight: 550;
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+    color: oklch(0.25 0.025 252);
 }
 
-.compare-subtitle {
+.compare-description {
+    max-width: 540px;
+    margin: 22px auto 0;
+    font-size: 17px;
+    line-height: 1.7;
+    color: #6f6f6f;
+}
 
-    margin: 2px;
-
-    font-size: 0.95rem;
-
-    line-height: 1.2;
-
-    color: #777;
-
+.compare-intro .customize-button {
+    margin-top: 28px;
 }
 
 
@@ -1108,53 +1079,23 @@
 @media (max-width: 700px) {
 
     .compare-page {
+        padding: 0;
+    }
 
-        padding: 80px 6%;
-
+    .compare-intro {
+        padding: 70px 20px 50px;
     }
 
     .compare-bottom-row {
-
         align-items: flex-start;
-
         flex-direction: column;
-
     }
 
     .customize-button {
-
         align-self: flex-start;
-
-    }
-
-    .customize-panel {
-
-        padding: 25px;
-
-    }
-
-    .compare-upload-container {
-
-        align-items: stretch;
-
-        flex-direction: column;
-
-    }
-
-    .compare-upload-button {
-
-        width: 100%;
-
-    }
-
-    .compare-default-button {
-
-        width: 100%;
-
     }
 
 }
-
 
 /*
     SMALL MOBILE

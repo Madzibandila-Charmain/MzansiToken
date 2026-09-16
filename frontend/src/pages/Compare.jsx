@@ -1047,34 +1047,33 @@ function Compare() {
 
             {/* Compare Header */}
 
-            <div className="compare-header">
+            <section className="compare-intro">
 
-                <p className="compare-eyebrow">
-                    tokenizer face-off · see what changes
+                {/* Description of what the Compare page does */}
+
+                <p className="compare-label">
+                    COMPARE
                 </p>
 
-                <h1>COMPARE</h1>
+                <h1>
+                    Put Two Tokenizers Through the Same Test.
+                </h1>
 
-                <div className="compare-bottom-row">
+                <p className="compare-description">
+                    See exactly where they differ, side by side, across the same
+                    language and corpus.
+                </p>
 
-                    <p className="compare-subtitle">
-                        Put two tokenizers through the same test.
-                        <br />
-                        See exactly where they differ.
-                    </p>
+                <button
+                    className="customize-button"
+                    onClick={() =>
+                        setShowCustomize(!showCustomize)
+                    }
+                >
+                    {showCustomize ? "Close" : "Customize"}
+                </button>
 
-                    <button
-                        className="customize-button"
-                        onClick={() =>
-                            setShowCustomize(!showCustomize)
-                        }
-                    >
-                        {showCustomize ? "Close" : "Customize"}
-                    </button>
-
-                </div>
-
-            </div>
+            </section>
 
             {/* Customize Panel */}
 
