@@ -20,6 +20,39 @@ import { useAppState } from "../context/AppStateContext";
 
 import CorpusUpload from "../components/CorpusUpload";
 
+import TokenizationMetrics from "../components/TokenizationMetrics";
+
+const GPT2_SPACE = "\u0120";
+const SENTENCEPIECE_SPACE = "\u2581";
+const WORDPIECE_PREFIX = "##";
+
+function readable(token) {
+
+    if (
+        token.startsWith(GPT2_SPACE) ||
+        token.startsWith(SENTENCEPIECE_SPACE)
+    ) {
+        return {
+            text: token.slice(1),
+            newWord: true
+        };
+    }
+
+    if (
+        token.startsWith(WORDPIECE_PREFIX)
+    ) {
+        return {
+            text: token.slice(2),
+            newWord: false
+        };
+    }
+
+    return {
+        text: token,
+        newWord: false
+    };
+}
+
 function Compare() {
 
     const {
@@ -35,8 +68,6 @@ function Compare() {
         setCompareSelectedFile,
         compareFileName,
         setCompareFileName,
-        compareMetrics,
-        setCompareMetrics,
         compareInitialised,
         setCompareInitialised
     } = useAppState();
@@ -139,13 +170,6 @@ function Compare() {
         File input reference.
     */
     const fileInputRef = useRef(null);
-
-    const availableMetrics = [
-        "Token Count",
-        "Fertility",
-        "Compression",
-        "Token Premium"
-    ];
 
     /*
         Load backend options when Compare opens.
@@ -473,45 +497,33 @@ function Compare() {
     ]);
 
     /*
-        Toggle selected metrics.
-    */
-    function handleMetricChange(metric) {
-
-        setCompareMetrics((currentMetrics) => {
-
-            if (currentMetrics.includes(metric)) {
-
-                return currentMetrics.filter(
-                    (item) => item !== metric
-                );
-
-            }
-
-            return [...currentMetrics, metric];
-
-        });
-
-    }
-
-    /*
         Converts backend tokenized text into an array.
     */
     function formatTokenizedText(tokenizedText) {
 
+        if (!tokenizedText) {
+            return [];
+        }
+
         if (Array.isArray(tokenizedText)) {
-            return tokenizedText.flat();
+            return tokenizedText;
         }
 
         if (typeof tokenizedText === "string") {
 
             return tokenizedText
-                .split(/\s+/)
-                .filter(Boolean);
-
+                .split(/\n+/)
+                .map((sentence) =>
+                    sentence
+                        .split(/\s+/)
+                        .filter(Boolean)
+                )
+                .filter(
+                    (sentence) =>
+                        sentence.length > 0
+                );
         }
-
         return [];
-
     }
 
     /*
@@ -519,50 +531,92 @@ function Compare() {
     */
     function renderTokens(tokens) {
 
-        if (!tokens || tokens.length === 0) {
+        if (
+            !tokens ||
+            tokens.length === 0
+        ) {
 
             return "Your tokenized text will appear here.";
 
         }
 
-        const visibleTokens = tokens.slice(0, 1000);
+        let sentences;
+
+        if (
+            Array.isArray(tokens[0])
+        ) {
+
+            sentences = tokens;
+
+        }
+        else {
+
+            sentences = [
+                tokens
+            ];
+
+        }
+
+        const visibleSentences =
+            sentences.slice(0, 10);
 
         return (
-
             <>
+                {visibleSentences.map(
+                    (
+                        sentence,
+                        sentenceIndex
+                    ) => (
 
-                {visibleTokens.map((token, index) => {
-
-                    const colourIndex = index % 8;
-
-                    return (
-
-                        <span
-                            key={`${index}-${token}`}
-                            className={`token-pill token-colour-${colourIndex}`}
+                        <div
+                            key={`sentence-${sentenceIndex}`}
+                            className="token-sentence"
                         >
-                            {token}
-                        </span>
 
-                    );
+                            {sentence.map(
+                                (
+                                    token,
+                                    tokenIndex
+                                ) => {
 
-                })}
+                                    const colourIndex =
+                                        tokenIndex % 8;
 
-                {tokens.length > 1000 && (
+                                    const {
+                                        text,
+                                        newWord
+                                    } = readable(
+                                        Array.isArray(token)
+                                            ? token.join("")
+                                            : String(token)
+                                    );
 
-                    <span className="token-limit-message">
+                                    return (
+                                        <span
+                                            key={`${sentenceIndex}-${tokenIndex}-${token}`}
+                                            className={
+                                                `token-pill token-colour-${colourIndex}` +
+                                                (
+                                                    newWord
+                                                        ? " token-new-word"
+                                                        : ""
+                                                )
+                                            }
+                                            title={token}
+                                        >
+                                            {text}
+                                        </span>
+                                    );
 
-                        Showing the first 1,000 tokens of{" "}
-                        {tokens.length.toLocaleString()}.
+                                }
+                            )}
 
-                    </span>
+                        </div>
 
+                    )
                 )}
-
             </>
-
         );
-
     }
 
     /*
@@ -588,6 +642,28 @@ function Compare() {
 
     }
 
+    function getMetricValue(metric, metrics) {
+        if (metric === "Tokens") {
+            return Number(
+                metrics?.tokens ?? 0
+            ).toLocaleString();
+        }
+
+        if (metric === "Fertility") {
+            return Number(
+                metrics?.fertility ?? 0
+            ).toFixed(2);
+        }
+
+        if (metric === "Compression") {
+            return Number(
+                metrics?.compression ?? 0
+            ).toFixed(2);
+        }
+
+        return "0.00";
+    }
+
     function formatMbiMetric(value) {
 
         return Number(value ?? 0).toFixed(2);
@@ -606,6 +682,14 @@ function Compare() {
 
         return formatMbiMetric(value);
 
+    }
+
+    /*
+        English corpus won't display Precision/F1/Recall.
+    */
+
+    function hasMbiMetrics() {
+        return compareLanguage !== "English";
     }
 
     /*
@@ -846,7 +930,6 @@ function Compare() {
                 const result =
                     await uploadCorpus(
                         compareSelectedFile,
-                        compareLanguage,
                         newTokenizer
                     );
 
@@ -920,7 +1003,6 @@ function Compare() {
                 const result =
                     await uploadCorpus(
                         compareSelectedFile,
-                        compareLanguage,
                         newTokenizer
                     );
 
@@ -996,38 +1078,6 @@ function Compare() {
 
     }
 
-    /*
-        Displays metric value.
-    */
-    function getMetricValue(metric, tokenizerMetrics) {
-
-        switch (metric) {
-
-            case "Token Count":
-                return tokenizerMetrics.tokens;
-
-            case "Fertility":
-                return Number(
-                    tokenizerMetrics.fertility
-                ).toFixed(2);
-
-            case "Compression":
-                return Number(
-                    tokenizerMetrics.compression
-                ).toFixed(2);
-
-            case "Token Premium":
-                return Number(
-                    tokenizerMetrics.token_premium ?? 0
-                ).toFixed(2);
-
-            default:
-                return "0";
-
-        }
-
-    }
-
     return (
 
         <div className="compare-page">
@@ -1097,40 +1147,12 @@ function Compare() {
 
                     </div>
 
-                    <div className="customize-section">
-
-                        <h2>Metrics to compare</h2>
-
-                        <div className="round-options">
-
-                            {availableMetrics.map((metric) => (
-
-                                <button
-                                    key={metric}
-                                    className={`round-option ${
-                                        compareMetrics.includes(metric)
-                                            ? "selected"
-                                            : ""
-                                    }`}
-                                    onClick={() =>
-                                        handleMetricChange(metric)
-                                    }
-                                >
-                                    {metric}
-                                </button>
-
-                            ))}
-
-                        </div>
-
-                    </div>
-
                     <div className="selection-summary">
 
                         <span>{compareLanguage}</span>
 
                         <span>
-                            {compareMetrics.length} metrics selected
+                            Comparing two tokenizers
                         </span>
 
                     </div>
@@ -1198,274 +1220,71 @@ function Compare() {
 
                     {/* TOKENIZER 1 */}
 
-                    <div className="compare-tokenization-panel">
-
-                        <div className="compare-panel-heading">
-                            Tokenizer 1
-                        </div>
-
-                        <select
-                            className="compare-tokenizer-select"
-                            value={compareTokenizerOne}
-                            onChange={handleTokenizerOneChange}
-                            disabled={
-                                selectionLoading || loading
-                            }
-                        >
-
-                            {tokenizers.map((item) => (
-
-                                <option
-                                    key={item}
-                                    value={item}
-                                >
-                                    {item}
-                                </option>
-
-                            ))}
-
-                        </select>
-
-                        <div className="compare-tokenization-result">
-
-                            <div className="compare-tokenization-text">
-
-                                {loading &&
-                                !tokenizerOneTokens.length
-                                    ? "Loading tokenized corpus..."
-                                    : renderTokens(
-                                        tokenizerOneTokens
-                                    )}
-
-                            </div>
-
-                        </div>
-
-                        {compareMetrics.length > 0 && (
-
-                            <div className="compare-tokenization-metrics">
-
-                                {compareMetrics.map((metric) => (
-
-                                    <div
-                                        className="compare-metric-card"
-                                        key={metric}
-                                    >
-
-                                        <span className="compare-metric-name">
-                                            {metric}
-                                        </span>
-
-                                        <span className="compare-metric-value">
-
-                                            {getMetricValue(
-                                                metric,
-                                                tokenizerOneMetrics
-                                            )}
-
-                                        </span>
-
-                                    </div>
-
-                                ))}
-
-                            </div>
-
-                        )}
-
-                    </div>
+                    <TokenizationMetrics
+                        title={compareTokenizerOne || "Tokenizer 1"}
+                        tokens={tokenizerOneTokens}
+                        metrics={tokenizerOneMetrics}
+                        mbi={
+                            mbiComparison.tokenizerA
+                        }
+                        showMbi={hasMbiMetrics()}
+                        renderTokens={renderTokens}
+                        tokenizerSelector={
+                            <select
+                                className="compare-tokenizer-select"
+                                value={compareTokenizerOne}
+                                onChange={handleTokenizerOneChange}
+                                disabled={
+                                    selectionLoading || loading
+                                }
+                            >
+                                {tokenizers.map(
+                                    (item) => (
+                                        <option
+                                            key={item}
+                                            value={item}
+                                        >
+                                            {item}
+                                        </option>
+                                    )
+                                )}
+                            </select>
+                        }
+                    />
 
                     {/* TOKENIZER 2 */}
 
-                    <div className="compare-tokenization-panel">
-
-                        <div className="compare-panel-heading">
-                            Tokenizer 2
-                        </div>
-
-                        <select
-                            className="compare-tokenizer-select"
-                            value={compareTokenizerTwo}
-                            onChange={handleTokenizerTwoChange}
-                            disabled={
-                                selectionLoading || loading
-                            }
-                        >
-
-                            {tokenizers.map((item) => (
-
-                                <option
-                                    key={item}
-                                    value={item}
-                                >
-                                    {item}
-                                </option>
-
-                            ))}
-
-                        </select>
-
-                        <div className="compare-tokenization-result">
-
-                            <div className="compare-tokenization-text">
-
-                                {loading &&
-                                !tokenizerTwoTokens.length
-                                    ? "Loading tokenized corpus..."
-                                    : renderTokens(
-                                        tokenizerTwoTokens
-                                    )}
-
-                            </div>
-
-                        </div>
-
-                        {compareMetrics.length > 0 && (
-
-                            <div className="compare-tokenization-metrics">
-
-                                {compareMetrics.map((metric) => (
-
-                                    <div
-                                        className="compare-metric-card"
-                                        key={metric}
-                                    >
-
-                                        <span className="compare-metric-name">
-                                            {metric}
-                                        </span>
-
-                                        <span className="compare-metric-value">
-
-                                            {getMetricValue(
-                                                metric,
-                                                tokenizerTwoMetrics
-                                            )}
-
-                                        </span>
-
-                                    </div>
-
-                                ))}
-
-                            </div>
-
-                        )}
-
-                    </div>
-
-                </div>
-
-                <div className="compare-mbi-summary">
-
-                    <div className="compare-panel-heading">
-                        MBI comparison
-                    </div>
-
-
-                    {mbiUnavailable && (
-
-                        <div className="compare-selection-status is-error">
-
-                            <span className="compare-status-dot"></span>
-
-                            <span>
-                                {mbiUnavailable}
-                            </span>
-
-                        </div>
-
-                    )}
-
-                    {mbiError && (
-
-                        <div className="compare-error">
-                            {mbiError}
-                        </div>
-
-                    )}
-
-                    <div className="compare-tokenization-results">
-
-                        <div className="compare-tokenization-panel">
-
-                            <div className="compare-panel-heading">
-                                {compareTokenizerOne || "Tokenizer 1"}
-                            </div>
-
-                            <div className="compare-tokenization-metrics">
-
-                                <div className="compare-metric-card">
-                                    <span className="compare-metric-name">Precision</span>
-                                    <span className="compare-metric-value">
-                                        {getMbiMetricDisplay(
-                                            mbiComparison.tokenizerA.precision
-                                        )}
-                                    </span>
-                                </div>
-
-                                <div className="compare-metric-card">
-                                    <span className="compare-metric-name">Recall</span>
-                                    <span className="compare-metric-value">
-                                        {getMbiMetricDisplay(
-                                            mbiComparison.tokenizerA.recall
-                                        )}
-                                    </span>
-                                </div>
-
-                                <div className="compare-metric-card">
-                                    <span className="compare-metric-name">F1</span>
-                                    <span className="compare-metric-value">
-                                        {getMbiMetricDisplay(
-                                            mbiComparison.tokenizerA.f1
-                                        )}
-                                    </span>
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                        <div className="compare-tokenization-panel">
-
-                            <div className="compare-panel-heading">
-                                {compareTokenizerTwo || "Tokenizer 2"}
-                            </div>
-
-                            <div className="compare-tokenization-metrics">
-
-                                <div className="compare-metric-card">
-                                    <span className="compare-metric-name">Precision</span>
-                                    <span className="compare-metric-value">
-                                        {getMbiMetricDisplay(
-                                            mbiComparison.tokenizerB.precision
-                                        )}
-                                    </span>
-                                </div>
-
-                                <div className="compare-metric-card">
-                                    <span className="compare-metric-name">Recall</span>
-                                    <span className="compare-metric-value">
-                                        {getMbiMetricDisplay(
-                                            mbiComparison.tokenizerB.recall
-                                        )}
-                                    </span>
-                                </div>
-
-                                <div className="compare-metric-card">
-                                    <span className="compare-metric-name">F1</span>
-                                    <span className="compare-metric-value">
-                                        {getMbiMetricDisplay(
-                                            mbiComparison.tokenizerB.f1
-                                        )}
-                                    </span>
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    </div>
+                    <TokenizationMetrics
+                        title={compareTokenizerTwo || "Tokenizer 2"}
+                        tokens={tokenizerTwoTokens}
+                        metrics={tokenizerTwoMetrics}
+                        mbi={
+                            mbiComparison.tokenizerB
+                        }
+                        showMbi={hasMbiMetrics()}
+                        renderTokens={renderTokens}
+                        tokenizerSelector={
+                            <select
+                                className="compare-tokenizer-select"
+                                value={compareTokenizerTwo}
+                                onChange={handleTokenizerTwoChange}
+                                disabled={
+                                    selectionLoading || loading
+                                }
+                            >
+                                {tokenizers.map(
+                                    (item) => (
+                                        <option
+                                            key={item}
+                                            value={item}
+                                        >
+                                            {item}
+                                        </option>
+                                    )
+                                )}
+                            </select>
+                        }
+                    />
 
                 </div>
 
@@ -1518,37 +1337,45 @@ function Compare() {
 
                         {/* Tokenizer 1 metrics */}
 
-                        {compareMetrics.length > 0 && (
+                        <div className="compare-typed-metrics">
 
-                            <div className="compare-typed-metrics">
-
-                                {compareMetrics.map((metric) => (
-
-                                    <div
-                                        className="compare-typed-metric-card"
-                                        key={metric}
-                                    >
-
-                                        <span className="compare-typed-metric-name">
-                                            {metric}
-                                        </span>
-
-                                        <span className="compare-typed-metric-value">
-
-                                            {getMetricValue(
-                                                metric,
-                                                typedTokenizerOneMetrics
-                                            )}
-
-                                        </span>
-
-                                    </div>
-
-                                ))}
-
+                            <div className="compare-typed-metric-card">
+                                <span className="compare-typed-metric-name">
+                                    Tokens
+                                </span>
+                                <span className="compare-typed-metric-value">
+                                    {getMetricValue(
+                                        "Tokens",
+                                        typedTokenizerOneMetrics
+                                    )}
+                                </span>
                             </div>
 
-                        )}
+                            <div className="compare-typed-metric-card">
+                                <span className="compare-typed-metric-name">
+                                    Fertility
+                                </span>
+                                <span className="compare-typed-metric-value">
+                                    {getMetricValue(
+                                        "Fertility",
+                                        typedTokenizerOneMetrics
+                                    )}
+                                </span>
+                            </div>
+
+                            <div className="compare-typed-metric-card">
+                                <span className="compare-typed-metric-name">
+                                    Compression
+                                </span>
+                                <span className="compare-typed-metric-value">
+                                    {getMetricValue(
+                                        "Compression",
+                                        typedTokenizerOneMetrics
+                                    )}
+                                </span>
+                            </div>
+
+                        </div>
 
                     </div>
 
@@ -1575,38 +1402,45 @@ function Compare() {
                         </div>
 
                         {/* Tokenizer 2 metrics */}
+                        <div className="compare-typed-metrics">
 
-                        {compareMetrics.length > 0 && (
-
-                            <div className="compare-typed-metrics">
-
-                                {compareMetrics.map((metric) => (
-
-                                    <div
-                                        className="compare-typed-metric-card"
-                                        key={metric}
-                                    >
-
-                                        <span className="compare-typed-metric-name">
-                                            {metric}
-                                        </span>
-
-                                        <span className="compare-typed-metric-value">
-
-                                            {getMetricValue(
-                                                metric,
-                                                typedTokenizerTwoMetrics
-                                            )}
-
-                                        </span>
-
-                                    </div>
-
-                                ))}
-
+                            <div className="compare-typed-metric-card">
+                                <span className="compare-typed-metric-name">
+                                    Tokens
+                                </span>
+                                <span className="compare-typed-metric-value">
+                                    {getMetricValue(
+                                        "Tokens",
+                                        typedTokenizerTwoMetrics
+                                    )}
+                                </span>
                             </div>
 
-                        )}
+                            <div className="compare-typed-metric-card">
+                                <span className="compare-typed-metric-name">
+                                    Fertility
+                                </span>
+                                <span className="compare-typed-metric-value">
+                                    {getMetricValue(
+                                        "Fertility",
+                                        typedTokenizerTwoMetrics
+                                    )}
+                                </span>
+                            </div>
+
+                            <div className="compare-typed-metric-card">
+                                <span className="compare-typed-metric-name">
+                                    Compression
+                                </span>
+                                <span className="compare-typed-metric-value">
+                                    {getMetricValue(
+                                        "Compression",
+                                        typedTokenizerTwoMetrics
+                                    )}
+                                </span>
+                            </div>
+
+                        </div>
 
                     </div>
 
