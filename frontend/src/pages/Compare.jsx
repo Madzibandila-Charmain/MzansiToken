@@ -1224,32 +1224,9 @@ function Compare() {
                         title={compareTokenizerOne || "Tokenizer 1"}
                         tokens={tokenizerOneTokens}
                         metrics={tokenizerOneMetrics}
-                        mbi={
-                            mbiComparison.tokenizerA
-                        }
+                        mbi={mbiComparison.tokenizerA}
                         showMbi={hasMbiMetrics()}
                         renderTokens={renderTokens}
-                        tokenizerSelector={
-                            <select
-                                className="compare-tokenizer-select"
-                                value={compareTokenizerOne}
-                                onChange={handleTokenizerOneChange}
-                                disabled={
-                                    selectionLoading || loading
-                                }
-                            >
-                                {tokenizers.map(
-                                    (item) => (
-                                        <option
-                                            key={item}
-                                            value={item}
-                                        >
-                                            {item}
-                                        </option>
-                                    )
-                                )}
-                            </select>
-                        }
                     />
 
                     {/* TOKENIZER 2 */}
@@ -1258,32 +1235,9 @@ function Compare() {
                         title={compareTokenizerTwo || "Tokenizer 2"}
                         tokens={tokenizerTwoTokens}
                         metrics={tokenizerTwoMetrics}
-                        mbi={
-                            mbiComparison.tokenizerB
-                        }
+                        mbi={mbiComparison.tokenizerB}
                         showMbi={hasMbiMetrics()}
                         renderTokens={renderTokens}
-                        tokenizerSelector={
-                            <select
-                                className="compare-tokenizer-select"
-                                value={compareTokenizerTwo}
-                                onChange={handleTokenizerTwoChange}
-                                disabled={
-                                    selectionLoading || loading
-                                }
-                            >
-                                {tokenizers.map(
-                                    (item) => (
-                                        <option
-                                            key={item}
-                                            value={item}
-                                        >
-                                            {item}
-                                        </option>
-                                    )
-                                )}
-                            </select>
-                        }
                     />
 
                 </div>
