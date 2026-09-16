@@ -1,0 +1,664 @@
+/*
+    CompareCharts
+    Author: Mukovhe Ranwashe (RNWMUK001)
+    Date: 16 September 2026
+
+    Two tokenizers, all eight languages, on one set of axes.
+
+    One chart, and a row of headline numbers underneath it:
+
+      - a dumbbell plot: where does each tokenizer sit for this language,
+        and how far apart are they? Two dots joined by a line, so the gap
+        is a length you can see rather than a subtraction you have to do.
+        The family is printed under each language name, because that is
+        where the pattern lives - the Nguni languages move together, and
+        so do the Sotho-Tswana ones.
+
+    It reads GET /metrics/{model} once per tokenizer. It deliberately does
+    NOT use compareTokenizers() from the client, because that helper POSTs
+    to /compare while the backend serves GET /compare - it would 405.
+*/
+
+import { useEffect, useRef, useState } from "react";
+
+import { getMetrics } from "../api/client";
+
+import { FAMILY } from "./languageColours";
+
+/* One colour each. Checked for colour-blind separation - these two stay
+   apart under every simulation, which matters when the whole page is a
+   comparison of exactly two things. */
+const COLOUR_A = "#2f6fd0";
+const COLOUR_B = "#d2601a";
+
+const BETTER = "#2f7d4f";
+const WORSE = "#b23b3b";
+
+/*
+    Which direction counts as an improvement is not the same for every
+    measure. Fewer tokens per word is better; MORE bytes carried per token
+    is better, because it means each token is doing more work.
+*/
+const MEASURES = [
+    {
+        key: "fertility",
+        label: "Per word",
+        title: "Tokens per written word",
+        lowerIsBetter: true,
+        format: (v) => v.toFixed(2)
+    },
+    {
+        key: "compression",
+        label: "Bytes / token",
+        title: "Bytes carried per token",
+        lowerIsBetter: false,
+        format: (v) => v.toFixed(2)
+    },
+    {
+        key: "token_count",
+        label: "Total tokens",
+        title: "Tokens for the whole corpus",
+        lowerIsBetter: true,
+        format: (v) => Number(v).toLocaleString()
+    },
+    {
+        key: "token_premium",
+        label: "Cost vs English",
+        title: "Cost relative to English",
+        lowerIsBetter: true,
+        format: (v) => v.toFixed(2) + "×"
+    }
+];
+
+function CompareCharts({ tokenizerA, tokenizerB }) {
+
+    const [pair, setPair] = useState(null);
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [measure, setMeasure] = useState("fertility");
+    const [hot, setHot] = useState(null);
+
+    /* Which shape the same numbers are drawn in. */
+    const [shape, setShape] = useState("dots");
+
+    const requestRef = useRef(0);
+
+    useEffect(() => {
+
+        if (!tokenizerA || !tokenizerB) {
+            return;
+        }
+
+        /* Number every request so a slow reply for an old pair of
+           tokenizers cannot overwrite a newer one. */
+        const id = requestRef.current + 1;
+        requestRef.current = id;
+
+        setLoading(true);
+        setError("");
+
+        Promise.all([
+            getMetrics(tokenizerA),
+            getMetrics(tokenizerB)
+        ])
+            .then(([a, b]) => {
+
+                if (requestRef.current !== id) {
+                    return;
+                }
+
+                setPair({ a, b });
+                setLoading(false);
+
+            })
+            .catch((err) => {
+
+                if (requestRef.current !== id) {
+                    return;
+                }
+
+                setPair(null);
+                setLoading(false);
+                setError(err.message || "Could not load the comparison.");
+
+            });
+
+    }, [tokenizerA, tokenizerB]);
+
+    if (error) {
+
+        return (
+            <section className="compare-charts">
+                <div className="selection-status is-error">
+                    <span className="status-dot"></span>
+                    <span>{error}</span>
+                </div>
+            </section>
+        );
+
+    }
+
+    if (loading && !pair) {
+
+        return (
+            <section className="compare-charts">
+                <div className="charts-waiting">
+                    <span className="spinner is-big"></span>
+                    <span>Comparing {tokenizerA} and {tokenizerB}&hellip;</span>
+                </div>
+            </section>
+        );
+
+    }
+
+    if (!pair) {
+        return null;
+    }
+
+    const current = MEASURES.find((m) => m.key === measure);
+
+    /* Only languages both tokenizers reported, so no row is half empty. */
+    const names = Object.keys(pair.a).filter(
+        (name) => pair.b[name] !== undefined
+    );
+
+    const valueOf = (side, name) => {
+
+        const value = pair[side][name]?.[measure];
+
+        if (value === null || value === undefined) {
+            return measure === "token_premium" ? 1 : 0;
+        }
+
+        return value;
+    };
+
+    const rows = names.map((name) => {
+
+        const a = valueOf("a", name);
+        const b = valueOf("b", name);
+
+        /* Percentage change from A to B, then flipped where needed so that
+           a positive number always means "B is better". */
+        const raw = a === 0 ? 0 : (b - a) / a * 100;
+
+        return {
+            name: name,
+            family: FAMILY[name] || "",
+            a: a,
+            b: b,
+            change: raw,
+            gain: current.lowerIsBetter ? -raw : raw
+        };
+    });
+
+    const highest = Math.max(...rows.map((r) => Math.max(r.a, r.b)));
+
+    const southAfrican = rows.filter((r) => r.name !== "English");
+    const improved = southAfrican.filter((r) => r.gain > 0).length;
+
+    const meanGain =
+        southAfrican.length === 0
+            ? 0
+            : southAfrican.reduce((sum, r) => sum + r.gain, 0) /
+              southAfrican.length;
+
+    const best = [...southAfrican].sort((p, q) => q.gain - p.gain)[0];
+    const english = rows.find((r) => r.name === "English");
+
+    /* ---------- dumbbell geometry ---------- */
+
+    const LEFT = 132;
+    const RIGHT = 860;
+    const TOP = 30;
+    const ROW = 40;
+
+    const x = (value) => LEFT + (value / highest) * (RIGHT - LEFT);
+
+    const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => f * highest);
+
+    return (
+        <section className="compare-charts">
+
+            <div className={"compare-body" + (loading ? " is-loading" : "")}>
+
+                <div className="compare-head">
+                    <h2>All eight languages, both tokenizers</h2>
+
+                    <div className="compare-legend">
+                        <span>
+                            <i style={{ background: COLOUR_A }}></i>
+                            {tokenizerA}
+                        </span>
+                        <span>
+                            <i style={{ background: COLOUR_B }}></i>
+                            {tokenizerB}
+                        </span>
+                    </div>
+                </div>
+
+                {tokenizerA === tokenizerB && (
+                    <div className="selection-status is-warning">
+                        <span className="status-dot"></span>
+                        <span>
+                            Both sides are set to <b>{tokenizerA}</b>, so every
+                            pair of dots sits in the same place.
+                        </span>
+                    </div>
+                )}
+
+                <div className="compare-controls">
+
+                    <div className="compare-switch">
+                        {[
+                            { key: "dots", label: "Dots" },
+                            { key: "bars", label: "Bars" }
+                        ].map((s2) => (
+                            <button
+                                key={s2.key}
+                                type="button"
+                                aria-pressed={shape === s2.key}
+                                onClick={() => setShape(s2.key)}
+                            >
+                                {s2.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="compare-switch">
+                    {MEASURES.map((m) => (
+                        <button
+                            key={m.key}
+                            type="button"
+                            aria-pressed={measure === m.key}
+                            onClick={() => setMeasure(m.key)}
+                        >
+                            {m.label}
+                        </button>
+                    ))}
+                    </div>
+
+                </div>
+
+                {/* ---------- the chart ---------- */}
+                {shape === "dots" && (
+                <div className="compare-card">
+
+                        <h3>{current.title}</h3>
+                        <p>
+                            The line between the two dots is the difference.
+                            A short line means the tokenizers agree.
+                        </p>
+
+                        <svg
+                            className="compare-svg"
+                            viewBox={`0 0 900 ${TOP + rows.length * ROW + 40}`}
+                            role="img"
+                            aria-label={
+                                current.title + " for " + tokenizerA +
+                                " and " + tokenizerB + " by language"
+                            }
+                        >
+
+                            {ticks.map((t, i) => (
+                                <g key={i}>
+                                    <line
+                                        className="compare-grid-line"
+                                        x1={x(t)}
+                                        y1={TOP - 14}
+                                        x2={x(t)}
+                                        y2={TOP + rows.length * ROW - 18}
+                                    />
+                                    <text
+                                        className="compare-axis"
+                                        x={x(t)}
+                                        y={TOP + rows.length * ROW}
+                                        textAnchor="middle"
+                                    >
+                                        {current.format(t)}
+                                    </text>
+                                </g>
+                            ))}
+
+                            {rows.map((r, i) => {
+
+                                const y = TOP + i * ROW;
+                                const low = Math.min(x(r.a), x(r.b));
+                                const high = Math.max(x(r.a), x(r.b));
+                                const lowValue = x(r.a) < x(r.b) ? r.a : r.b;
+                                const highValue = x(r.a) < x(r.b) ? r.b : r.a;
+
+                                /*
+                                    When both tokenizers land on the same
+                                    number the second dot covers the first
+                                    and one of them simply disappears. Draw
+                                    one dot split down the middle instead,
+                                    so "they agree" is visible rather than
+                                    looking like a missing value.
+                                */
+                                const together = Math.abs(x(r.a) - x(r.b)) < 1.5;
+                                const cx = x(r.a);
+
+                                return (
+                                    <g
+                                        key={r.name}
+                                        className={
+                                            "compare-row"
+                                            + (hot === r.name ? " is-on" : "")
+                                            + (hot && hot !== r.name ? " is-dim" : "")
+                                        }
+                                        onMouseEnter={() => setHot(r.name)}
+                                        onMouseLeave={() => setHot(null)}
+                                    >
+
+                                        {/* A wide invisible band so the whole
+                                            row is a hover target, not just
+                                            the two dots. */}
+                                        <rect
+                                            x="0"
+                                            y={y - ROW / 2}
+                                            width="900"
+                                            height={ROW}
+                                            fill="transparent"
+                                        />
+
+                                        <text className="compare-lang" x="0" y={y + 1}>
+                                            {r.name}
+                                        </text>
+
+                                        <text className="compare-family" x="0" y={y + 14}>
+                                            {r.family}
+                                        </text>
+
+                                        {together ? (
+
+                                            <>
+                                                {/* One dot, two halves. */}
+                                                <path
+                                                    className="compare-dot"
+                                                    d={`M${cx} ${y - 6.5}`
+                                                        + ` A6.5 6.5 0 0 0 ${cx} ${y + 6.5} Z`}
+                                                    fill={COLOUR_A}
+                                                />
+
+                                                <path
+                                                    className="compare-dot"
+                                                    d={`M${cx} ${y - 6.5}`
+                                                        + ` A6.5 6.5 0 0 1 ${cx} ${y + 6.5} Z`}
+                                                    fill={COLOUR_B}
+                                                />
+
+                                                <text
+                                                    className="compare-value"
+                                                    x={cx + 13}
+                                                    y={y + 4}
+                                                >
+                                                    {current.format(r.a)}
+                                                </text>
+                                            </>
+
+                                        ) : (
+
+                                            <>
+                                                <line
+                                                    className="compare-connector"
+                                                    x1={x(r.a)}
+                                                    y1={y}
+                                                    x2={x(r.b)}
+                                                    y2={y}
+                                                />
+
+                                                <circle
+                                                    className="compare-dot"
+                                                    cx={x(r.a)}
+                                                    cy={y}
+                                                    r="6.5"
+                                                    fill={COLOUR_A}
+                                                />
+
+                                                <circle
+                                                    className="compare-dot"
+                                                    cx={x(r.b)}
+                                                    cy={y}
+                                                    r="6.5"
+                                                    fill={COLOUR_B}
+                                                />
+
+                                                <text
+                                                    className="compare-value"
+                                                    x={low - 11}
+                                                    y={y + 4}
+                                                    textAnchor="end"
+                                                >
+                                                    {current.format(lowValue)}
+                                                </text>
+
+                                                <text
+                                                    className="compare-value"
+                                                    x={high + 11}
+                                                    y={y + 4}
+                                                >
+                                                    {current.format(highValue)}
+                                                </text>
+                                            </>
+
+                                        )}
+
+                                    </g>
+                                );
+                            })}
+                        </svg>
+
+                </div>
+                )}
+
+                {/* ---------- grouped bars ---------- */}
+                {shape === "bars" && (
+                <div className="compare-card">
+
+                    <h3>{current.title}</h3>
+                    <p>
+                        Two bars per language, one for each tokenizer. The
+                        shorter bar wins for every measure except bytes per
+                        token, where longer is better.
+                    </p>
+
+                    <svg
+                        className="compare-svg"
+                        viewBox={`0 0 900 ${TOP + rows.length * ROW + 40}`}
+                        role="img"
+                        aria-label={current.title + " as grouped bars"}
+                    >
+
+                        {ticks.map((t, i) => (
+                            <g key={i}>
+                                <line
+                                    className="compare-grid-line"
+                                    x1={x(t)}
+                                    y1={TOP - 20}
+                                    x2={x(t)}
+                                    y2={TOP + rows.length * ROW - 18}
+                                />
+                                <text
+                                    className="compare-axis"
+                                    x={x(t)}
+                                    y={TOP + rows.length * ROW}
+                                    textAnchor="middle"
+                                >
+                                    {current.format(t)}
+                                </text>
+                            </g>
+                        ))}
+
+                        {rows.map((r, i) => {
+
+                            const y = TOP + i * ROW;
+
+                            /* 2px of surface between the pair, so they read
+                               as two bars rather than one striped block. */
+                            const h = 11;
+
+                            return (
+                                <g
+                                    key={r.name}
+                                    className={
+                                        "compare-row"
+                                        + (hot === r.name ? " is-on" : "")
+                                        + (hot && hot !== r.name ? " is-dim" : "")
+                                    }
+                                    onMouseEnter={() => setHot(r.name)}
+                                    onMouseLeave={() => setHot(null)}
+                                >
+
+                                    <rect
+                                        x="0"
+                                        y={y - ROW / 2}
+                                        width="900"
+                                        height={ROW}
+                                        fill="transparent"
+                                    />
+
+                                    <text className="compare-lang" x="0" y={y - 2}>
+                                        {r.name}
+                                    </text>
+
+                                    <text className="compare-family" x="0" y={y + 11}>
+                                        {r.family}
+                                    </text>
+
+                                    <rect
+                                        className="compare-bar"
+                                        x={LEFT}
+                                        y={y - h - 1}
+                                        width={Math.max(x(r.a) - LEFT, 0)}
+                                        height={h}
+                                        fill={COLOUR_A}
+                                    />
+
+                                    <rect
+                                        className="compare-bar"
+                                        x={LEFT}
+                                        y={y + 1}
+                                        width={Math.max(x(r.b) - LEFT, 0)}
+                                        height={h}
+                                        fill={COLOUR_B}
+                                    />
+
+                                    <text
+                                        className="compare-value"
+                                        x={x(r.a) + 8}
+                                        y={y - 3}
+                                    >
+                                        {current.format(r.a)}
+                                    </text>
+
+                                    <text
+                                        className="compare-value"
+                                        x={x(r.b) + 8}
+                                        y={y + 11}
+                                    >
+                                        {current.format(r.b)}
+                                    </text>
+
+                                </g>
+                            );
+                        })}
+                    </svg>
+
+                </div>
+                )}
+
+                {/* The headline numbers, under the chart they summarise. */}
+                <div className="compare-verdict">
+
+                    <div className="stat">
+                        <span className="k">Languages improved</span>
+                        <span className={"v " + (improved > 0 ? "up" : "")}>
+                            {improved} of {southAfrican.length}
+                        </span>
+                        <span className="n">on {current.label.toLowerCase()}</span>
+                    </div>
+
+                    <div className="stat">
+                        <span className="k">Average change</span>
+                        <span className={"v " + (meanGain >= 0 ? "up" : "down")}>
+                            {meanGain >= 0 ? "+" : ""}{meanGain.toFixed(1)}%
+                        </span>
+                        <span className="n">across the SA languages</span>
+                    </div>
+
+                    {best && (
+                        <div className="stat">
+                            <span className="k">Biggest change</span>
+                            <span className="v">{best.name}</span>
+                            <span className="n">
+                                {current.format(best.a)} &rarr; {current.format(best.b)}
+                            </span>
+                        </div>
+                    )}
+
+                    {english && (
+                        <div className="stat">
+                            <span className="k">English baseline</span>
+                            <span className={"v " + (english.gain >= 0 ? "up" : "down")}>
+                                {Math.abs(english.gain).toFixed(1)}%{" "}
+                                {english.gain >= 0 ? "better" : "worse"}
+                            </span>
+                            <span className="n">
+                                {current.format(english.a)} &rarr; {current.format(english.b)}
+                            </span>
+                        </div>
+                    )}
+
+                </div>
+
+                {/* Written from the numbers, so it stays true for any pair. */}
+                <p className="compare-note">
+                    {improved === southAfrican.length
+                        ? <>
+                            <b>{tokenizerB}</b> is better on all{" "}
+                            {southAfrican.length} South African languages for{" "}
+                            {current.label.toLowerCase()}.
+                          </>
+                        : improved === 0
+                            ? <>
+                                <b>{tokenizerA}</b> is better on every South
+                                African language for {current.label.toLowerCase()}.
+                              </>
+                            : <>
+                                <b>{tokenizerB}</b> is better on {improved} of{" "}
+                                {southAfrican.length} South African languages
+                                and worse on the rest.
+                              </>}
+                    {" "}
+                    {best && (
+                        <>
+                            The biggest move is <b>{best.name}</b>, from{" "}
+                            {current.format(best.a)} to {current.format(best.b)}.
+                        </>
+                    )}
+                    {" "}
+                    {english && english.gain < 0 && (
+                        <>
+                            English got <b>{Math.abs(english.gain).toFixed(1)}%
+                            worse</b> at the same time, so part of any
+                            improvement against English is the baseline
+                            slipping rather than the language gaining.
+                        </>
+                    )}
+                </p>
+
+            </div>
+
+            {loading && (
+                <div className="charts-overlay">
+                    <span className="spinner is-big"></span>
+                    <span>Comparing {tokenizerA} and {tokenizerB}&hellip;</span>
+                </div>
+            )}
+
+        </section>
+    );
+}
+
+export default CompareCharts;
