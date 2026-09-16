@@ -559,6 +559,14 @@
 }
 
 /*
+    TOKENIZATION DISPLAY HEADING
+*/
+
+.compare-tokenization-results .tokenization-display-heading {
+    margin-bottom: 18px;
+}
+
+/*
     PANEL HEADING
 */
 

@@ -24,6 +24,8 @@ import CorpusUpload from "../components/CorpusUpload";
 
 import TokenizationMetrics from "../components/TokenizationMetrics";
 
+import TypeAnything from "../components/TypeAnything";
+
 const GPT2_SPACE = "\u0120";
 const SENTENCEPIECE_SPACE = "\u2581";
 const WORDPIECE_PREFIX = "##";
@@ -1477,197 +1479,25 @@ function Compare() {
             </section>
 
             {/* Type Anything */}
-
-            <section className="compare-text-input-box">
-
-                <div className="compare-text-input-heading">
-                    Mzansi Explorer • Type Anything
-                </div>
-
-                {/* Text entered by the user */}
-
-                <textarea
-                    className="compare-text-input-area"
-                    value={inputText}
-                    onChange={(event) =>
-                        setInputText(
-                            event.target.value
-                        )
+            <TypeAnything
+                inputText={inputText}
+                onInputChange={setInputText}
+                results={[
+                    {
+                        id: "tokenizer-a",
+                        title: compareTokenizerOne,
+                        tokens: typedTokenizerOneTokens,
+                        metrics: typedTokenizerOneMetrics
+                    },
+                    {
+                        id: "tokenizer-b",
+                        title: compareTokenizerTwo,
+                        tokens: typedTokenizerTwoTokens,
+                        metrics: typedTokenizerTwoMetrics
                     }
-                    placeholder="Type or paste your text here..."
-                />
-
-                {/* Two typed-text tokenizer displays */}
-
-                <div className="compare-typed-results">
-
-                    {/* TOKENIZER 1 */}
-
-                    <div className="compare-typed-panel">
-
-                        <div className="compare-typed-panel-heading">
-                            {compareTokenizerOne ||
-                                "Tokenizer 1"}
-                        </div>
-
-                        <div className="compare-typed-tokenization-result">
-
-                            <div className="compare-typed-result-text">
-
-                                {inputText.trim()
-                                    ? renderTokens(
-                                        typedTokenizerOneTokens
-                                    )
-                                    : "Your tokenized text will appear here."}
-
-                            </div>
-
-                        </div>
-
-                        {/* Tokenizer 1 metrics */}
-
-                        <div className="compare-typed-metrics">
-
-                            <div className="compare-typed-metric-card">
-
-                                <span className="compare-typed-metric-name">
-                                    Tokens
-                                </span>
-
-                                <span className="compare-typed-metric-value">
-
-                                    {getMetricValue(
-                                        "Tokens",
-                                        typedTokenizerOneMetrics
-                                    )}
-
-                                </span>
-
-                            </div>
-
-                            <div className="compare-typed-metric-card">
-
-                                <span className="compare-typed-metric-name">
-                                    Fertility
-                                </span>
-
-                                <span className="compare-typed-metric-value">
-
-                                    {getMetricValue(
-                                        "Fertility",
-                                        typedTokenizerOneMetrics
-                                    )}
-
-                                </span>
-
-                            </div>
-
-                            <div className="compare-typed-metric-card">
-
-                                <span className="compare-typed-metric-name">
-                                    Compression
-                                </span>
-
-                                <span className="compare-typed-metric-value">
-
-                                    {getMetricValue(
-                                        "Compression",
-                                        typedTokenizerOneMetrics
-                                    )}
-
-                                </span>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    {/* TOKENIZER 2 */}
-
-                    <div className="compare-typed-panel">
-
-                        <div className="compare-typed-panel-heading">
-                            {compareTokenizerTwo ||
-                                "Tokenizer 2"}
-                        </div>
-
-                        <div className="compare-typed-tokenization-result">
-
-                            <div className="compare-typed-result-text">
-
-                                {inputText.trim()
-                                    ? renderTokens(
-                                        typedTokenizerTwoTokens
-                                    )
-                                    : "Your tokenized text will appear here."}
-
-                            </div>
-
-                        </div>
-
-                        {/* Tokenizer 2 metrics */}
-
-                        <div className="compare-typed-metrics">
-
-                            <div className="compare-typed-metric-card">
-
-                                <span className="compare-typed-metric-name">
-                                    Tokens
-                                </span>
-
-                                <span className="compare-typed-metric-value">
-
-                                    {getMetricValue(
-                                        "Tokens",
-                                        typedTokenizerTwoMetrics
-                                    )}
-
-                                </span>
-
-                            </div>
-
-                            <div className="compare-typed-metric-card">
-
-                                <span className="compare-typed-metric-name">
-                                    Fertility
-                                </span>
-
-                                <span className="compare-typed-metric-value">
-
-                                    {getMetricValue(
-                                        "Fertility",
-                                        typedTokenizerTwoMetrics
-                                    )}
-
-                                </span>
-
-                            </div>
-
-                            <div className="compare-typed-metric-card">
-
-                                <span className="compare-typed-metric-name">
-                                    Compression
-                                </span>
-
-                                <span className="compare-typed-metric-value">
-
-                                    {getMetricValue(
-                                        "Compression",
-                                        typedTokenizerTwoMetrics
-                                    )}
-
-                                </span>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
+                ]}
+                renderTokens={renderTokens}
+            />
 
         </div>
     );

@@ -23,6 +23,8 @@ import { languageColour } from "../components/languageColours";
 
 import CorpusUpload from "../components/CorpusUpload";
 
+import TypeAnything from "../components/TypeAnything";
+
 const GPT2_SPACE = "\u0120";
 const SENTENCEPIECE_SPACE = "\u2581";
 const WORDPIECE_PREFIX = "##";
@@ -2510,98 +2512,18 @@ function Inspect() {
             <MetricsChart tokenizer={tokenizer} />
 
             {/* Text input box */}
-
-            <section className="text-input-box">
-
-                <div className="text-input-heading">
-                    Mzansi Explorer • Type Anything
-                </div>
-
-                {/* Text entered by the user */}
-
-                <textarea
-                    className="text-input-area"
-                    value={inputText}
-                    onChange={(event) =>
-                        setInputText(
-                            event.target.value
-                        )
+            <TypeAnything
+                inputText={inputText}
+                onInputChange={setInputText}
+                results={[
+                    {
+                        tokens: typedTokenizedText,
+                        metrics: textMetrics
                     }
-                    placeholder="Type or paste your text here..."
-                />
+                ]}
+                renderTokens={renderTokens}
+            />
 
-                {/*Tokenization result */}
-
-                <div className="typed-tokenization-result">
-
-                    <div className="typed-result-text">
-
-                        {renderTokens(
-                            typedTokenizedText
-                        ) ||
-                            "Your tokenized text will appear here."}
-
-                    </div>
-
-                    {/* Metrics for the typed text */}
-
-                    <div className="typed-tokenization-metrics">
-
-                        {/* Token count */}
-
-                        <div className="typed-metric-card">
-
-                            <span className="typed-metric-name">
-                                Tokens
-                            </span>
-
-                            <span className="typed-metric-value">
-                                {textMetrics.tokens}
-                            </span>
-
-                        </div>
-
-                        {/* Fertility */}
-
-                        <div className="typed-metric-card">
-
-                            <span className="typed-metric-name">
-                                Fertility
-                            </span>
-
-                            <span className="typed-metric-value">
-
-                                {Number(
-                                    textMetrics.fertility
-                                ).toFixed(2)}
-
-                            </span>
-
-                        </div>
-
-                        {/* Compression count */}
-
-                        <div className="typed-metric-card">
-
-                            <span className="typed-metric-name">
-                                Compression
-                            </span>
-
-                            <span className="typed-metric-value">
-
-                                {Number(
-                                    textMetrics.compression
-                                ).toFixed(2)}
-
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
         </>
         
 
