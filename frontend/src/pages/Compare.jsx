@@ -18,6 +18,8 @@ import {
 
 import { useAppState } from "../context/AppStateContext";
 
+import CorpusUpload from "../components/CorpusUpload";
+
 function Compare() {
 
     const {
@@ -620,10 +622,7 @@ function Compare() {
             setLoading(true);
             setError("");
 
-            const [
-                resultOne,
-                resultTwo
-            ] = await Promise.all([
+            const [resultOne,resultTwo] = await Promise.all([
 
                 getDefaultCorpus(
                     selectedLanguage,
@@ -634,7 +633,6 @@ function Compare() {
                     selectedLanguage,
                     selectedTokenizerTwo
                 )
-
             ]);
 
             setTokenizerOneTokens(
@@ -661,16 +659,13 @@ function Compare() {
             setCompareSelectedFile(null);
             setCompareFileName("default");
 
-        } catch (err) {
-
+        } 
+        catch (err) {
             setError(err.message);
-
-        } finally {
-
+        } 
+        finally {
             setLoading(false);
-
         }
-
     }
 
     /*
@@ -688,23 +683,9 @@ function Compare() {
             setLoading(true);
             setError("");
 
-            const [
-                resultOne,
-                resultTwo
-            ] = await Promise.all([
-
-                uploadCorpus(
-                    file,
-                    selectedLanguage,
-                    selectedTokenizerOne
-                ),
-
-                uploadCorpus(
-                    file,
-                    selectedLanguage,
-                    selectedTokenizerTwo
-                )
-
+            const [resultOne, resultTwo] = await Promise.all([
+                uploadCorpus(file, selectedTokenizerOne),
+                uploadCorpus(file, selectedTokenizerTwo)
             ]);
 
             setCompareSource("upload");
@@ -733,11 +714,17 @@ function Compare() {
 
         } catch (err) {
 
-            setError(err.message);
+            console.error("Upload corpus error:", err);
+
+            setError(
+                err.message ||
+                "Could not process the uploaded corpus."
+            );
 
         } finally {
 
             setLoading(false);
+            setSelectionLoading(false);
 
         }
 
@@ -1174,42 +1161,14 @@ function Compare() {
                     {compareFileName} • {compareLanguage}
                 </p>
 
-                <div className="compare-upload-container">
-
-                    <input
-                        type="file"
-                        id="compare-corpus-upload"
-                        ref={fileInputRef}
-                        accept=".txt"
-                        onChange={handleFileChange}
-                        disabled={
-                            selectionLoading || loading
-                        }
-                    />
-
-                    <label
-                        htmlFor="compare-corpus-upload"
-                        className="compare-upload-button"
-                    >
-                        Upload your corpus(text)
-                    </label>
-
-                    {compareFileName !== "default" && (
-
-                        <button
-                            type="button"
-                            className="compare-default-button"
-                            onClick={handleDefault}
-                            disabled={
-                                selectionLoading || loading
-                            }
-                        >
-                            Default
-                        </button>
-
-                    )}
-
-                </div>
+                <CorpusUpload
+                    inputId="compare-corpus-upload"
+                    fileInputRef={fileInputRef}
+                    onFileChange={handleFileChange}
+                    onDefault={handleDefault}
+                    showDefault={compareFileName !== "default"}
+                    disabled={selectionLoading || loading}
+                />
 
                 {/* Status */}
 
