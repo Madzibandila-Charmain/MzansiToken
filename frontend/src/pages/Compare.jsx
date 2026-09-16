@@ -31,6 +31,8 @@ const GPT2_SPACE = "\u0120";
 const SENTENCEPIECE_SPACE = "\u2581";
 const WORDPIECE_PREFIX = "##";
 
+import CompareCharts from "../components/CompareCharts";
+
 function readable(token) {
 
     if (
@@ -1705,6 +1707,12 @@ function Compare() {
                 </div>
 
             </section>
+
+            {/* All eight languages, both tokenizers */}
+            <CompareCharts
+                tokenizerA={compareTokenizerOne}
+                tokenizerB={compareTokenizerTwo}
+            />
 
             {/* Type Anything */}
             <TypeAnything
