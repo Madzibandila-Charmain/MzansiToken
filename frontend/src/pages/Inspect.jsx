@@ -21,6 +21,8 @@ import MetricsChart from "../components/MetricsChart";
 
 import { languageColour } from "../components/languageColours";
 
+import CorpusUpload from "../components/CorpusUpload";
+
 const GPT2_SPACE = "\u0120";
 const SENTENCEPIECE_SPACE = "\u2581";
 const WORDPIECE_PREFIX = "##";
@@ -2135,73 +2137,14 @@ function Inspect() {
 
                 </p>
 
-                <div className="upload-container">
-
-                    <input
-                        type="file"
-                        id="corpus-upload"
-                        ref={fileInputRef}
-                        accept=".txt,text/plain"
-                        onChange={handleFileChange}
-                        disabled={
-                            selectionLoading
-                        }
-                    />
-
-                    <label
-                        htmlFor="corpus-upload"
-                        className="upload-button"
-                    >
-                        <svg
-                            className="upload-icon"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                            aria-hidden="true"
-                        >
-                            <path
-                                d="M12 16V4"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                            />
-                            <path
-                                d="M7 9L12 4L17 9"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            />
-                            <path
-                                d="M5 20H19"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                            />
-                        </svg>
-                        <span>Upload corpus</span>
-                    </label>
-
-                    {/* Shows Default button */}
-
-                    {fileName !== "default" && (
-
-                        <button
-                            type="button"
-                            className="default-button"
-                            onClick={
-                                handleDefault
-                            }
-                            disabled={
-                                selectionLoading
-                            }
-                        >
-                            Default
-                        </button>
-
-                    )}
-
-                </div>
+                <CorpusUpload
+                    inputId="corpus-upload"
+                    fileInputRef={fileInputRef}
+                    onFileChange={handleFileChange}
+                    onDefault={handleDefault}
+                    showDefault={fileName !== "default"}
+                    disabled={selectionLoading}
+                />
 
                 <div
                     className={
