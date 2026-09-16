@@ -10,16 +10,23 @@ function TokenizationMetrics({
     mbi,
     showMbi,
     renderTokens,
-    tokenizerSelector
+    tokenizerSelector,
+    tokenizerType
 }) {
 
     return (
         <div className="tokenization-display-block">
 
             {/* Tokenizer heading */}
-
-            <div className="tokenization-display-heading">
-                {title}
+            <div
+                className={`tokenization-display-heading ${
+                    tokenizerType === "1"
+                        ? "tokenizer-one-heading"
+                        : "tokenizer-two-heading"
+                }`}
+            >
+                <span className="tokenizer-colour-dot"></span>
+                <span>{title}</span>
             </div>
 
             {/* Optional tokenizer selector */}

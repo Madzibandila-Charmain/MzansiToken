@@ -1456,6 +1456,7 @@ function Compare() {
                         }
                         showMbi={hasMbiMetrics()}
                         renderTokens={renderTokens}
+                        tokenizerType="1"
                     />
 
                     {/* TOKENIZER 2 */}
@@ -1472,6 +1473,7 @@ function Compare() {
                         }
                         showMbi={hasMbiMetrics()}
                         renderTokens={renderTokens}
+                        tokenizerType="2"
                     />
 
                 </div>
