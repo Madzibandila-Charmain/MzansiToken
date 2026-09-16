@@ -203,6 +203,95 @@
 
 }
 
+/*
+    Compare tokenizer filter
+*/
+
+.compare-tokenizer-filter {
+    max-width: 1250px;
+    margin: 0 auto 40px;
+    padding: 26px 30px;
+    box-sizing: border-box;
+    border: 1px solid oklch(0.88 0.025 240);
+    border-radius: 18px;
+    background: oklch(0.98 0.012 242 / 0.78);
+    box-shadow:
+        0 12px 30px oklch(0.25 0.025 252 / 0.06);
+}
+
+.compare-tokenizer-filter-heading {
+    margin-bottom: 22px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: oklch(0.25 0.025 252);
+}
+
+.compare-tokenizer-filter-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.compare-tokenizer-filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.compare-tokenizer-filter-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: oklch(0.42 0.025 252);
+}
+
+.compare-tokenizer-filter-select {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 42px 0 15px;
+    box-sizing: border-box;
+    border: 1px solid oklch(0.84 0.03 240);
+    border-radius: 10px;
+    background: oklch(0.99 0.008 242);
+    color: oklch(0.25 0.025 252);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease;
+}
+
+.compare-tokenizer-filter-select:hover {
+    border-color: oklch(0.69 0.19 44);
+    background: oklch(0.99 0.012 242);
+}
+
+.compare-tokenizer-filter-select:focus {
+    border-color: oklch(0.69 0.19 44);
+    box-shadow:
+        0 0 0 3px oklch(0.69 0.19 44 / 0.12);
+}
+
+.compare-tokenizer-filter-select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@media (max-width: 700px) {
+    .compare-tokenizer-filter {
+        margin: 0 20px 32px;
+        padding: 22px;
+    }
+
+    .compare-tokenizer-filter-options {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+}
+
 
 /*
     SELECTION SUMMARY
@@ -411,13 +500,6 @@
     font-weight: 600;
 }
 
-.compare-status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-
 .compare-selection-status.is-loading {
     color: #777777;
 }
@@ -442,6 +524,7 @@
 .compare-selection-status.is-error .compare-status-dot {
     background: #c74848;
 }
+
 
 @keyframes compare-status-pulse {
     0%,
@@ -641,7 +724,7 @@
 .compare-text-input-box {
 
     width: 100%;
-    max-width: 1200px;
+    max-width: 1250px;
 
     margin: 0 auto 80px;
 

@@ -1,6 +1,8 @@
 /*
     Compare Page
+
     Author: Madzibandila Charmain
+
     Date: 21 August 2026
 */
 
@@ -74,7 +76,6 @@ function Compare() {
 
     /*
         Type Anything text is kept locally to Compare.
-
         This prevents the Compare text box from sharing
         its value with the Inspect text box.
     */
@@ -97,8 +98,11 @@ function Compare() {
     /*
         Tokenized text entered by the user for each tokenizer.
     */
-    const [typedTokenizerOneTokens, setTypedTokenizerOneTokens] = useState([]);
-    const [typedTokenizerTwoTokens, setTypedTokenizerTwoTokens] = useState([]);
+    const [typedTokenizerOneTokens, setTypedTokenizerOneTokens] =
+        useState([]);
+
+    const [typedTokenizerTwoTokens, setTypedTokenizerTwoTokens] =
+        useState([]);
 
     /*
         Metrics for typed text for each tokenizer.
@@ -120,9 +124,7 @@ function Compare() {
         });
 
     const [mbiLoading, setMbiLoading] = useState(false);
-
     const [mbiError, setMbiError] = useState("");
-
     const [mbiUnavailable, setMbiUnavailable] = useState("");
 
     const [mbiComparison, setMbiComparison] = useState({
@@ -161,9 +163,25 @@ function Compare() {
         Loading / status state.
     */
     const [loading, setLoading] = useState(false);
+
+    /*
+        General selection status is used for language
+        changes and returning to the default corpus.
+    */
     const [selectionLoading, setSelectionLoading] = useState(false);
     const [selectionStatus, setSelectionStatus] = useState("");
     const [selectionType, setSelectionType] = useState("");
+
+    /*
+        Each tokenizer has its own loading and status state.
+        This keeps Tokenizer 1 and Tokenizer 2 independent.
+    */
+    const [tokenizerOneLoading, setTokenizerOneLoading] = useState(false);
+    const [tokenizerOneStatus, setTokenizerOneStatus] = useState("");
+
+    const [tokenizerTwoLoading, setTokenizerTwoLoading] = useState(false);
+    const [tokenizerTwoStatus, setTokenizerTwoStatus] = useState("");
+
     const [error, setError] = useState("");
 
     /*
@@ -295,6 +313,7 @@ function Compare() {
                         words_evaluated:
                             result.tokenizer_a.words_evaluated ?? 0
                     },
+
                     tokenizerB: {
                         precision:
                             result.tokenizer_b.metrics.precision ?? 0,
@@ -309,9 +328,14 @@ function Compare() {
 
             } catch (err) {
 
-                if (err.message?.includes("Unsupported language")) {
+                if (
+                    err.message?.includes(
+                        "Unsupported language"
+                    )
+                ) {
 
                     if (!cancelled) {
+
                         setMbiComparison({
                             tokenizerA: {
                                 precision: 0,
@@ -319,6 +343,7 @@ function Compare() {
                                 f1: 0,
                                 words_evaluated: 0
                             },
+
                             tokenizerB: {
                                 precision: 0,
                                 recall: 0,
@@ -333,7 +358,6 @@ function Compare() {
                     }
 
                     return;
-
                 }
 
                 if (!cancelled) {
@@ -347,7 +371,6 @@ function Compare() {
                 }
 
             }
-
         }
 
         loadMbiComparison();
@@ -523,6 +546,7 @@ function Compare() {
                         sentence.length > 0
                 );
         }
+
         return [];
     }
 
@@ -535,9 +559,7 @@ function Compare() {
             !tokens ||
             tokens.length === 0
         ) {
-
             return "Your tokenized text will appear here.";
-
         }
 
         let sentences;
@@ -545,16 +567,11 @@ function Compare() {
         if (
             Array.isArray(tokens[0])
         ) {
-
             sentences = tokens;
-
-        }
-        else {
-
+        } else {
             sentences = [
                 tokens
             ];
-
         }
 
         const visibleSentences =
@@ -592,6 +609,7 @@ function Compare() {
                                     );
 
                                     return (
+
                                         <span
                                             key={`${sentenceIndex}-${tokenIndex}-${token}`}
                                             className={
@@ -602,10 +620,11 @@ function Compare() {
                                                         : ""
                                                 )
                                             }
-                                            title={token}
+                                            title={String(token)}
                                         >
                                             {text}
                                         </span>
+
                                     );
 
                                 }
@@ -625,7 +644,6 @@ function Compare() {
     function formatMetrics(result) {
 
         return {
-
             tokens:
                 result?.metrics?.token_count ?? 0,
 
@@ -637,28 +655,33 @@ function Compare() {
 
             token_premium:
                 result?.metrics?.token_premium ?? 0
-
         };
-
     }
 
     function getMetricValue(metric, metrics) {
+
         if (metric === "Tokens") {
+
             return Number(
                 metrics?.tokens ?? 0
             ).toLocaleString();
+
         }
 
         if (metric === "Fertility") {
+
             return Number(
                 metrics?.fertility ?? 0
             ).toFixed(2);
+
         }
 
         if (metric === "Compression") {
+
             return Number(
                 metrics?.compression ?? 0
             ).toFixed(2);
+
         }
 
         return "0.00";
@@ -666,8 +689,9 @@ function Compare() {
 
     function formatMbiMetric(value) {
 
-        return Number(value ?? 0).toFixed(2);
-
+        return Number(
+            value ?? 0
+        ).toFixed(2);
     }
 
     function getMbiMetricDisplay(value) {
@@ -681,14 +705,13 @@ function Compare() {
         }
 
         return formatMbiMetric(value);
-
     }
 
     /*
         English corpus won't display Precision/F1/Recall.
     */
-
     function hasMbiMetrics() {
+
         return compareLanguage !== "English";
     }
 
@@ -706,7 +729,10 @@ function Compare() {
             setLoading(true);
             setError("");
 
-            const [resultOne,resultTwo] = await Promise.all([
+            const [
+                resultOne,
+                resultTwo
+            ] = await Promise.all([
 
                 getDefaultCorpus(
                     selectedLanguage,
@@ -717,6 +743,7 @@ function Compare() {
                     selectedLanguage,
                     selectedTokenizerTwo
                 )
+
             ]);
 
             setTokenizerOneTokens(
@@ -743,12 +770,14 @@ function Compare() {
             setCompareSelectedFile(null);
             setCompareFileName("default");
 
-        } 
-        catch (err) {
+        } catch (err) {
+
             setError(err.message);
-        } 
-        finally {
+
+        } finally {
+
             setLoading(false);
+
         }
     }
 
@@ -767,9 +796,21 @@ function Compare() {
             setLoading(true);
             setError("");
 
-            const [resultOne, resultTwo] = await Promise.all([
-                uploadCorpus(file, selectedTokenizerOne),
-                uploadCorpus(file, selectedTokenizerTwo)
+            const [
+                resultOne,
+                resultTwo
+            ] = await Promise.all([
+
+                uploadCorpus(
+                    file,
+                    selectedTokenizerOne
+                ),
+
+                uploadCorpus(
+                    file,
+                    selectedTokenizerTwo
+                )
+
             ]);
 
             setCompareSource("upload");
@@ -798,7 +839,10 @@ function Compare() {
 
         } catch (err) {
 
-            console.error("Upload corpus error:", err);
+            console.error(
+                "Upload corpus error:",
+                err
+            );
 
             setError(
                 err.message ||
@@ -811,7 +855,6 @@ function Compare() {
             setSelectionLoading(false);
 
         }
-
     }
 
     /*
@@ -819,7 +862,8 @@ function Compare() {
     */
     async function handleFileChange(event) {
 
-        const file = event.target.files[0];
+        const file =
+            event.target.files[0];
 
         if (!file) {
             return;
@@ -831,7 +875,6 @@ function Compare() {
             compareTokenizerOne,
             compareTokenizerTwo
         );
-
     }
 
     /*
@@ -845,6 +888,7 @@ function Compare() {
         }
 
         setCompareLanguage(newLanguage);
+
         setSelectionLoading(true);
         setSelectionType("language");
         setSelectionStatus("Loading language...");
@@ -869,22 +913,25 @@ function Compare() {
                     compareTokenizerOne,
                     compareTokenizerTwo
                 );
-
             }
 
-            setSelectionStatus("Language ready");
+            setSelectionStatus(
+                "Language ready"
+            );
 
         } catch (err) {
 
             setError(err.message);
-            setSelectionStatus("Language failed");
+
+            setSelectionStatus(
+                "Language failed"
+            );
 
         } finally {
 
             setSelectionLoading(false);
 
         }
-
     }
 
     /*
@@ -892,40 +939,27 @@ function Compare() {
     */
     async function handleTokenizerOneChange(event) {
 
-        if (selectionLoading) {
-            return;
-        }
+        const newTokenizer =
+            event.target.value;
 
-        const newTokenizer = event.target.value;
+        setCompareTokenizerOne(
+            newTokenizer
+        );
 
-        setCompareTokenizerOne(newTokenizer);
-        setSelectionLoading(true);
-        setSelectionType("tokenizer");
-        setSelectionStatus("Loading tokenizer 1...");
+        setTokenizerOneLoading(true);
+
+        setTokenizerOneStatus(
+            "Loading tokenizer 1..."
+        );
 
         try {
 
             setError("");
 
-            if (compareSource === "default") {
-
-                const result =
-                    await getDefaultCorpus(
-                        compareLanguage,
-                        newTokenizer
-                    );
-
-                setTokenizerOneTokens(
-                    formatTokenizedText(
-                        result.tokenized_text
-                    )
-                );
-
-                setTokenizerOneMetrics(
-                    formatMetrics(result)
-                );
-
-            } else if (compareSelectedFile) {
+            if (
+                compareSource === "upload" &&
+                compareSelectedFile
+            ) {
 
                 const result =
                     await uploadCorpus(
@@ -935,7 +969,7 @@ function Compare() {
 
                 setTokenizerOneTokens(
                     formatTokenizedText(
-                        result.tokenized_text
+                        result?.tokenized_text
                     )
                 );
 
@@ -943,21 +977,41 @@ function Compare() {
                     formatMetrics(result)
                 );
 
+            } else {
+
+                const result =
+                    await getDefaultCorpus(
+                        compareLanguage,
+                        newTokenizer
+                    );
+
+                setTokenizerOneTokens(
+                    formatTokenizedText(
+                        result?.tokenized_text
+                    )
+                );
+
+                setTokenizerOneMetrics(
+                    formatMetrics(result)
+                );
             }
 
-            setSelectionStatus("Tokenizer 1 ready");
+            setTokenizerOneStatus(
+                "Tokenizer 1 is ready"
+            );
 
         } catch (err) {
 
-            setError(err.message);
-            setSelectionStatus("Tokenizer 1 failed");
+            setTokenizerOneStatus(
+                err.message ||
+                "Could not load tokenizer."
+            );
 
         } finally {
 
-            setSelectionLoading(false);
+            setTokenizerOneLoading(false);
 
         }
-
     }
 
     /*
@@ -965,40 +1019,27 @@ function Compare() {
     */
     async function handleTokenizerTwoChange(event) {
 
-        if (selectionLoading) {
-            return;
-        }
+        const newTokenizer =
+            event.target.value;
 
-        const newTokenizer = event.target.value;
+        setCompareTokenizerTwo(
+            newTokenizer
+        );
 
-        setCompareTokenizerTwo(newTokenizer);
-        setSelectionLoading(true);
-        setSelectionType("tokenizer");
-        setSelectionStatus("Loading tokenizer 2...");
+        setTokenizerTwoLoading(true);
+
+        setTokenizerTwoStatus(
+            "Loading tokenizer 2..."
+        );
 
         try {
 
             setError("");
 
-            if (compareSource === "default") {
-
-                const result =
-                    await getDefaultCorpus(
-                        compareLanguage,
-                        newTokenizer
-                    );
-
-                setTokenizerTwoTokens(
-                    formatTokenizedText(
-                        result.tokenized_text
-                    )
-                );
-
-                setTokenizerTwoMetrics(
-                    formatMetrics(result)
-                );
-
-            } else if (compareSelectedFile) {
+            if (
+                compareSource === "upload" &&
+                compareSelectedFile
+            ) {
 
                 const result =
                     await uploadCorpus(
@@ -1008,7 +1049,7 @@ function Compare() {
 
                 setTokenizerTwoTokens(
                     formatTokenizedText(
-                        result.tokenized_text
+                        result?.tokenized_text
                     )
                 );
 
@@ -1016,21 +1057,41 @@ function Compare() {
                     formatMetrics(result)
                 );
 
+            } else {
+
+                const result =
+                    await getDefaultCorpus(
+                        compareLanguage,
+                        newTokenizer
+                    );
+
+                setTokenizerTwoTokens(
+                    formatTokenizedText(
+                        result?.tokenized_text
+                    )
+                );
+
+                setTokenizerTwoMetrics(
+                    formatMetrics(result)
+                );
             }
 
-            setSelectionStatus("Tokenizer 2 ready");
+            setTokenizerTwoStatus(
+                "Tokenizer 2 is ready"
+            );
 
         } catch (err) {
 
-            setError(err.message);
-            setSelectionStatus("Tokenizer 2 failed");
+            setTokenizerTwoStatus(
+                err.message ||
+                "Could not load tokenizer."
+            );
 
         } finally {
 
-            setSelectionLoading(false);
+            setTokenizerTwoLoading(false);
 
         }
-
     }
 
     /*
@@ -1044,7 +1105,10 @@ function Compare() {
 
         setSelectionLoading(true);
         setSelectionType("default");
-        setSelectionStatus("Loading default corpus...");
+        setSelectionStatus(
+            "Loading default corpus..."
+        );
+
         setError("");
 
         try {
@@ -1063,19 +1127,23 @@ function Compare() {
                 fileInputRef.current.value = "";
             }
 
-            setSelectionStatus("Default corpus ready");
+            setSelectionStatus(
+                "Default corpus ready"
+            );
 
         } catch (err) {
 
             setError(err.message);
-            setSelectionStatus("Default corpus failed");
+
+            setSelectionStatus(
+                "Default corpus failed"
+            );
 
         } finally {
 
             setSelectionLoading(false);
 
         }
-
     }
 
     return (
@@ -1107,8 +1175,148 @@ function Compare() {
                         setShowCustomize(!showCustomize)
                     }
                 >
-                    {showCustomize ? "Close" : "Customize"}
+                    {showCustomize
+                        ? "Close"
+                        : "Customize"}
                 </button>
+
+            </section>
+
+            {/* Tokenizer Selection */}
+
+            <section className="compare-tokenizer-filter">
+
+                <div className="compare-tokenizer-filter-heading">
+                    Compare Tokenizers
+                </div>
+
+                <div className="compare-tokenizer-filter-options">
+
+                    {/* Tokenizer 1 */}
+
+                    <div className="compare-tokenizer-filter-item">
+
+                        <label
+                            htmlFor="compare-tokenizer-one"
+                            className="compare-tokenizer-filter-label"
+                        >
+                            Tokenizer 1
+                        </label>
+
+                        <select
+                            id="compare-tokenizer-one"
+                            className="compare-tokenizer-filter-select"
+                            value={compareTokenizerOne}
+                            onChange={handleTokenizerOneChange}
+                            disabled={
+                                tokenizerOneLoading ||
+                                selectionLoading ||
+                                loading
+                            }
+                        >
+
+                            {tokenizers.map((item) => (
+
+                                <option
+                                    key={item}
+                                    value={item}
+                                >
+                                    {item}
+                                </option>
+
+                            ))}
+
+                        </select>
+
+                        {/* Tokenizer 1 status */}
+
+                        {tokenizerOneStatus && (
+
+                            <div
+                                className={`selection-status ${
+                                    tokenizerOneStatus.startsWith("Loading ")
+                                        ? "is-loading"
+                                        : tokenizerOneStatus.includes("could not")
+                                            ? "is-error"
+                                            : "is-ready"
+                                }`}
+                            >
+
+                                <span className="status-dot"></span>
+
+                                <span>
+                                    {tokenizerOneStatus}
+                                </span>
+
+                            </div>
+
+                        )}
+
+                    </div>
+
+                    {/* Tokenizer 2 */}
+
+                    <div className="compare-tokenizer-filter-item">
+
+                        <label
+                            htmlFor="compare-tokenizer-two"
+                            className="compare-tokenizer-filter-label"
+                        >
+                            Tokenizer 2
+                        </label>
+
+                        <select
+                            id="compare-tokenizer-two"
+                            className="compare-tokenizer-filter-select"
+                            value={compareTokenizerTwo}
+                            onChange={handleTokenizerTwoChange}
+                            disabled={
+                                tokenizerTwoLoading ||
+                                selectionLoading ||
+                                loading
+                            }
+                        >
+
+                            {tokenizers.map((item) => (
+
+                                <option
+                                    key={item}
+                                    value={item}
+                                >
+                                    {item}
+                                </option>
+
+                            ))}
+
+                        </select>
+
+                        {/* Tokenizer 2 status */}
+
+                        {tokenizerTwoStatus && (
+
+                            <div
+                                className={`selection-status ${
+                                    tokenizerTwoStatus.startsWith("Loading ")
+                                        ? "is-loading"
+                                        : tokenizerTwoStatus.includes("could not")
+                                            ? "is-error"
+                                            : "is-ready"
+                                }`}
+                            >
+
+                                <span className="status-dot"></span>
+
+                                <span>
+                                    {tokenizerTwoStatus}
+                                </span>
+
+                            </div>
+
+                        )}
+
+                    </div>
+
+                </div>
 
             </section>
 
@@ -1120,7 +1328,9 @@ function Compare() {
 
                     <div className="customize-section">
 
-                        <h2>Corpus language</h2>
+                        <h2>
+                            Corpus language
+                        </h2>
 
                         <div className="round-options">
 
@@ -1136,7 +1346,10 @@ function Compare() {
                                     onClick={() =>
                                         handleLanguageChange(item)
                                     }
-                                    disabled={selectionLoading}
+                                    disabled={
+                                        selectionLoading ||
+                                        loading
+                                    }
                                 >
                                     {item}
                                 </button>
@@ -1149,7 +1362,9 @@ function Compare() {
 
                     <div className="selection-summary">
 
-                        <span>{compareLanguage}</span>
+                        <span>
+                            {compareLanguage}
+                        </span>
 
                         <span>
                             Comparing two tokenizers
@@ -1188,8 +1403,15 @@ function Compare() {
                     fileInputRef={fileInputRef}
                     onFileChange={handleFileChange}
                     onDefault={handleDefault}
-                    showDefault={compareFileName !== "default"}
-                    disabled={selectionLoading || loading}
+                    showDefault={
+                        compareFileName !== "default"
+                    }
+                    disabled={
+                        selectionLoading ||
+                        loading ||
+                        tokenizerOneLoading ||
+                        tokenizerTwoLoading
+                    }
                 />
 
                 {/* Status */}
@@ -1221,10 +1443,15 @@ function Compare() {
                     {/* TOKENIZER 1 */}
 
                     <TokenizationMetrics
-                        title={compareTokenizerOne || "Tokenizer 1"}
+                        title={
+                            compareTokenizerOne ||
+                            "Tokenizer 1"
+                        }
                         tokens={tokenizerOneTokens}
                         metrics={tokenizerOneMetrics}
-                        mbi={mbiComparison.tokenizerA}
+                        mbi={
+                            mbiComparison.tokenizerA
+                        }
                         showMbi={hasMbiMetrics()}
                         renderTokens={renderTokens}
                     />
@@ -1232,10 +1459,15 @@ function Compare() {
                     {/* TOKENIZER 2 */}
 
                     <TokenizationMetrics
-                        title={compareTokenizerTwo || "Tokenizer 2"}
+                        title={
+                            compareTokenizerTwo ||
+                            "Tokenizer 2"
+                        }
                         tokens={tokenizerTwoTokens}
                         metrics={tokenizerTwoMetrics}
-                        mbi={mbiComparison.tokenizerB}
+                        mbi={
+                            mbiComparison.tokenizerB
+                        }
                         showMbi={hasMbiMetrics()}
                         renderTokens={renderTokens}
                     />
@@ -1258,7 +1490,9 @@ function Compare() {
                     className="compare-text-input-area"
                     value={inputText}
                     onChange={(event) =>
-                        setInputText(event.target.value)
+                        setInputText(
+                            event.target.value
+                        )
                     }
                     placeholder="Type or paste your text here..."
                 />
@@ -1272,7 +1506,8 @@ function Compare() {
                     <div className="compare-typed-panel">
 
                         <div className="compare-typed-panel-heading">
-                            {compareTokenizerOne || "Tokenizer 1"}
+                            {compareTokenizerOne ||
+                                "Tokenizer 1"}
                         </div>
 
                         <div className="compare-typed-tokenization-result">
@@ -1294,39 +1529,54 @@ function Compare() {
                         <div className="compare-typed-metrics">
 
                             <div className="compare-typed-metric-card">
+
                                 <span className="compare-typed-metric-name">
                                     Tokens
                                 </span>
+
                                 <span className="compare-typed-metric-value">
+
                                     {getMetricValue(
                                         "Tokens",
                                         typedTokenizerOneMetrics
                                     )}
+
                                 </span>
+
                             </div>
 
                             <div className="compare-typed-metric-card">
+
                                 <span className="compare-typed-metric-name">
                                     Fertility
                                 </span>
+
                                 <span className="compare-typed-metric-value">
+
                                     {getMetricValue(
                                         "Fertility",
                                         typedTokenizerOneMetrics
                                     )}
+
                                 </span>
+
                             </div>
 
                             <div className="compare-typed-metric-card">
+
                                 <span className="compare-typed-metric-name">
                                     Compression
                                 </span>
+
                                 <span className="compare-typed-metric-value">
+
                                     {getMetricValue(
                                         "Compression",
                                         typedTokenizerOneMetrics
                                     )}
+
                                 </span>
+
                             </div>
 
                         </div>
@@ -1338,7 +1588,8 @@ function Compare() {
                     <div className="compare-typed-panel">
 
                         <div className="compare-typed-panel-heading">
-                            {compareTokenizerTwo || "Tokenizer 2"}
+                            {compareTokenizerTwo ||
+                                "Tokenizer 2"}
                         </div>
 
                         <div className="compare-typed-tokenization-result">
@@ -1356,42 +1607,58 @@ function Compare() {
                         </div>
 
                         {/* Tokenizer 2 metrics */}
+
                         <div className="compare-typed-metrics">
 
                             <div className="compare-typed-metric-card">
+
                                 <span className="compare-typed-metric-name">
                                     Tokens
                                 </span>
+
                                 <span className="compare-typed-metric-value">
+
                                     {getMetricValue(
                                         "Tokens",
                                         typedTokenizerTwoMetrics
                                     )}
+
                                 </span>
+
                             </div>
 
                             <div className="compare-typed-metric-card">
+
                                 <span className="compare-typed-metric-name">
                                     Fertility
                                 </span>
+
                                 <span className="compare-typed-metric-value">
+
                                     {getMetricValue(
                                         "Fertility",
                                         typedTokenizerTwoMetrics
                                     )}
+
                                 </span>
+
                             </div>
 
                             <div className="compare-typed-metric-card">
+
                                 <span className="compare-typed-metric-name">
                                     Compression
                                 </span>
+
                                 <span className="compare-typed-metric-value">
+
                                     {getMetricValue(
                                         "Compression",
                                         typedTokenizerTwoMetrics
                                     )}
+
                                 </span>
+
                             </div>
 
                         </div>
@@ -1403,9 +1670,7 @@ function Compare() {
             </section>
 
         </div>
-
     );
-
 }
 
 export default Compare;
