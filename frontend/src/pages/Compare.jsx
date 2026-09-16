@@ -15,7 +15,8 @@ import {
     getDefaultCorpus,
     uploadCorpus,
     tokenizeText,
-    compareMBI
+    compareMBI,
+    getTokenizerInfo
 } from "../api/client";
 
 import { useAppState } from "../context/AppStateContext";
@@ -90,6 +91,9 @@ function Compare() {
     */
     const [languages, setLanguages] = useState([]);
     const [tokenizers, setTokenizers] = useState([]);
+
+    const [tokenizerOneInput, setTokenizerOneInput] = useState("");
+    const [tokenizerTwoInput, setTokenizerTwoInput] = useState("");
 
     /*
         Tokenized corpus for each tokenizer.
@@ -222,30 +226,43 @@ function Compare() {
                     so navigating away from Compare does not reset them.
                 */
                 if (!compareInitialised) {
-
                     if (!compareLanguage) {
                         setCompareLanguage(defaultLanguage);
                     }
 
-                    if (!compareTokenizerOne) {
-
-                        setCompareTokenizerOne(
-                            defaultTokenizer
-                        );
-
-                        /*
-                            Use a different tokenizer for panel 2 when possible.
-                        */
-                        const secondTokenizer =
-                            result.tokenizers?.find(
-                                (item) =>
-                                    item !== defaultTokenizer
+                    const secondTokenizer =
+                        result.tokenizers?.find(
+                            (item) =>
+                                item !== defaultTokenizer
                             ) || defaultTokenizer;
 
-                        setCompareTokenizerTwo(
-                            secondTokenizer
+                    const initialTokenizerOne =
+                        compareTokenizerOne ||
+                        defaultTokenizer;
+
+                    const initialTokenizerTwo =
+                        compareTokenizerTwo ||
+                        secondTokenizer;
+
+                    if (!compareTokenizerOne) {
+                        setCompareTokenizerOne(
+                            initialTokenizerOne
                         );
                     }
+
+                    if (!compareTokenizerTwo) {
+                        setCompareTokenizerTwo(
+                            initialTokenizerTwo
+                        );
+                    }
+
+                    setTokenizerOneInput(
+                        initialTokenizerOne
+                    );
+
+                    setTokenizerTwoInput(
+                        initialTokenizerTwo
+                    );
 
                     setCompareInitialised(true);
                 }
@@ -937,16 +954,36 @@ function Compare() {
     }
 
     /*
-        Change Tokenizer 1.
+        Search and change Tokenizer 1.
     */
-    async function handleTokenizerOneChange(event) {
+
+    async function handleTokenizerOneSearch(event) {
+
+        if (
+            event &&
+            event.key &&
+            event.key !== "Enter"
+        ) {
+            return;
+        }
 
         const newTokenizer =
-            event.target.value;
+            (
+                event?.value ??
+                tokenizerOneInput
+            ).trim();
 
-        setCompareTokenizerOne(
-            newTokenizer
-        );
+        if (!newTokenizer) {
+            return;
+        }
+
+        if (
+            tokenizerOneLoading ||
+            selectionLoading ||
+            loading
+        ) {
+            return;
+        }
 
         setTokenizerOneLoading(true);
 
@@ -954,9 +991,22 @@ function Compare() {
             "Loading tokenizer 1..."
         );
 
+        setError("");
+
         try {
 
-            setError("");
+            /*
+                Check that the tokenizer entered by the user
+                is available in the backend.
+            */
+
+            await getTokenizerInfo(
+                newTokenizer
+            );
+
+            /*
+                Upload mode.
+            */
 
             if (
                 compareSource === "upload" &&
@@ -979,7 +1029,13 @@ function Compare() {
                     formatMetrics(result)
                 );
 
-            } else {
+            }
+
+            /*
+                Default corpus mode.
+            */
+
+            else {
 
                 const result =
                     await getDefaultCorpus(
@@ -996,37 +1052,71 @@ function Compare() {
                 setTokenizerOneMetrics(
                     formatMetrics(result)
                 );
+
             }
+
+            setCompareTokenizerOne(
+                newTokenizer
+            );
+
+            setTokenizerOneInput(
+                newTokenizer
+            );
 
             setTokenizerOneStatus(
                 "Tokenizer 1 is ready"
             );
 
-        } catch (err) {
+        }
+        catch (err) {
 
             setTokenizerOneStatus(
-                err.message ||
-                "Could not load tokenizer."
+            "Tokenizer 1 not available."
             );
 
-        } finally {
-
-            setTokenizerOneLoading(false);
+            setError(
+                err.message ||
+                "Could not load tokenizer 1."
+            );
 
         }
+        finally {
+            setTokenizerOneLoading(false);
+        }
+
     }
 
     /*
-        Change Tokenizer 2.
+        Search and change Tokenizer 2.
     */
-    async function handleTokenizerTwoChange(event) {
+
+    async function handleTokenizerTwoSearch(event) {
+
+        if (
+            event &&
+            event.key &&
+            event.key !== "Enter"
+        ) {
+            return;
+        }
 
         const newTokenizer =
-            event.target.value;
+            (
+                event?.value ??
+                tokenizerTwoInput
+            ).trim();
 
-        setCompareTokenizerTwo(
-            newTokenizer
-        );
+        if (!newTokenizer) {
+            return;
+        }
+
+        if (
+            tokenizerTwoLoading ||
+            selectionLoading ||
+            loading
+        ) {
+            return;
+        }
 
         setTokenizerTwoLoading(true);
 
@@ -1034,9 +1124,22 @@ function Compare() {
             "Loading tokenizer 2..."
         );
 
+        setError("");
+
         try {
 
-            setError("");
+            /*
+                Check that the tokenizer entered by the user
+                is available in the backend.
+            */
+
+            await getTokenizerInfo(
+                newTokenizer
+            );
+
+            /*
+                Upload mode.
+            */
 
             if (
                 compareSource === "upload" &&
@@ -1059,7 +1162,12 @@ function Compare() {
                     formatMetrics(result)
                 );
 
-            } else {
+            }
+
+            /*
+                Default corpus mode.
+            */
+            else {
 
                 const result =
                     await getDefaultCorpus(
@@ -1076,26 +1184,38 @@ function Compare() {
                 setTokenizerTwoMetrics(
                     formatMetrics(result)
                 );
+
             }
+
+            setCompareTokenizerTwo(
+                newTokenizer
+            );
+
+            setTokenizerTwoInput(
+                newTokenizer
+            );
 
             setTokenizerTwoStatus(
                 "Tokenizer 2 is ready"
             );
 
-        } catch (err) {
+        }
+        catch (err) {
 
             setTokenizerTwoStatus(
-                err.message ||
-                "Could not load tokenizer."
+                "Tokenizer 2 not available."
             );
 
-        } finally {
-
-            setTokenizerTwoLoading(false);
+            setError(
+                err.message ||
+                "Could not load tokenizer 2."
+            );
 
         }
+        finally {
+            setTokenizerTwoLoading(false);
+        }
     }
-
     /*
         Return to the default corpus.
     */
@@ -1205,30 +1325,81 @@ function Compare() {
                             Tokenizer 1
                         </label>
 
-                        <select
-                            id="compare-tokenizer-one"
-                            className="compare-tokenizer-filter-select"
-                            value={compareTokenizerOne}
-                            onChange={handleTokenizerOneChange}
-                            disabled={
-                                tokenizerOneLoading ||
-                                selectionLoading ||
-                                loading
-                            }
-                        >
+                        <div className="tokenizer-search">
 
-                            {tokenizers.map((item) => (
+                            <input
+                                type="text"
+                                id="compare-tokenizer-one"
+                                value={tokenizerOneInput}
+                                onChange={(event) => {
+                                    setTokenizerOneInput(
+                                        event.target.value
+                                    );
+                                }}
+                                onKeyDown={(event) => {
 
-                                <option
-                                    key={item}
-                                    value={item}
+                                    if (
+                                        event.key === "Enter"
+                                    ) {
+
+                                        handleTokenizerOneSearch(
+                                            event
+                                        );
+
+                                    }
+
+                                }}
+                                placeholder="Type tokenizer name..."
+                                disabled={
+                                    tokenizerOneLoading ||
+                                    selectionLoading ||
+                                    loading
+                                }
+                            />
+
+                            <button
+                                type="button"
+                                className="search-button"
+                                onClick={() =>
+                                    handleTokenizerOneSearch({
+                                        key: "Enter"
+                                    })
+                                }
+                                disabled={
+                                    tokenizerOneLoading ||
+                                    selectionLoading ||
+                                    loading
+                                }
+                            >
+
+                                <svg
+                                    className="search-button-icon"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true"
                                 >
-                                    {item}
-                                </option>
+                                    <circle
+                                        cx="11"
+                                        cy="11"
+                                        r="7"
+                                        stroke="currentColor"
+                                        strokeWidth="2.5"
+                                    />
 
-                            ))}
+                                    <path
+                                        d="M16.5 16.5L21 21"
+                                        stroke="currentColor"
+                                        strokeWidth="2.5"
+                                        strokeLinecap="round"
+                                    />
+                                </svg>
 
-                        </select>
+                                <span> Search</span>
+
+                            </button>
+
+                        </div>
 
                         {/* Tokenizer 1 status */}
 
@@ -1236,10 +1407,13 @@ function Compare() {
 
                             <div
                                 className={`selection-status ${
-                                    tokenizerOneStatus.startsWith("Loading ")
-                                        ? "is-loading"
-                                        : tokenizerOneStatus.includes("could not")
-                                            ? "is-error"
+                                    tokenizerOneStatus ===
+                                    "Tokenizer 1 not available."
+                                        ? "is-error"
+                                        : tokenizerOneStatus.startsWith(
+                                            "Loading "
+                                        )
+                                            ? "is-loading"
                                             : "is-ready"
                                 }`}
                             >
@@ -1267,41 +1441,93 @@ function Compare() {
                             Tokenizer 2
                         </label>
 
-                        <select
-                            id="compare-tokenizer-two"
-                            className="compare-tokenizer-filter-select"
-                            value={compareTokenizerTwo}
-                            onChange={handleTokenizerTwoChange}
-                            disabled={
-                                tokenizerTwoLoading ||
-                                selectionLoading ||
-                                loading
-                            }
-                        >
+                        <div className="tokenizer-search">
 
-                            {tokenizers.map((item) => (
+                            <input
+                                type="text"
+                                id="compare-tokenizer-two"
+                                value={tokenizerTwoInput}
+                                onChange={(event) => {
+                                    setTokenizerTwoInput(
+                                        event.target.value
+                                    );
+                                }}
+                                onKeyDown={(event) => {
 
-                                <option
-                                    key={item}
-                                    value={item}
+                                    if (
+                                        event.key === "Enter"
+                                    ) {
+
+                                        handleTokenizerTwoSearch(
+                                            event
+                                        );
+
+                                    }
+
+                                }}
+                                placeholder="Type tokenizer name..."
+                                disabled={
+                                    tokenizerTwoLoading ||
+                                    selectionLoading ||
+                                    loading
+                                }
+                            />
+
+                            <button
+                                type="button"
+                                className="search-button"
+                                onClick={() =>
+                                    handleTokenizerTwoSearch({
+                                        key: "Enter"
+                                    })
+                                }
+                                disabled={
+                                    tokenizerTwoLoading ||
+                                    selectionLoading ||
+                                    loading
+                                }
+                            >
+
+                                <svg
+                                    className="search-button-icon"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true"
                                 >
-                                    {item}
-                                </option>
+                                    <circle
+                                        cx="11"
+                                        cy="11"
+                                        r="7"
+                                        stroke="currentColor"
+                                        strokeWidth="2.5"
+                                    />
 
-                            ))}
+                                    <path
+                                        d="M16.5 16.5L21 21"
+                                        stroke="currentColor"
+                                        strokeWidth="2.5"
+                                        strokeLinecap="round"
+                                    />
+                                </svg>
 
-                        </select>
+                                <span> Search</span>
 
-                        {/* Tokenizer 2 status */}
+                            </button>
+
+                        </div>
 
                         {tokenizerTwoStatus && (
 
                             <div
                                 className={`selection-status ${
-                                    tokenizerTwoStatus.startsWith("Loading ")
-                                        ? "is-loading"
-                                        : tokenizerTwoStatus.includes("could not")
-                                            ? "is-error"
+                                    tokenizerTwoStatus ===
+                                    "Tokenizer 2 not available."
+                                        ? "is-error"
+                                        : tokenizerTwoStatus.startsWith(
+                                            "Loading "
+                                        )
+                                            ? "is-loading"
                                             : "is-ready"
                                 }`}
                             >
