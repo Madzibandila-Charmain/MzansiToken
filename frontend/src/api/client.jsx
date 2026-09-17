@@ -13,6 +13,89 @@ const API_BASE_URL =
 
 
 /*
+    An error that still knows its HTTP status, so callers can tell a bad
+    request from a dead backend without parsing the message text.
+*/
+export class ApiError extends Error {
+
+    constructor(message, status, detail) {
+        super(message);
+
+        this.name = "ApiError";
+        this.status = status;
+        this.detail = detail;
+    }
+}
+
+/*
+    FastAPI sends `detail` as a string for our own HTTPExceptions, but as an
+    ARRAY of validation objects for a 422. The old code assigned that array
+    straight into new Error(), which stringifies to "[object Object]" - so a
+    bad request told the user nothing at all.
+*/
+function readDetail(detail, fallback) {
+
+    if (typeof detail === "string" && detail.trim()) {
+        return detail;
+    }
+
+    if (Array.isArray(detail)) {
+
+        const parts = detail
+            .map((item) => {
+
+                if (typeof item === "string") {
+                    return item;
+                }
+
+                const where = Array.isArray(item?.loc)
+                    ? item.loc.filter((p) => p !== "body").join(".")
+                    : "";
+
+                const what = item?.msg || "is not valid";
+
+                return where ? `${where}: ${what}` : what;
+            })
+            .filter(Boolean);
+
+        if (parts.length) {
+            return parts.join("; ");
+        }
+    }
+
+    if (detail && typeof detail === "object" && typeof detail.message === "string") {
+        return detail.message;
+    }
+
+    return fallback;
+}
+
+/*
+    Turns a rejected fetch into something a user can act on. A dead backend
+    rejects with "Failed to fetch", which is true but useless.
+*/
+export function friendlyError(err, what = "the backend") {
+
+    /* A cancelled request is not a failure - nothing should be shown. */
+    if (err?.name === "AbortError") {
+        return "";
+    }
+
+    if (err instanceof ApiError) {
+        return err.message;
+    }
+
+    const raw = String(err?.message || err);
+
+    if (/failed to fetch|networkerror|load failed|fetch failed/i.test(raw)) {
+        return `Cannot reach ${what} at ${API_BASE_URL}. Is the backend running?`;
+    }
+
+    return raw || "Something went wrong.";
+}
+
+
+/*
  *RESPONSE HANDLER
  */
 
@@ -25,21 +108,27 @@ async function handleResponse(
         return response.json();
     }
 
-    let message = defaultMessage;
+    let detail = null;
 
     try {
-
-        const errorData = await response.json();
-
-        if (errorData.detail) {
-            message = errorData.detail;
-        }
-
-    } catch {
-        // Keep default message.
+        detail = (await response.json())?.detail ?? null;
+    }
+    catch {
+        /* Not JSON - a proxy error page, or the server died mid-reply. */
     }
 
-    throw new Error(message);
+    let message = readDetail(detail, defaultMessage);
+
+    /*
+        A 5xx is our bug, not the user's. Say so, and point at where the
+        traceback actually is.
+    */
+    if (response.status >= 500) {
+        message = `${message} (server error ${response.status} `
+            + `- check the backend terminal)`;
+    }
+
+    throw new ApiError(message, response.status, detail);
 }
 
 
@@ -213,23 +302,15 @@ export async function getTokenizerInfo(tokenizer, signal) {
         }
     );
 
-    if (!response.ok) {
-        let message = "Failed to load tokenizer";
-
-        try {
-            const errorData = await response.json();
-
-            if (errorData.detail) {
-                message = errorData.detail;
-            }
-        } catch {
-            // Keep the default error message
-        }
-
-        throw new Error(message);
-    }
-
-    return response.json();
+    /*
+        The old inline block here threw a plain Error before handleResponse
+        ever ran, so a 422 arrived as "[object Object]" and a dead backend
+        as "Failed to fetch". One handler for every endpoint instead.
+    */
+    return handleResponse(
+        response,
+        "Failed to load tokenizer."
+    );
 }
 
 
