@@ -3640,3 +3640,610 @@ body {
 
     transition: filter 0.25s ease, opacity 0.25s ease;
 }
+
+
+/* ---------------------------------------------------------
+   PIE CHARTS - busy state
+   Same treatment as the reading blocks: the charts stay put
+   and go soft, so nobody reads the previous tokenizer's
+   slices as if they belonged to the new one.
+   --------------------------------------------------------- */
+
+.charts-box {
+    position: relative;
+}
+
+/* The hover card is a child of the box and is normally held at
+   opacity 0. Dimming "everything" would drag it UP to 0.5 and make
+   an empty dark pill appear in the corner, so it is excluded. */
+.charts-box.is-busy > *:not(.charts-overlay):not(.chart-tip) {
+    filter: blur(6px);
+    opacity: 0.5;
+
+    pointer-events: none;
+    user-select: none;
+
+    transition: filter 0.25s ease, opacity 0.25s ease;
+}
+
+.charts-box .charts-overlay {
+    z-index: 3;
+
+    background: oklch(1 0 0 / 0.4);
+}
+
+/* Nothing has been drawn yet on a first load, so the box needs a
+   height of its own or the wheel has nowhere to sit. */
+.charts-box.is-first-load {
+    min-height: 260px;
+}
+
+.charts-box.is-busy > .chart-tip {
+    opacity: 0;
+}
+
+/* A language that has been picked but has not arrived yet still needs a
+   panel of roughly the right size, or the grid jumps when it lands. */
+.language-tokenization-block.is-empty {
+    min-height: 210px;
+}
+
+/* =========================================================
+   HOME PAGE - Mukovhe Ranwashe (RNWMUK001), 17 September 2026
+   ========================================================= */
+
+.home {
+    width: calc(100% - 40px);
+    max-width: 1180px;
+
+    margin: 0 auto;
+
+    box-sizing: border-box;
+}
+
+/* ---------------------------------------------------------
+   HERO
+   --------------------------------------------------------- */
+
+.home-hero {
+    position: relative;
+
+    padding: 78px 0 56px;
+
+    text-align: center;
+}
+
+/* The demonstration sits behind the words, faint enough to read
+   through but close enough to notice. */
+.home-hero-tokens {
+    position: absolute;
+    inset: 18px 0 auto 0;
+
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 7px;
+
+    opacity: 0.22;
+
+    pointer-events: none;
+    user-select: none;
+}
+
+.home-hero-token {
+    padding: 7px 14px;
+
+    border-radius: 9px;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 15px;
+    font-weight: 500;
+
+    color: #ffffff;
+
+    animation: token-rise 0.6s ease both;
+}
+
+@keyframes token-rise {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-hero-token {
+        animation: none;
+    }
+}
+
+.home-pill {
+    position: relative;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+
+    margin-bottom: 26px;
+    padding: 8px 17px;
+
+    background: oklch(1 0 0 / 0.78);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 999px;
+
+    font-size: 12.5px;
+    font-weight: 600;
+
+    color: oklch(0.45 0.025 252);
+
+    backdrop-filter: blur(8px);
+}
+
+.home-pill-dot {
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: #5aa544;
+}
+
+.home-title {
+    position: relative;
+
+    max-width: 15ch;
+
+    margin: 0 auto 20px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: clamp(38px, 6.4vw, 74px);
+    font-weight: 700;
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+
+    color: oklch(0.22 0.03 252);
+}
+
+.home-title-accent {
+    display: block;
+
+    /* The accent carries the second line, the way a headline in the
+       reference does - one colour change, not a gradient per word. */
+    color: oklch(0.62 0.19 44);
+}
+
+.home-lede {
+    position: relative;
+
+    max-width: 60ch;
+
+    margin: 0 auto 32px;
+
+    font-size: 16.5px;
+    line-height: 1.62;
+
+    color: oklch(0.45 0.025 252);
+}
+
+.home-cta {
+    position: relative;
+
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+}
+
+.home-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+
+    padding: 13px 24px;
+
+    background: oklch(1 0 0 / 0.86);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 999px;
+
+    font-size: 14.5px;
+    font-weight: 600;
+
+    color: oklch(0.25 0.025 252);
+
+    text-decoration: none;
+
+    transition:
+        transform 0.16s ease,
+        box-shadow 0.16s ease,
+        background-color 0.16s ease;
+}
+
+.home-button:hover {
+    transform: translateY(-2px);
+
+    box-shadow: 0 10px 24px oklch(0.25 0.025 252 / 0.13);
+}
+
+.home-button.is-primary {
+    background: oklch(0.25 0.025 252);
+    border-color: oklch(0.25 0.025 252);
+
+    color: #ffffff;
+}
+
+.home-button.is-primary:hover {
+    background: oklch(0.2 0.03 252);
+}
+
+/* ---------------------------------------------------------
+   LIVE NUMBERS
+   --------------------------------------------------------- */
+
+.home-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 16px;
+
+    margin-bottom: 18px;
+}
+
+.home-stat {
+    display: flex;
+    flex-direction: column;
+
+    padding: 22px 24px;
+
+    background: oklch(1 0 0 / 0.76);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 18px;
+
+    box-shadow: 0 10px 30px oklch(0.25 0.025 252 / 0.06);
+
+    backdrop-filter: blur(10px);
+}
+
+.home-stat-icon svg,
+.home-feature-icon svg,
+.home-card-icon svg {
+    width: 20px;
+    height: 20px;
+
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.home-stat-icon {
+    margin-bottom: 12px;
+
+    color: oklch(0.62 0.19 44);
+}
+
+.home-stat-value {
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+
+    font-variant-numeric: tabular-nums;
+
+    color: oklch(0.22 0.03 252);
+}
+
+.home-stat-label {
+    margin-top: 2px;
+
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+
+    color: oklch(0.55 0.02 252);
+}
+
+.home-stat-note {
+    margin-top: 8px;
+
+    font-size: 12.5px;
+    line-height: 1.5;
+
+    color: oklch(0.55 0.02 252);
+}
+
+/* Shown only when /status could not be reached, so the page is honest
+   about the numbers being missing rather than showing zeros. */
+.home-offline {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+
+    margin: 0 0 8px;
+    padding: 11px 15px;
+
+    background: oklch(0.97 0.03 30 / 0.7);
+
+    border: 1px solid oklch(0.86 0.06 30);
+    border-radius: 12px;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    color: #8a3a12;
+}
+
+.home-offline .status-dot {
+    flex: none;
+
+    margin-top: 6px;
+
+    background: #b23b3b;
+}
+
+/* ---------------------------------------------------------
+   SECTIONS
+   --------------------------------------------------------- */
+
+.home-section {
+    padding: 66px 0 10px;
+
+    text-align: center;
+}
+
+.home-heading {
+    margin: 0 0 12px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: clamp(27px, 3.6vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+
+    color: oklch(0.22 0.03 252);
+}
+
+.home-sub {
+    max-width: 62ch;
+
+    margin: 0 auto 34px;
+
+    font-size: 15px;
+    line-height: 1.62;
+
+    color: oklch(0.5 0.025 252);
+}
+
+.home-features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
+    gap: 16px;
+
+    text-align: left;
+}
+
+.home-feature {
+    padding: 24px 24px 26px;
+
+    background: oklch(1 0 0 / 0.72);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 18px;
+}
+
+.home-feature-icon,
+.home-card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 40px;
+    height: 40px;
+
+    margin-bottom: 14px;
+
+    background: oklch(0.25 0.025 252);
+
+    border-radius: 12px;
+
+    color: #ffffff;
+}
+
+.home-feature h3,
+.home-card h3 {
+    margin: 0 0 8px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+
+    color: oklch(0.22 0.03 252);
+}
+
+.home-feature p,
+.home-card p {
+    margin: 0;
+
+    font-size: 13.8px;
+    line-height: 1.6;
+
+    color: oklch(0.5 0.025 252);
+}
+
+/* ---------------------------------------------------------
+   THE THREE WAYS IN
+   --------------------------------------------------------- */
+
+.home-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+    gap: 16px;
+
+    text-align: left;
+}
+
+.home-card {
+    display: flex;
+    flex-direction: column;
+
+    padding: 24px 24px 22px;
+
+    background: oklch(1 0 0 / 0.78);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 18px;
+
+    text-decoration: none;
+
+    transition:
+        transform 0.16s ease,
+        box-shadow 0.16s ease,
+        border-color 0.16s ease;
+}
+
+a.home-card:hover {
+    transform: translateY(-3px);
+
+    border-color: oklch(0.69 0.19 44);
+
+    box-shadow: 0 14px 34px oklch(0.25 0.025 252 / 0.11);
+}
+
+/* Pushed to the bottom so the four links sit on one line regardless of
+   how long each card's paragraph runs. */
+.home-card-go {
+    margin-top: auto;
+    padding-top: 16px;
+
+    font-size: 13px;
+    font-weight: 700;
+
+    color: oklch(0.55 0.19 44);
+}
+
+.home-card-go.is-quiet {
+    color: oklch(0.6 0.02 252);
+    font-weight: 600;
+}
+
+/* ---------------------------------------------------------
+   CLOSING BAND
+   --------------------------------------------------------- */
+
+.home-closing {
+    margin-top: 72px;
+    padding: 58px 30px 62px;
+
+    background: oklch(0.96 0.02 242 / 0.68);
+
+    border: 1px solid oklch(0.88 0.03 240);
+    border-radius: 26px;
+
+    text-align: center;
+}
+
+.home-closing h2 {
+    margin: 0 0 10px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: clamp(25px, 3.4vw, 38px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+
+    color: oklch(0.22 0.03 252);
+}
+
+.home-closing p {
+    max-width: 52ch;
+
+    margin: 0 auto 26px;
+
+    font-size: 15px;
+
+    color: oklch(0.5 0.025 252);
+}
+
+/* ---------------------------------------------------------
+   FOOTER
+   --------------------------------------------------------- */
+
+.home-footer {
+    margin-top: 54px;
+    padding: 40px 0 56px;
+
+    border-top: 1px solid oklch(0.88 0.03 240);
+
+    text-align: center;
+}
+
+.home-footer-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+
+    margin-bottom: 14px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+
+    color: oklch(0.22 0.03 252);
+}
+
+.home-footer p {
+    margin: 0 0 4px;
+
+    font-size: 13.5px;
+
+    color: oklch(0.5 0.025 252);
+}
+
+.home-footer-fine {
+    font-size: 12.5px !important;
+
+    color: oklch(0.62 0.02 252) !important;
+}
+
+/* The eight wheel colours as a signature, in the order they are
+   assigned to languages. */
+.home-footer-wheel {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+
+    margin-top: 20px;
+}
+
+.home-footer-wheel span {
+    width: 26px;
+    height: 5px;
+
+    border-radius: 3px;
+}
+
+@media (max-width: 640px) {
+
+    .home-hero {
+        padding-top: 62px;
+    }
+
+    .home-hero-tokens {
+        gap: 5px;
+    }
+
+    .home-hero-token {
+        padding: 5px 10px;
+        font-size: 13px;
+    }
+}
+
+/* The placeholder a panel shows before anything has been tokenized. It used
+   to be a bare string returned from renderTokens, so it had no styling at
+   all and sat at full text weight next to real tokens. */
+.token-empty {
+    font-size: 13px;
+
+    color: oklch(0.62 0.02 252);
+}
