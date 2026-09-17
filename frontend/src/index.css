@@ -3626,12 +3626,16 @@ body {
     font-size: 12px;
 }
 
-.language-tokenization-block {
+/* Both pages use the same busy treatment, so both panel classes are
+   listed here rather than the rule being written out twice. */
+.language-tokenization-block,
+.tokenization-display-block {
     position: relative;
 }
 
 /* Blur everything in the block except the overlay itself. */
-.language-tokenization-block.is-busy > *:not(.block-overlay) {
+.language-tokenization-block.is-busy > *:not(.block-overlay),
+.tokenization-display-block.is-busy > *:not(.block-overlay) {
     filter: blur(5px);
     opacity: 0.55;
 
@@ -4246,4 +4250,134 @@ a.home-card:hover {
     font-size: 13px;
 
     color: oklch(0.62 0.02 252);
+}
+
+/* The share printed beside each doughnut slice. Same monospace as the
+   petal figures so the two charts read as one family. */
+.chart-share {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    font-weight: 500;
+
+    transition: opacity 0.18s ease;
+}
+
+.chart-share.is-dim {
+    opacity: 0.25;
+}
+
+/* =========================================================
+   LANGUAGE PILLS - Mukovhe Ranwashe (RNWMUK001)
+   From the Inspect mock. Used on Compare so the corpus
+   language is visible rather than hidden behind Customize.
+   ========================================================= */
+
+/* One setup card: the corpus language and the two tokenizers, which are
+   really one decision - what is being compared, and on what. They used to
+   be two separate blocks, with the language hidden behind a Customize
+   button that no longer exists. */
+.compare-setup {
+    width: calc(100% - 40px);
+    max-width: 1250px;
+
+    margin: 0 auto 18px;
+    padding: 20px 24px;
+
+    box-sizing: border-box;
+
+    background: oklch(0.99 0.008 242 / 0.8);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 18px;
+
+    backdrop-filter: blur(10px);
+}
+
+.compare-setup .compare-tokenizer-filter-heading {
+    margin-bottom: 12px;
+
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+
+    color: oklch(0.45 0.025 252);
+}
+
+/* White space does the separating, rather than a rule across the card. */
+.compare-setup .compare-tokenizer-filter-heading + * {
+    margin-top: 0;
+}
+
+.compare-setup .language-pills + .compare-tokenizer-filter-heading,
+.compare-setup .selection-status + .compare-tokenizer-filter-heading {
+    margin-top: 26px;
+}
+
+.language-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+
+    margin-top: 10px;
+}
+
+.language-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+
+    padding: 7px 13px;
+
+    background: oklch(1 0 0 / 0.72);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 999px;
+
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+
+    color: oklch(0.25 0.025 252);
+
+    cursor: pointer;
+
+    transition:
+        transform 0.15s ease,
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        background-color 0.15s ease;
+}
+
+.language-pill:hover:not(:disabled) {
+    transform: translateY(-2px);
+
+    border-color: oklch(0.69 0.19 44);
+
+    box-shadow: 0 5px 14px oklch(0.25 0.025 252 / 0.12);
+}
+
+.language-pill.is-selected {
+    background: oklch(0.25 0.025 252);
+    border-color: oklch(0.25 0.025 252);
+
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.language-pill:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+/* The dot carries the colour this language has in the charts. */
+.language-pill .pill-dot {
+    width: 9px;
+    height: 9px;
+
+    flex: none;
+
+    border-radius: 50%;
+
+    box-shadow: 0 0 0 1px oklch(1 0 0 / 0.5);
 }

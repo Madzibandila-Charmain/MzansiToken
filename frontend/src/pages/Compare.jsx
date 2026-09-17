@@ -16,7 +16,8 @@ import {
     uploadCorpus,
     tokenizeText,
     compareMBI,
-    getTokenizerInfo
+    getTokenizerInfo,
+    friendlyError,
 } from "../api/client";
 
 import { useAppState } from "../context/AppStateContext";
@@ -29,6 +30,10 @@ import TypeAnything from "../components/TypeAnything";
 import CompareCharts from "../components/CompareCharts";
 
 import TokenStream from "../components/TokenStream";
+
+import StatusMessage from "../components/StatusMessage";
+
+import { languageColour } from "../components/languageColours";
 
 import { formatTokenizedText } from "../lib/tokenText";
 
@@ -60,7 +65,6 @@ function Compare() {
     */
     const [inputText, setInputText] = useState("");
 
-    const [showCustomize, setShowCustomize] = useState(false);
 
     /*
         Languages and tokenizers provided by the backend.
@@ -160,9 +164,11 @@ function Compare() {
     */
     const [tokenizerOneLoading, setTokenizerOneLoading] = useState(false);
     const [tokenizerOneStatus, setTokenizerOneStatus] = useState("");
+    const [tokenizerOneFailed, setTokenizerOneFailed] = useState(false);
 
     const [tokenizerTwoLoading, setTokenizerTwoLoading] = useState(false);
     const [tokenizerTwoStatus, setTokenizerTwoStatus] = useState("");
+    const [tokenizerTwoFailed, setTokenizerTwoFailed] = useState(false);
 
     const [error, setError] = useState("");
 
@@ -170,6 +176,19 @@ function Compare() {
         File input reference.
     */
     const fileInputRef = useRef(null);
+
+    /*
+        The label read "default", which is the internal name for the
+        built-in corpus and means nothing to a reader. Name what is
+        actually on screen instead - same wording as Inspect.
+    */
+    const corpusLabel = compareSource === "upload"
+        ? `${compareFileName} \u2022 Uploaded corpus \u2022 `
+            + `${compareTokenizerOne || "tokenizer 1"} vs `
+            + `${compareTokenizerTwo || "tokenizer 2"}`
+        : `Built-in corpus \u2022 ${compareLanguage || "no language selected"}`
+            + ` \u2022 ${compareTokenizerOne || "tokenizer 1"} vs `
+            + `${compareTokenizerTwo || "tokenizer 2"}`;
 
     /*
         Load backend options when Compare opens.
@@ -852,6 +871,8 @@ function Compare() {
 
         setTokenizerOneLoading(true);
 
+        setTokenizerOneFailed(false);
+
         setTokenizerOneStatus(
             "Loading tokenizer 1..."
         );
@@ -928,21 +949,33 @@ function Compare() {
                 newTokenizer
             );
 
+            setTokenizerOneFailed(false);
+
             setTokenizerOneStatus(
-                "Tokenizer 1 is ready"
+                `${newTokenizer} ready.`
             );
 
         }
         catch (err) {
 
-            setTokenizerOneStatus(
-            "Tokenizer 1 not available."
+            console.error(
+                "Tokenizer 1 loading error:",
+                err
             );
 
-            setError(
-                err.message ||
-                "Could not load tokenizer 1."
-            );
+            /*
+                The backend says exactly what is wrong. The old flat
+                sentence threw that away, so every failure looked the same.
+            */
+            const detail =
+                friendlyError(err) ||
+                "Could not load tokenizer 1.";
+
+            setError(detail);
+
+            setTokenizerOneFailed(true);
+
+            setTokenizerOneStatus(detail);
 
         }
         finally {
@@ -984,6 +1017,8 @@ function Compare() {
         }
 
         setTokenizerTwoLoading(true);
+
+        setTokenizerTwoFailed(false);
 
         setTokenizerTwoStatus(
             "Loading tokenizer 2..."
@@ -1060,21 +1095,29 @@ function Compare() {
                 newTokenizer
             );
 
+            setTokenizerTwoFailed(false);
+
             setTokenizerTwoStatus(
-                "Tokenizer 2 is ready"
+                `${newTokenizer} ready.`
             );
 
         }
         catch (err) {
 
-            setTokenizerTwoStatus(
-                "Tokenizer 2 not available."
+            console.error(
+                "Tokenizer 2 loading error:",
+                err
             );
 
-            setError(
-                err.message ||
-                "Could not load tokenizer 2."
-            );
+            const detail =
+                friendlyError(err) ||
+                "Could not load tokenizer 2.";
+
+            setError(detail);
+
+            setTokenizerTwoFailed(true);
+
+            setTokenizerTwoStatus(detail);
 
         }
         finally {
@@ -1156,22 +1199,72 @@ function Compare() {
                     language and corpus.
                 </p>
 
-                <button
-                    className="customize-button"
-                    onClick={() =>
-                        setShowCustomize(!showCustomize)
-                    }
-                >
-                    {showCustomize
-                        ? "Close"
-                        : "Customize"}
-                </button>
-
             </section>
 
-            {/* Tokenizer Selection */}
+            {/* Corpus language, as pills.
 
-            <section className="compare-tokenizer-filter">
+                It used to live only inside the Customize panel, so the one
+                thing that decides what both tokenizers are reading was
+                hidden behind a button. Same coloured pills as Inspect, and
+                the colour is the one that language carries in every chart. */}
+
+            <section className="compare-setup">
+
+                <div className="compare-tokenizer-filter-heading">
+                    Corpus language
+                </div>
+
+                <div className="language-pills">
+
+                    {languages.map((item) => (
+
+                        <button
+                            key={item}
+                            type="button"
+                            className={`language-pill ${
+                                compareLanguage === item
+                                    ? "is-selected"
+                                    : ""
+                            }`}
+                            onClick={() =>
+                                handleLanguageChange(item)
+                            }
+                            disabled={
+                                selectionLoading ||
+                                loading ||
+                                tokenizerOneLoading ||
+                                tokenizerTwoLoading ||
+                                compareSource === "upload"
+                            }
+                        >
+
+                            <span
+                                className="pill-dot"
+                                style={{
+                                    background: languageColour(item)
+                                }}
+                            ></span>
+
+                            {item}
+
+                        </button>
+
+                    ))}
+
+                </div>
+
+                {compareSource === "upload" && (
+                    <div className="selection-status">
+                        <span className="status-dot"></span>
+                        <span>
+                            Language is off while an uploaded corpus is active.
+                        </span>
+                    </div>
+                )}
+
+                {/* Tokenizer Selection - same card, because picking a
+                    language and picking two tokenizers is one decision:
+                    what is being compared, and on what. */}
 
                 <div className="compare-tokenizer-filter-heading">
                     Compare Tokenizers
@@ -1272,12 +1365,9 @@ function Compare() {
 
                             <div
                                 className={`selection-status ${
-                                    tokenizerOneStatus ===
-                                    "Tokenizer 1 not available."
+                                    tokenizerOneFailed
                                         ? "is-error"
-                                        : tokenizerOneStatus.startsWith(
-                                            "Loading "
-                                        )
+                                        : tokenizerOneLoading
                                             ? "is-loading"
                                             : "is-ready"
                                 }`}
@@ -1285,9 +1375,11 @@ function Compare() {
 
                                 <span className="status-dot"></span>
 
-                                <span>
-                                    {tokenizerOneStatus}
-                                </span>
+                                <StatusMessage
+                                    text={tokenizerOneStatus}
+                                    failed={tokenizerOneFailed}
+                                    modelName={tokenizerOneInput}
+                                />
 
                             </div>
 
@@ -1386,12 +1478,9 @@ function Compare() {
 
                             <div
                                 className={`selection-status ${
-                                    tokenizerTwoStatus ===
-                                    "Tokenizer 2 not available."
+                                    tokenizerTwoFailed
                                         ? "is-error"
-                                        : tokenizerTwoStatus.startsWith(
-                                            "Loading "
-                                        )
+                                        : tokenizerTwoLoading
                                             ? "is-loading"
                                             : "is-ready"
                                 }`}
@@ -1399,9 +1488,11 @@ function Compare() {
 
                                 <span className="status-dot"></span>
 
-                                <span>
-                                    {tokenizerTwoStatus}
-                                </span>
+                                <StatusMessage
+                                    text={tokenizerTwoStatus}
+                                    failed={tokenizerTwoFailed}
+                                    modelName={tokenizerTwoInput}
+                                />
 
                             </div>
 
@@ -1413,62 +1504,6 @@ function Compare() {
 
             </section>
 
-            {/* Customize Panel */}
-
-            {showCustomize && (
-
-                <div className="customize-panel">
-
-                    <div className="customize-section">
-
-                        <h2>
-                            Corpus language
-                        </h2>
-
-                        <div className="round-options">
-
-                            {languages.map((item) => (
-
-                                <button
-                                    key={item}
-                                    className={`round-option ${
-                                        compareLanguage === item
-                                            ? "selected"
-                                            : ""
-                                    }`}
-                                    onClick={() =>
-                                        handleLanguageChange(item)
-                                    }
-                                    disabled={
-                                        selectionLoading ||
-                                        loading
-                                    }
-                                >
-                                    {item}
-                                </button>
-
-                            ))}
-
-                        </div>
-
-                    </div>
-
-                    <div className="selection-summary">
-
-                        <span>
-                            {compareLanguage}
-                        </span>
-
-                        <span>
-                            Comparing two tokenizers
-                        </span>
-
-                    </div>
-
-                </div>
-
-            )}
-
             {/* Error */}
 
             {error && (
@@ -1479,16 +1514,16 @@ function Compare() {
 
             )}
 
-            {/* Mzansi Explorer */}
+            {/* Corpus tokenization */}
 
             <section className="compare-corpus-box">
 
                 <div className="compare-corpus-heading">
-                    Mzansi Explorer • Corpus Tokenization
+                    Corpus Tokenization
                 </div>
 
                 <p className="compare-corpus-label">
-                    {compareFileName} • {compareLanguage}
+                    {corpusLabel}
                 </p>
 
                 <CorpusUpload
@@ -1521,9 +1556,7 @@ function Compare() {
 
                         <span className="compare-status-dot"></span>
 
-                        <span>
-                            {selectionStatus}
-                        </span>
+                        <StatusMessage text={selectionStatus} />
 
                     </div>
 
@@ -1547,6 +1580,16 @@ function Compare() {
                         }
                         showMbi={hasMbiMetrics()}
                         tokenizerType="1"
+                        busy={
+                            tokenizerOneLoading ||
+                            selectionLoading
+                        }
+                        busyLabel={
+                            tokenizerOneLoading
+                                ? `Loading ${tokenizerOneInput
+                                    || "tokenizer 1"}\u2026`
+                                : `Loading ${compareLanguage}\u2026`
+                        }
                     />
 
                     {/* TOKENIZER 2 */}
@@ -1563,6 +1606,16 @@ function Compare() {
                         }
                         showMbi={hasMbiMetrics()}
                         tokenizerType="2"
+                        busy={
+                            tokenizerTwoLoading ||
+                            selectionLoading
+                        }
+                        busyLabel={
+                            tokenizerTwoLoading
+                                ? `Loading ${tokenizerTwoInput
+                                    || "tokenizer 2"}\u2026`
+                                : `Loading ${compareLanguage}\u2026`
+                        }
                     />
 
                 </div>

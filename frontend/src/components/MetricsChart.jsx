@@ -22,26 +22,13 @@ import { getMetrics, friendlyError } from "../api/client";
    pills, the reading panels and these charts can never disagree. */
 import { languageColour, FAMILY, LANGUAGE_ORDER } from "./languageColours";
 
-const MEASURES = [
-    {
-        key: "fertility",
-        label: "Per word",
-        title: "Tokens per written word",
-        format: (value) => value.toFixed(2)
-    },
-    {
-        key: "compression",
-        label: "Bytes / token",
-        title: "Bytes carried per token",
-        format: (value) => value.toFixed(2)
-    },
-    {
-        key: "token_premium",
-        label: "Cost vs English",
-        title: "Cost relative to English",
-        format: (value) => value.toFixed(2) + "×"
-    }
-];
+/*
+    The petal wheel plots ratios only. A raw corpus total is not a ratio,
+    and drawn as a petal it would just restate the doughnut beside it, so
+    Inspect takes the ratio subset of the shared list.
+*/
+import { RATIO_MEASURES as MEASURES } from "../lib/measures";
+
 
 /* Geometry. One centre for both charts so they line up. */
 const CENTRE = 160;
@@ -279,11 +266,31 @@ function MetricsChart({ tokenizer }) {
         const pad = Math.min(0.016, span / 8);
         const mid = angle + span / 2;
 
+        const share = data[name].token_count / total * 100;
+
+        /*
+            The percentage sits just outside its own slice. It used to live
+            only in the legend, which meant reading the doughnut was a
+            matter of matching colours by eye.
+        */
+        const labelRadius = DONUT_OUTER + 17;
+
         const slice = {
             name: name,
             path: sector(DONUT_INNER, DONUT_OUTER, angle + pad, angle + span - pad),
             dx: Math.cos(mid) * 12,
             dy: Math.sin(mid) * 12,
+            share: share,
+            labelX: CENTRE + labelRadius * Math.cos(mid),
+            labelY: CENTRE + labelRadius * Math.sin(mid) + 4,
+
+            /* Keep the text inside the box on the left-hand slices. */
+            anchor: Math.cos(mid) > 0.25
+                ? "start"
+                : Math.cos(mid) < -0.25
+                    ? "end"
+                    : "middle",
+
             delay: index * 55
         };
 
@@ -408,11 +415,30 @@ function MetricsChart({ tokenizer }) {
 
                     <svg
                         className="chart-svg"
-                        viewBox="0 0 320 320"
+                        viewBox="-24 0 368 320"
                         role="img"
                         aria-label="Share of total tokens by language"
                     >
                         {donutSlices.map((slice) => wedge(slice, 1))}
+
+                        {/* The share of each slice, printed on the slice. */}
+                        {donutSlices.map((slice) => (
+                            <text
+                                key={`share-${slice.name}`}
+                                className={
+                                    "chart-share"
+                                    + (hot && hot !== slice.name
+                                        ? " is-dim"
+                                        : "")
+                                }
+                                x={slice.labelX}
+                                y={slice.labelY}
+                                textAnchor={slice.anchor}
+                                fill={colours[slice.name]}
+                            >
+                                {slice.share.toFixed(1)}%
+                            </text>
+                        ))}
 
                         <text
                             className="chart-hub"

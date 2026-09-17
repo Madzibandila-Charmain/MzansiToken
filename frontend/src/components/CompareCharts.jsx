@@ -35,56 +35,11 @@ const BETTER = "#2f7d4f";
 const WORSE = "#b23b3b";
 
 /*
-    Which direction counts as an improvement is not the same for every
-    measure. Fewer tokens per word is better; MORE bytes carried per token
-    is better, because it means each token is doing more work.
+    Compare is a difference between two tokenizers, so unlike the Inspect
+    wheel it can show the raw corpus total as well - the whole list.
 */
-const MEASURES = [
-    {
-        key: "fertility",
-        label: "Per word",
-        title: "Tokens per written word",
-        lowerIsBetter: true,
-        unit: "tokens per word",
-        betterWord: "fewer",
-        worseWord: "more",
-        goodMeans: "Fewer tokens per word is better - the same sentence costs less to process.",
-        format: (v) => v.toFixed(2)
-    },
-    {
-        key: "compression",
-        label: "Bytes / token",
-        title: "Bytes carried per token",
-        lowerIsBetter: false,
-        unit: "bytes per token",
-        betterWord: "more",
-        worseWord: "fewer",
-        goodMeans: "More bytes per token is better - each token carries more of the text.",
-        format: (v) => v.toFixed(2)
-    },
-    {
-        key: "token_count",
-        label: "Total tokens",
-        title: "Tokens for the whole corpus",
-        lowerIsBetter: true,
-        unit: "tokens for the corpus",
-        betterWord: "fewer",
-        worseWord: "more",
-        goodMeans: "Fewer tokens for the same corpus is better.",
-        format: (v) => Number(v).toLocaleString()
-    },
-    {
-        key: "token_premium",
-        label: "Cost vs English",
-        title: "Cost relative to English",
-        lowerIsBetter: true,
-        unit: "relative to English",
-        betterWord: "lower",
-        worseWord: "higher",
-        goodMeans: "Lower is better - it is how many times more this language costs than the same text in English.",
-        format: (v) => v.toFixed(2) + "×"
-    }
-];
+import { COMPARE_MEASURES as MEASURES } from "../lib/measures";
+
 
 function CompareCharts({ tokenizerA, tokenizerB }) {
 
