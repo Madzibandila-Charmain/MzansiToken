@@ -45,6 +45,10 @@ const MEASURES = [
         label: "Per word",
         title: "Tokens per written word",
         lowerIsBetter: true,
+        unit: "tokens per word",
+        betterWord: "fewer",
+        worseWord: "more",
+        goodMeans: "Fewer tokens per word is better - the same sentence costs less to process.",
         format: (v) => v.toFixed(2)
     },
     {
@@ -52,6 +56,10 @@ const MEASURES = [
         label: "Bytes / token",
         title: "Bytes carried per token",
         lowerIsBetter: false,
+        unit: "bytes per token",
+        betterWord: "more",
+        worseWord: "fewer",
+        goodMeans: "More bytes per token is better - each token carries more of the text.",
         format: (v) => v.toFixed(2)
     },
     {
@@ -59,6 +67,10 @@ const MEASURES = [
         label: "Total tokens",
         title: "Tokens for the whole corpus",
         lowerIsBetter: true,
+        unit: "tokens for the corpus",
+        betterWord: "fewer",
+        worseWord: "more",
+        goodMeans: "Fewer tokens for the same corpus is better.",
         format: (v) => Number(v).toLocaleString()
     },
     {
@@ -66,6 +78,10 @@ const MEASURES = [
         label: "Cost vs English",
         title: "Cost relative to English",
         lowerIsBetter: true,
+        unit: "relative to English",
+        betterWord: "lower",
+        worseWord: "higher",
+        goodMeans: "Lower is better - it is how many times more this language costs than the same text in English.",
         format: (v) => v.toFixed(2) + "×"
     }
 ];
@@ -203,8 +219,54 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
             : southAfrican.reduce((sum, r) => sum + r.gain, 0) /
               southAfrican.length;
 
-    const best = [...southAfrican].sort((p, q) => q.gain - p.gain)[0];
+    /*
+        "Biggest change" used to be the language B improved the MOST on,
+        which is not what the words say, and left a user asking why one
+        language was "winning". Rank by how far apart the two tokenizers
+        are, in either direction, and then say the direction in words.
+    */
+    const ranked = [...southAfrican].sort(
+        (p, q) => Math.abs(q.gain) - Math.abs(p.gain)
+    );
+
+    const widest = ranked[0];
+    const closest = ranked[ranked.length - 1];
+
     const english = rows.find((r) => r.name === "English");
+
+    /* The tokenizer that is ahead on average, named rather than implied. */
+    const winner = meanGain > 0 ? tokenizerB : tokenizerA;
+
+    const winnerWins = meanGain > 0
+        ? improved
+        : southAfrican.length - improved;
+
+    /*
+        Every percentage on this page is a size plus a direction in words,
+        because "44%" on its own does not say who it is good for.
+    */
+    const sizeOf = (row) => {
+
+        const size = Math.abs(row.change);
+
+        return size < 1
+            ? size.toFixed(1)
+            : String(Math.round(size));
+    };
+
+    const phraseOf = (row) => (
+        `${sizeOf(row)}% ${row.gain > 0
+            ? current.betterWord
+            : current.worseWord}`
+    );
+
+    /*
+        If nothing moved there is nothing to report, and saying "0 of 8
+        improved" would read as a verdict against B when in fact the two
+        sides are producing the same numbers. Usually that means both
+        pickers are on the same tokenizer.
+    */
+    const unchanged = rows.every((r) => Math.abs(r.change) < 0.05);
 
     /* ---------- dumbbell geometry ---------- */
 
@@ -568,84 +630,155 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
                 </div>
                 )}
 
+                {/* What "better" means, before any number claims it. */}
+                <p className="compare-meaning">
+                    {current.goodMeans}
+                    {" "}
+                    Every percentage below compares <b>{tokenizerB}</b>{" "}
+                    against <b>{tokenizerA}</b>.
+                </p>
+
                 {/* The headline numbers, under the chart they summarise. */}
                 <div className="compare-verdict">
 
                     <div className="stat">
-                        <span className="k">Languages improved</span>
-                        <span className={"v " + (improved > 0 ? "up" : "")}>
-                            {improved} of {southAfrican.length}
+                        <span className="k">Ahead overall</span>
+                        <span className="v v-name">
+                            {unchanged ? "Neither" : winner}
                         </span>
-                        <span className="n">on {current.label.toLowerCase()}</span>
+                        <span className="n">
+                            {unchanged
+                                ? "the two sides give the same numbers"
+                                : `wins on ${winnerWins} of `
+                                    + `${southAfrican.length} SA languages`}
+                        </span>
                     </div>
 
                     <div className="stat">
-                        <span className="k">Average change</span>
-                        <span className={"v " + (meanGain >= 0 ? "up" : "down")}>
-                            {meanGain >= 0 ? "+" : ""}{meanGain.toFixed(1)}%
+                        <span className="k">Typical difference</span>
+                        <span
+                            className={"v " + (unchanged
+                                ? ""
+                                : meanGain > 0 ? "up" : "down")}
+                        >
+                            {unchanged
+                                ? "\u2014"
+                                : `${Math.abs(meanGain) < 1
+                                    ? Math.abs(meanGain).toFixed(1)
+                                    : Math.round(Math.abs(meanGain))}% `
+                                    + `${meanGain > 0
+                                        ? current.betterWord
+                                        : current.worseWord}`}
                         </span>
-                        <span className="n">across the SA languages</span>
+                        <span className="n">
+                            {current.unit}, averaged over the{" "}
+                            {southAfrican.length}
+                        </span>
                     </div>
 
-                    {best && (
-                        <div className="stat">
-                            <span className="k">Biggest change</span>
-                            <span className="v">{best.name}</span>
-                            <span className="n">
-                                {current.format(best.a)} &rarr; {current.format(best.b)}
-                            </span>
-                        </div>
-                    )}
+                    <div className="stat">
+                        <span className="k">
+                            Furthest apart
+                            {!unchanged && widest
+                                ? ` \u2013 ${widest.name}`
+                                : ""}
+                        </span>
+                        <span
+                            className={"v " + (unchanged || !widest
+                                ? ""
+                                : widest.gain > 0 ? "up" : "down")}
+                        >
+                            {unchanged || !widest
+                                ? "\u2014"
+                                : phraseOf(widest)}
+                        </span>
+                        <span className="n">
+                            {unchanged || !widest
+                                ? "nothing moved"
+                                : `${current.format(widest.a)} \u2192 `
+                                    + `${current.format(widest.b)} `
+                                    + `${current.unit}`}
+                        </span>
+                    </div>
 
-                    {english && (
-                        <div className="stat">
-                            <span className="k">English baseline</span>
-                            <span className={"v " + (english.gain >= 0 ? "up" : "down")}>
-                                {Math.abs(english.gain).toFixed(1)}%{" "}
-                                {english.gain >= 0 ? "better" : "worse"}
-                            </span>
-                            <span className="n">
-                                {current.format(english.a)} &rarr; {current.format(english.b)}
-                            </span>
-                        </div>
-                    )}
+                    <div className="stat">
+                        <span className="k">
+                            Closest
+                            {!unchanged && closest
+                                ? ` \u2013 ${closest.name}`
+                                : ""}
+                        </span>
+                        <span
+                            className={"v " + (unchanged || !closest
+                                ? ""
+                                : closest.gain > 0 ? "up" : "down")}
+                        >
+                            {unchanged || !closest
+                                ? "\u2014"
+                                : phraseOf(closest)}
+                        </span>
+                        <span className="n">
+                            {unchanged || !closest
+                                ? "nothing moved"
+                                : `${current.format(closest.a)} \u2192 `
+                                    + `${current.format(closest.b)} `
+                                    + `${current.unit}`}
+                        </span>
+                    </div>
 
                 </div>
 
                 {/* Written from the numbers, so it stays true for any pair. */}
                 <p className="compare-note">
-                    {improved === southAfrican.length
+                    {unchanged
                         ? <>
-                            <b>{tokenizerB}</b> is better on all{" "}
-                            {southAfrican.length} South African languages for{" "}
-                            {current.label.toLowerCase()}.
+                            <b>{tokenizerA}</b> and <b>{tokenizerB}</b> produce
+                            the same numbers for every language, so there is
+                            nothing to choose between them here.
+                            {tokenizerA === tokenizerB
+                                ? " Both pickers are set to the same tokenizer."
+                                : " Check that both tokenizers actually loaded."}
                           </>
-                        : improved === 0
-                            ? <>
-                                <b>{tokenizerA}</b> is better on every South
-                                African language for {current.label.toLowerCase()}.
-                              </>
-                            : <>
-                                <b>{tokenizerB}</b> is better on {improved} of{" "}
-                                {southAfrican.length} South African languages
-                                and worse on the rest.
-                              </>}
-                    {" "}
-                    {best && (
-                        <>
-                            The biggest move is <b>{best.name}</b>, from{" "}
-                            {current.format(best.a)} to {current.format(best.b)}.
-                        </>
-                    )}
-                    {" "}
-                    {english && english.gain < 0 && (
-                        <>
-                            English got <b>{Math.abs(english.gain).toFixed(1)}%
-                            worse</b> at the same time, so part of any
-                            improvement against English is the baseline
-                            slipping rather than the language gaining.
-                        </>
-                    )}
+                        : <>
+                            On average <b>{winner}</b> comes out{" "}
+                            {Math.abs(meanGain) < 1
+                                ? Math.abs(meanGain).toFixed(1)
+                                : Math.round(Math.abs(meanGain))}%{" "}
+                            {meanGain > 0
+                                ? current.betterWord
+                                : current.worseWord}{" "}
+                            on {current.title.toLowerCase()}, and it is ahead
+                            on {winnerWins} of the {southAfrican.length} South
+                            African languages.
+                            {" "}
+                            {widest && (
+                                <>
+                                    The two are furthest apart on{" "}
+                                    <b>{widest.name}</b> ({phraseOf(widest)}
+                                    {" "}with <b>{tokenizerB}</b>) and closest
+                                    on <b>{closest.name}</b> ({phraseOf(closest)}).
+                                    That is a property of the language, not a
+                                    contest between the languages - a wide gap
+                                    only means the two tokenizers disagree most
+                                    about how to split it.
+                                </>
+                            )}
+                            {" "}
+                            {measure === "token_premium"
+                                && english
+                                && english.gain < 0 && (
+                                <>
+                                    English got{" "}
+                                    <b>
+                                        {Math.abs(english.gain).toFixed(1)}%
+                                        {" "}worse
+                                    </b>
+                                    {" "}at the same time, so part of any
+                                    improvement against English is the baseline
+                                    slipping rather than the language gaining.
+                                </>
+                            )}
+                          </>}
                 </p>
 
             </div>
