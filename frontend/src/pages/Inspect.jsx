@@ -12,7 +12,8 @@ import {
     uploadCorpus,
     tokenizeText,
     getMBI,
-    getTokenizerInfo
+    getTokenizerInfo,
+    friendlyError,
 } from "../api/client";
 
 import { useAppState } from "../context/AppStateContext";
@@ -31,6 +32,170 @@ const WORDPIECE_PREFIX = "##";
 
 /* Two side by side is what fits without scrolling. */
 const MAX_INSPECT_LANGUAGES = 2;
+
+/*
+    The status line wraps now, so a full backend sentence is fine. What is
+    not fine is an unbounded string - a stack trace or an HTML error page
+    would push the whole control bar off the screen - so it is capped.
+*/
+const STATUS_LIMIT = 220;
+
+function shortStatus(text) {
+
+    const value = String(text || "").trim();
+
+    if (value.length <= STATUS_LIMIT) {
+        return value;
+    }
+
+    return `${value.slice(0, STATUS_LIMIT).trimEnd()}...`;
+}
+
+/*
+    The backend writes the Hugging Face address straight into its message
+    ("...accept its terms at https://huggingface.co/meta-llama/Llama-2-7b-hf
+    and set an HF_TOKEN"), so the useful part of the sentence arrives as
+    plain text. This splits the message into the words around each address
+    and the addresses themselves, so the addresses can be rendered as real
+    links instead of something the user has to copy out by hand.
+*/
+const URL_PATTERN = /https?:\/\/[^\s<>"']+/g;
+
+function statusParts(text) {
+
+    const value = shortStatus(text);
+
+    const parts = [];
+
+    let cursor = 0;
+    let match;
+
+    URL_PATTERN.lastIndex = 0;
+
+    while ((match = URL_PATTERN.exec(value)) !== null) {
+
+        let url = match[0];
+
+        /*
+            A sentence usually ends right after the address, and that full
+            stop is not part of the address.
+        */
+        const trailing = url.match(/[.,;:!?)\]]+$/);
+
+        if (trailing) {
+            url = url.slice(0, url.length - trailing[0].length);
+        }
+
+        if (match.index > cursor) {
+            parts.push(value.slice(cursor, match.index));
+        }
+
+        /*
+            Our own backend address appears in the "is the backend running"
+            message. Linking it would invite the user to click something that
+            is, by definition, not answering, so it stays plain text.
+        */
+        if (/^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)/i.test(url)) {
+            parts.push(url);
+        }
+        else {
+            parts.push({ url: url });
+        }
+
+        cursor = match.index + url.length;
+
+        URL_PATTERN.lastIndex = cursor;
+    }
+
+    if (cursor < value.length) {
+        parts.push(value.slice(cursor));
+    }
+
+    return parts;
+}
+
+/*
+    A gated or missing model is fixed on Hugging Face, not in our app, so the
+    status line links straight to the page the user has to visit. Only for
+    those two cases - a dead backend has nothing to do with Hugging Face.
+*/
+function modelPageUrl(name, message) {
+
+    const id = String(name || "").trim();
+
+    if (!/^[\w.-]+(\/[\w.-]+)?$/.test(id)) {
+        return "";
+    }
+
+    const isModelProblem = /gated|licen[cs]e|not be found|does not exist|no such|unknown|invalid/i
+        .test(String(message || ""));
+
+    if (!isModelProblem) {
+        return "";
+    }
+
+    return `https://huggingface.co/${id}`;
+}
+
+/*
+    One status line for every kind of message: plain words stay plain, any
+    address in the message becomes a link, and if the backend named a broken
+    model without giving an address we add one.
+*/
+function StatusMessage({ text, failed, modelName }) {
+
+    const parts = statusParts(text);
+
+    const hasLink = parts.some(
+        (part) => typeof part !== "string"
+    );
+
+    const fallback = hasLink
+        ? ""
+        : modelPageUrl(modelName, text);
+
+    return (
+        <span className="status-text">
+
+            {parts.map((part, index) => (
+
+                typeof part === "string"
+                    ? (
+                        <span key={index}>
+                            {part}
+                        </span>
+                    )
+                    : (
+                        <a
+                            key={index}
+                            className="status-link"
+                            href={part.url}
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            {part.url.replace(/^https?:\/\//, "")}
+                        </a>
+                    )
+
+            ))}
+
+            {failed && fallback && (
+                <>
+                    {" "}
+                    <a
+                        className="status-link"
+                        href={fallback}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        Open it on Hugging Face
+                    </a>
+                </>
+            )}
+
+        </span>
+    );
+}
 
 function readable(token) {
 
@@ -127,8 +292,10 @@ function Inspect() {
     const [selectionLoading, setSelectionLoading] = useState(false);
 
     const [tokenizerStatus, setTokenizerStatus] = useState("");
+    const [tokenizerFailed, setTokenizerFailed] = useState(false);
 
     const [languageStatus, setLanguageStatus] = useState("");
+    const [languageFailed, setLanguageFailed] = useState(false);
 
     /* Stores an error returned by the backend. */
     const [error, setError] = useState("");
@@ -653,6 +820,8 @@ function Inspect() {
 
         setSelectionLoading(true);
 
+        setLanguageFailed(false);
+
         setLanguageStatus(
             `Loading ${newLanguage}`
         );
@@ -805,20 +974,29 @@ function Inspect() {
 
             }
 
+            setLanguageFailed(false);
+
             setLanguageStatus(
-                "Language ready."
+                `${newLanguage} ready.`
             );
 
         }
         catch (err) {
 
-            setError(
-                err.message
+            console.error(
+                "Language loading error:",
+                err
             );
 
-            setLanguageStatus(
-                "Could not load language corpus."
-            );
+            const detail =
+                friendlyError(err) ||
+                "Could not load language corpus.";
+
+            setError(detail);
+
+            setLanguageFailed(true);
+
+            setLanguageStatus(detail);
 
         }
         finally {
@@ -1197,8 +1375,14 @@ function Inspect() {
 
         setSelectionLoading(true);
 
+        /*
+            Clear the failure flag before the attempt, otherwise the status
+            line stays red while the next tokenizer is still loading.
+        */
+        setTokenizerFailed(false);
+
         setTokenizerStatus(
-            "Loading tokenizer..."
+            `Loading ${newTokenizer}...`
         );
 
         setError("");
@@ -1509,8 +1693,10 @@ function Inspect() {
                 newTokenizer
             );
 
+            setTokenizerFailed(false);
+
             setTokenizerStatus(
-                "Tokenizer ready."
+                `${newTokenizer} ready.`
             );
 
         }
@@ -1521,14 +1707,21 @@ function Inspect() {
                 err
             );
 
-            setError(
-                err.message ||
-                "Could not load tokenizer."
-            );
+            /*
+                The backend already says exactly what is wrong - gated model,
+                bad id, validation, server fault. The old code threw that away
+                and showed one flat sentence instead, so every failure looked
+                identical to the user.
+            */
+            const detail =
+                friendlyError(err) ||
+                "Could not load tokenizer.";
 
-            setTokenizerStatus(
-                "Tokenizer not available."
-            );
+            setError(detail);
+
+            setTokenizerFailed(true);
+
+            setTokenizerStatus(detail);
 
         }
         finally {
@@ -1948,11 +2141,9 @@ function Inspect() {
 
                             <div
                                 className={`selection-status ${
-                                    tokenizerStatus ===
-                                    "Tokenizer not available."
+                                    tokenizerFailed
                                         ? "is-error"
-                                        : tokenizerStatus ===
-                                            "Loading tokenizer..."
+                                        : selectionLoading
                                                 ? "is-loading"
                                                 : "is-ready"
                                 }`}
@@ -1960,9 +2151,11 @@ function Inspect() {
 
                                 <span className="status-dot"></span>
 
-                                <span>
-                                    {tokenizerStatus}
-                                </span>
+                                <StatusMessage
+                                    text={tokenizerStatus}
+                                    failed={tokenizerFailed}
+                                    modelName={tokenizerInput}
+                                />
 
                             </div>
 
@@ -2097,22 +2290,20 @@ function Inspect() {
                         {languageStatus && (
                             <div
                                 className={`selection-status ${
-                                    languageStatus ===
-                                    "Could not load language corpus."
+                                    languageFailed
                                         ? "is-error"
-                                        : languageStatus.startsWith(
-                                            "Loading "
-                                        )
-                                            ? "is-loading"
-                                            : "is-ready"
+                                        : selectionLoading
+                                                ? "is-loading"
+                                                : "is-ready"
                                 }`}
                             >
 
                                 <span className="status-dot"></span>
 
-                                <span>
-                                    {languageStatus}
-                                </span>
+                                <StatusMessage
+                                    text={languageStatus}
+                                    failed={languageFailed}
+                                />
 
                             </div>
                         )}
@@ -2161,8 +2352,23 @@ function Inspect() {
                     {source === "upload" ? (
 
                         <div
-                            className="language-tokenization-block"
+                            className={
+                                "language-tokenization-block"
+                                + (selectionLoading ? " is-busy" : "")
+                            }
                         >
+
+                            {/* A spinning wheel over a blurred block, so it is
+                                obvious the panel is being refilled rather than
+                                showing stale numbers. */}
+                            {selectionLoading && (
+                                <div className="block-overlay">
+                                    <span className="spinner"></span>
+                                    <span className="block-overlay-text">
+                                        Tokenizing&hellip;
+                                    </span>
+                                </div>
+                            )}
 
                             {/* Tokenization Result */}
 
@@ -2291,8 +2497,25 @@ function Inspect() {
 
                                     <div
                                         key={selectedLanguage}
-                                        className="language-tokenization-block"
+                                        className={
+                                            "language-tokenization-block"
+                                            + (selectionLoading
+                                                ? " is-busy"
+                                                : "")
+                                        }
                                     >
+
+                                        {/* Spinning wheel over a blurred
+                                            block while this language is
+                                            being tokenized again. */}
+                                        {selectionLoading && (
+                                            <div className="block-overlay">
+                                                <span className="spinner"></span>
+                                                <span className="block-overlay-text">
+                                                    Tokenizing {selectedLanguage}&hellip;
+                                                </span>
+                                            </div>
+                                        )}
 
                                         {/* Tokenization Result */}
 
