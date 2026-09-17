@@ -14,7 +14,7 @@ function TypeAnything({
 
             {/* Type Anything heading */}
             <div className="text-input-heading">
-                Mzansi Explorer • Type Anything
+                Type Anything
             </div>
 
             {/* Text input */}
