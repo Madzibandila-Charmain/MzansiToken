@@ -163,6 +163,13 @@ function Compare() {
         This keeps Tokenizer 1 and Tokenizer 2 independent.
     */
     const [tokenizerOneLoading, setTokenizerOneLoading] = useState(false);
+    /*
+        The selection status had no failure state at all, so "Language
+        failed" rendered in the green ready style. A failure that looks
+        like a success is worse than no message.
+    */
+    const [selectionFailed, setSelectionFailed] = useState(false);
+
     const [tokenizerOneStatus, setTokenizerOneStatus] = useState("");
     const [tokenizerOneFailed, setTokenizerOneFailed] = useState(false);
 
@@ -264,7 +271,10 @@ function Compare() {
 
             } catch (err) {
 
-                setError(err.message);
+                setError(
+                    friendlyError(err) ||
+                    "Could not load the backend options."
+                );
 
             } finally {
 
@@ -413,11 +423,16 @@ function Compare() {
             return;
         }
 
+        /*
+            loadDefaultCorpus re-throws now, and an effect cannot catch for
+            us. The message is already in `error` by the time it rejects,
+            so this only stops it surfacing as an unhandled rejection.
+        */
         loadDefaultCorpus(
             compareLanguage,
             compareTokenizerOne,
             compareTokenizerTwo
-        );
+        ).catch(() => {});
 
     }, [
         compareLanguage,
@@ -518,7 +533,10 @@ function Compare() {
 
             } catch (err) {
 
-                setError(err.message);
+                setError(
+                    friendlyError(err) ||
+                    "Could not tokenize the text."
+                );
 
             }
 
@@ -675,7 +693,19 @@ function Compare() {
 
         } catch (err) {
 
-            setError(err.message);
+            setError(
+                friendlyError(err) ||
+                "Could not load the corpus."
+            );
+
+            /*
+                Re-thrown on purpose. This was swallowed here, so the
+                caller's catch never ran and handleLanguageChange went on
+                to report "ready" for a load that had failed - a green
+                status line over no data. Inspect's version has always
+                re-thrown; this one did not.
+            */
+            throw err;
 
         } finally {
 
@@ -747,10 +777,18 @@ function Compare() {
                 err
             );
 
-            setError(
-                err.message ||
-                "Could not process the uploaded corpus."
-            );
+            const detail =
+                friendlyError(err) ||
+                "Could not process the uploaded corpus.";
+
+            setError(detail);
+
+            setSelectionFailed(true);
+
+            setSelectionStatus(detail);
+
+            /* Same reason as loadDefaultCorpus: the caller has to know. */
+            throw err;
 
         } finally {
 
@@ -772,12 +810,20 @@ function Compare() {
             return;
         }
 
-        await processUploadedCorpus(
-            file,
-            compareLanguage,
-            compareTokenizerOne,
-            compareTokenizerTwo
-        );
+        /* Same reason: the handler owns the message, not the browser. */
+        try {
+
+            await processUploadedCorpus(
+                file,
+                compareLanguage,
+                compareTokenizerOne,
+                compareTokenizerTwo
+            );
+
+        }
+        catch {
+            /* Already reported by processUploadedCorpus. */
+        }
     }
 
     /*
@@ -793,6 +839,8 @@ function Compare() {
         setCompareLanguage(newLanguage);
 
         setSelectionLoading(true);
+        setSelectionFailed(false);
+
         setSelectionType("language");
         setSelectionStatus("Loading language...");
 
@@ -818,17 +866,29 @@ function Compare() {
                 );
             }
 
+            setSelectionFailed(false);
+
             setSelectionStatus(
-                "Language ready"
+                `${newLanguage} ready.`
             );
 
         } catch (err) {
 
-            setError(err.message);
-
-            setSelectionStatus(
-                "Language failed"
+            console.error(
+                "Language loading error:",
+                err
             );
+
+            /* What the backend said, not "Language failed". */
+            const detail =
+                friendlyError(err) ||
+                "Could not load the language corpus.";
+
+            setError(detail);
+
+            setSelectionFailed(true);
+
+            setSelectionStatus(detail);
 
         } finally {
 
@@ -1157,17 +1217,28 @@ function Compare() {
                 fileInputRef.current.value = "";
             }
 
+            setSelectionFailed(false);
+
             setSelectionStatus(
-                "Default corpus ready"
+                "Built-in corpus ready."
             );
 
         } catch (err) {
 
-            setError(err.message);
-
-            setSelectionStatus(
-                "Default corpus failed"
+            console.error(
+                "Default corpus error:",
+                err
             );
+
+            const detail =
+                friendlyError(err) ||
+                "Could not load the built-in corpus.";
+
+            setError(detail);
+
+            setSelectionFailed(true);
+
+            setSelectionStatus(detail);
 
         } finally {
 
@@ -1548,15 +1619,20 @@ function Compare() {
 
                     <div
                         className={`compare-selection-status ${
-                            selectionLoading
-                                ? "is-loading"
-                                : "is-ready"
+                            selectionFailed
+                                ? "is-error"
+                                : selectionLoading
+                                    ? "is-loading"
+                                    : "is-ready"
                         }`}
                     >
 
                         <span className="compare-status-dot"></span>
 
-                        <StatusMessage text={selectionStatus} />
+                        <StatusMessage
+                            text={selectionStatus}
+                            failed={selectionFailed}
+                        />
 
                     </div>
 

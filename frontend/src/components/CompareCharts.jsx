@@ -21,7 +21,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { getMetrics } from "../api/client";
+import { getMetrics, friendlyError } from "../api/client";
 
 import { FAMILY } from "./languageColours";
 
@@ -90,7 +90,10 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
 
                 setPair(null);
                 setLoading(false);
-                setError(err.message || "Could not load the comparison.");
+                setError(
+                    friendlyError(err) ||
+                    "Could not load the comparison."
+                );
 
             });
 
