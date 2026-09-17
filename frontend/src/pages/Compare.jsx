@@ -28,37 +28,11 @@ import TokenizationMetrics from "../components/TokenizationMetrics";
 import TypeAnything from "../components/TypeAnything";
 import CompareCharts from "../components/CompareCharts";
 
-const GPT2_SPACE = "\u0120";
-const SENTENCEPIECE_SPACE = "\u2581";
-const WORDPIECE_PREFIX = "##";
+import TokenStream from "../components/TokenStream";
+
+import { formatTokenizedText } from "../lib/tokenText";
 
 
-function readable(token) {
-
-    if (
-        token.startsWith(GPT2_SPACE) ||
-        token.startsWith(SENTENCEPIECE_SPACE)
-    ) {
-        return {
-            text: token.slice(1),
-            newWord: true
-        };
-    }
-
-    if (
-        token.startsWith(WORDPIECE_PREFIX)
-    ) {
-        return {
-            text: token.slice(2),
-            newWord: false
-        };
-    }
-
-    return {
-        text: token,
-        newWord: false
-    };
-}
 
 function Compare() {
 
@@ -543,121 +517,10 @@ function Compare() {
     /*
         Converts backend tokenized text into an array.
     */
-    function formatTokenizedText(tokenizedText) {
-
-        if (!tokenizedText) {
-            return [];
-        }
-
-        if (Array.isArray(tokenizedText)) {
-            return tokenizedText;
-        }
-
-        if (typeof tokenizedText === "string") {
-
-            return tokenizedText
-                .split(/\n+/)
-                .map((sentence) =>
-                    sentence
-                        .split(/\s+/)
-                        .filter(Boolean)
-                )
-                .filter(
-                    (sentence) =>
-                        sentence.length > 0
-                );
-        }
-
-        return [];
-    }
 
     /*
         Render tokens using the same token-pill style as Inspect.
     */
-    function renderTokens(tokens) {
-
-        if (
-            !tokens ||
-            tokens.length === 0
-        ) {
-            return "Your tokenized text will appear here.";
-        }
-
-        let sentences;
-
-        if (
-            Array.isArray(tokens[0])
-        ) {
-            sentences = tokens;
-        } else {
-            sentences = [
-                tokens
-            ];
-        }
-
-        const visibleSentences =
-            sentences.slice(0, 10);
-
-        return (
-            <>
-                {visibleSentences.map(
-                    (
-                        sentence,
-                        sentenceIndex
-                    ) => (
-
-                        <div
-                            key={`sentence-${sentenceIndex}`}
-                            className="token-sentence"
-                        >
-
-                            {sentence.map(
-                                (
-                                    token,
-                                    tokenIndex
-                                ) => {
-
-                                    const colourIndex =
-                                        tokenIndex % 8;
-
-                                    const {
-                                        text,
-                                        newWord
-                                    } = readable(
-                                        Array.isArray(token)
-                                            ? token.join("")
-                                            : String(token)
-                                    );
-
-                                    return (
-
-                                        <span
-                                            key={`${sentenceIndex}-${tokenIndex}-${token}`}
-                                            className={
-                                                `token-pill token-colour-${colourIndex}` +
-                                                (
-                                                    newWord
-                                                        ? " token-new-word"
-                                                        : ""
-                                                )
-                                            }
-                                            title={String(token)}
-                                        >
-                                            {text}
-                                        </span>
-
-                                    );
-
-                                }
-                            )}
-
-                        </div>
-
-                    )
-                )}
-            </>
-        );
-    }
 
     /*
         Converts backend metrics into the Compare format.
@@ -1683,7 +1546,6 @@ function Compare() {
                             mbiComparison.tokenizerA
                         }
                         showMbi={hasMbiMetrics()}
-                        renderTokens={renderTokens}
                         tokenizerType="1"
                     />
 
@@ -1700,7 +1562,6 @@ function Compare() {
                             mbiComparison.tokenizerB
                         }
                         showMbi={hasMbiMetrics()}
-                        renderTokens={renderTokens}
                         tokenizerType="2"
                     />
 
@@ -1732,7 +1593,6 @@ function Compare() {
                         metrics: typedTokenizerTwoMetrics
                     }
                 ]}
-                renderTokens={renderTokens}
             />
 
         </div>
