@@ -4381,3 +4381,339 @@ a.home-card:hover {
 
     box-shadow: 0 0 0 1px oklch(1 0 0 / 0.5);
 }
+
+/* =========================================================
+   HOME - THE MAP AND THE FLAG PALETTE
+   Mukovhe Ranwashe (RNWMUK001), 17 September 2026
+
+   The flag has six colours, and all six are used here: green,
+   gold, red, blue, black and white. They sit at low opacity
+   behind the page, because at full strength three of them are
+   dark enough to make body text unreadable and would fight the
+   language palette in the charts, which is the one place colour
+   has to carry meaning.
+   ========================================================= */
+
+:root {
+    --za-green: #007749;
+    --za-gold: #ffb81c;
+    --za-red: #e03c31;
+    --za-blue: #001489;
+    --za-black: #000000;
+    --za-white: #ffffff;
+}
+
+/* Scoped to .home, so Inspect, Compare and Rank keep the surface
+   the charts were colour-checked against. */
+.home {
+    position: relative;
+}
+
+/* ---------------------------------------------------------
+   THE MAP AS THE BACKDROP
+   Fixed rather than scrolled, so it behaves like a watermark
+   on the page instead of a picture in it. Faded to roughly
+   where the hero token strip sits, which is the level at
+   which it still reads as the country without competing
+   with the text over it.
+   --------------------------------------------------------- */
+
+.home-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    opacity: 0.2;
+
+    pointer-events: none;
+    user-select: none;
+}
+
+.home-backdrop .za-map {
+    width: min(1180px, 132vw);
+    height: auto;
+
+    max-height: 128vh;
+}
+
+.za-map {
+    display: block;
+
+    width: 100%;
+    height: auto;
+
+    overflow: visible;
+}
+
+.za-outline {
+    fill: none;
+    stroke: oklch(1 0 0 / 0.85);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+}
+
+/* Lesotho is a country in its own right, so it is left as the page
+   surface rather than painted with South Africa's flag. */
+.za-lesotho {
+    fill: oklch(0.97 0.006 242);
+    stroke: oklch(1 0 0 / 0.85);
+    stroke-width: 2;
+    stroke-linejoin: round;
+}
+
+@media (max-width: 640px) {
+
+    /* A narrow screen crops the sides badly, so the map is scaled to the
+       width rather than left to overflow. */
+    .home-backdrop .za-map {
+        width: 178vw;
+    }
+}
+
+/* =========================================================
+   HOME - FLAG ACCENTS
+   The rest of the app uses an orange accent. Orange is not in
+   the flag, so on this page the accent is the flag's green:
+   dark enough to hold contrast on the pale backdrop, and the
+   only flag colour that does at text size. Gold fails it and
+   blue is too close to a link.
+   ========================================================= */
+
+.home .home-title-accent {
+    color: var(--za-green);
+}
+
+.home .home-stat-icon,
+.home .home-card-go {
+    color: var(--za-green);
+}
+
+.home .home-pill-dot {
+    background: var(--za-green);
+}
+
+.home a.home-card:hover {
+    border-color: var(--za-green);
+}
+
+.home .home-button:not(.is-primary):hover {
+    border-color: var(--za-green);
+}
+
+/* The closing band picked up the old blue rule; the flag's blue instead. */
+.home .compare-note,
+.home .home-closing {
+    border-color: oklch(0.88 0.03 240);
+}
+
+/* =========================================================
+   HOME - THE LAVA LAMP IN THE FLAG'S COLOURS
+   Mukovhe Ranwashe (RNWMUK001), 17 September 2026
+
+   Same three blobs and the same lava-a/b/c keyframes as every
+   other page - only the colours and the stacking change. The
+   motion was already right; it was just orange, pink and a
+   cool blue, none of which are in the flag.
+
+   Blob one carries red into gold, blob two the green, blob
+   three the blue with a little black in it. Six colours, one
+   of which is the white page they drift over.
+   ========================================================= */
+
+.app-shell.is-home .ambient-gradient {
+
+    /*
+        Back to the layer it was always on. A parent's background paints
+        before every child, so z-index 0 here puts the lava above the
+        shell's white and the page content above the lava - which is what
+        the pages that were never touched have always done.
+    */
+    z-index: 0;
+
+    /* Faded, so it reads as colour drifting behind the page rather than
+       a light show the text has to survive. */
+    opacity: 0.42;
+
+    background:
+        radial-gradient(
+            circle at 30% 32%,
+            color-mix(in oklab, var(--za-red) 86%, transparent) 0 17%,
+            transparent 40%
+        ),
+        radial-gradient(
+            circle at 70% 58%,
+            color-mix(in oklab, var(--za-gold) 82%, transparent) 0 22%,
+            transparent 50%
+        );
+}
+
+.app-shell.is-home .ambient-gradient::before {
+    background: radial-gradient(
+        circle at 46% 44%,
+        color-mix(in oklab, var(--za-green) 80%, transparent) 0 42%,
+        transparent 70%
+    );
+}
+
+.app-shell.is-home .ambient-gradient::after {
+    background:
+        radial-gradient(
+            circle at 50% 50%,
+            color-mix(in oklab, var(--za-blue) 62%, transparent) 0 40%,
+            transparent 70%
+        ),
+        radial-gradient(
+            circle at 38% 62%,
+            color-mix(in oklab, var(--za-black) 34%, transparent) 0 26%,
+            transparent 58%
+        );
+}
+
+/* The map sits between the moving colour and the page content. It is
+   inside <main>, which the shell puts on z-index 1, so a negative value
+   here is still above the lava. */
+.home-backdrop {
+    z-index: -2;
+
+    /* Slightly softer now that there is no blue veil muting it. */
+    opacity: 0.17;
+}
+
+/*
+    The blue was two layers, neither of them the lava: body is a pale
+    blue-grey, and .app-shell lays an opaque blue-to-warm gradient over
+    it. On this page both are replaced with plain white, so the only
+    colour on screen is the flag.
+*/
+.app-shell.is-home {
+    background: var(--za-white);
+}
+
+/* =========================================================
+   HOME - LEGIBILITY OVER THE BACKDROP
+   With the blue veil gone the page is white, so the greys
+   that were tuned against a tinted surface now read as too
+   light. Every one of these is a step darker, and the cards
+   are closer to opaque so the map does not show through the
+   numbers.
+   ========================================================= */
+
+.home .home-lede {
+    color: oklch(0.38 0.02 252);
+}
+
+.home .home-sub,
+.home .home-feature p,
+.home .home-card p,
+.home .home-closing p {
+    color: oklch(0.4 0.02 252);
+}
+
+.home .home-stat-label,
+.home .home-stat-note {
+    color: oklch(0.44 0.02 252);
+}
+
+/* Near enough to opaque that the numbers sit on white, not on a map. */
+.home .home-stat,
+.home .home-card,
+.home .home-feature {
+    background: oklch(1 0 0 / 0.93);
+}
+
+.home .home-pill {
+    background: oklch(1 0 0 / 0.92);
+}
+
+.home .home-closing {
+    background: oklch(1 0 0 / 0.78);
+}
+
+/* =========================================================
+   THE HEADER, WITHOUT THE BAR
+   Mukovhe Ranwashe (RNWMUK001), 17 September 2026
+
+   The white band across the top was the last thing covering
+   the background. It is gone: no fill, no blur, no bottom
+   rule, so the lava and the map run the full height of the
+   page. The nav still has to be readable over moving colour,
+   so each item carries its own small surface instead.
+   ========================================================= */
+
+.site-header {
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: 0;
+}
+
+.logo {
+    text-decoration: none;
+    color: inherit;
+}
+
+.brand-mark-svg {
+    display: block;
+
+    border-radius: 29%;
+
+    box-shadow: 0 3px 10px oklch(0.25 0.025 252 / 0.22);
+}
+
+/* The slot through the mark is the page showing through, so it has to
+   match whatever is behind the header. */
+.brand-cut {
+    fill: oklch(0.99 0.004 242);
+}
+
+/* Each nav item gets a small pill of its own, which is what lets the
+   bar disappear without the links becoming unreadable. */
+.main-nav a {
+    padding: 7px 14px;
+
+    background: oklch(1 0 0 / 0.66);
+
+    border-radius: 999px;
+
+    backdrop-filter: blur(8px);
+}
+
+.main-nav a:hover {
+    background: oklch(1 0 0 / 0.86);
+}
+
+/* ---------------------------------------------------------
+   THE FOOTER, NOW THAT IT CARRIES THE CAPSTONE LINE
+   --------------------------------------------------------- */
+
+.home-footer-tokens {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 7px;
+
+    margin-bottom: 14px;
+}
+
+.home-footer-tokens .home-hero-token {
+    position: static;
+}
+
+.home-footer-word {
+    max-width: 44ch;
+
+    margin: 0 auto 26px !important;
+
+    font-size: 13.5px !important;
+    line-height: 1.6;
+
+    color: oklch(0.46 0.02 252) !important;
+}
+
+.home-footer-brand {
+    gap: 12px;
+}

@@ -27,6 +27,10 @@ import { getBackendStatus, friendlyError } from "../api/client";
 
 import { WHEEL, LANGUAGE_ORDER } from "../components/languageColours";
 
+import SouthAfricaMap, { FLAG } from "../components/SouthAfricaMap";
+
+import BrandMark from "../components/BrandMark";
+
 /*
     A real sentence, split the way a byte-level tokenizer splits it. It sits
     behind the headline so the page demonstrates the idea before it explains
@@ -34,6 +38,20 @@ import { WHEEL, LANGUAGE_ORDER } from "../components/languageColours";
 */
 const HERO_TOKENS = [
     "Ngi", "ya", "bo", "nga", "ka", "khu", "lu"
+];
+
+/*
+    On this page the pills wear the flag rather than the language palette.
+    White is left out because a white pill on a white page is not a pill,
+    and the language wheel still rules the charts, where colour has to
+    carry meaning rather than mood.
+*/
+const HERO_COLOURS = [
+    FLAG.green,
+    FLAG.gold,
+    FLAG.red,
+    FLAG.blue,
+    FLAG.black
 ];
 
 function Stat({ value, label, note, icon }) {
@@ -174,30 +192,17 @@ function Home() {
     return (
         <div className="home">
 
+            {/* The country with the flag inside it, faded back as the
+                page's backdrop - the same treatment as the token strip
+                in the hero. Real Natural Earth geometry, so it holds up
+                at this size. Decorative, so it is hidden from readers. */}
+            <div className="home-backdrop" aria-hidden="true">
+                <SouthAfricaMap decorative />
+            </div>
+
             {/* ---------------- HERO ---------------- */}
 
             <section className="home-hero">
-
-                {/* The idea, demonstrated, before it is explained. */}
-                <div className="home-hero-tokens" aria-hidden="true">
-                    {HERO_TOKENS.map((piece, index) => (
-                        <span
-                            key={index}
-                            className="home-hero-token"
-                            style={{
-                                background: WHEEL[index % WHEEL.length],
-                                animationDelay: `${index * 0.09}s`
-                            }}
-                        >
-                            {piece}
-                        </span>
-                    ))}
-                </div>
-
-                <span className="home-pill">
-                    <span className="home-pill-dot"></span>
-                    CSC3003S Capstone &middot; University of Cape Town
-                </span>
 
                 <h1 className="home-title">
                     See the language
@@ -441,8 +446,31 @@ function Home() {
 
             <footer className="home-footer">
 
+                {/* The sentence that started the hero now closes the page:
+                    one isiZulu word, split the way a tokenizer splits it. */}
+                <div className="home-footer-tokens" aria-hidden="true">
+                    {HERO_TOKENS.map((piece, index) => (
+                        <span
+                            key={index}
+                            className="home-hero-token"
+                            style={{
+                                background:
+                                    HERO_COLOURS[index % HERO_COLOURS.length],
+                                animationDelay: `${index * 0.09}s`
+                            }}
+                        >
+                            {piece}
+                        </span>
+                    ))}
+                </div>
+
+                <p className="home-footer-word">
+                    &ldquo;Ngiyabonga kakhulu&rdquo; &mdash; thank you very
+                    much, in isiZulu, in seven tokens.
+                </p>
+
                 <div className="home-footer-brand">
-                    <span className="brand-mark">M</span>
+                    <BrandMark size={30} />
                     MzansiToken
                 </div>
 
