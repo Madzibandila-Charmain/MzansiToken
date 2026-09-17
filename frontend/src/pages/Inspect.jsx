@@ -26,9 +26,9 @@ import CorpusUpload from "../components/CorpusUpload";
 
 import TypeAnything from "../components/TypeAnything";
 
-const GPT2_SPACE = "\u0120";
-const SENTENCEPIECE_SPACE = "\u2581";
-const WORDPIECE_PREFIX = "##";
+import TokenStream from "../components/TokenStream";
+
+import { formatTokenizedText } from "../lib/tokenText";
 
 /* Two side by side is what fits without scrolling. */
 const MAX_INSPECT_LANGUAGES = 2;
@@ -197,21 +197,6 @@ function StatusMessage({ text, failed, modelName }) {
     );
 }
 
-function readable(token) {
-
-    if (
-        token.startsWith(GPT2_SPACE) ||
-        token.startsWith(SENTENCEPIECE_SPACE)
-    ) {
-        return { text: token.slice(1), newWord: true };
-    }
-
-    if (token.startsWith(WORDPIECE_PREFIX)) {
-        return { text: token.slice(2), newWord: false };
-    }
-
-    return { text: token, newWord: false };
-}
 
 function Inspect() {
 
@@ -1197,39 +1182,6 @@ function Inspect() {
 
     }
 
-    function formatTokenizedText(tokenizedText) {
-
-        if (!tokenizedText) {
-            return [];
-        }
-
-        // Backend returned a list of tokens
-
-        if (Array.isArray(tokenizedText)) {
-            return tokenizedText;
-        }
-
-        // Backend returned text as a string
-
-        if (typeof tokenizedText === "string") {
-
-            return tokenizedText
-                .split(/\n+/)
-                .map((sentence) =>
-                    sentence
-                        .split(/\s+/)
-                        .filter(Boolean)
-                )
-                .filter(
-                    (sentence) =>
-                        sentence.length > 0
-                );
-
-        }
-
-        return [];
-
-    }
 
     /* Handled file slection from user computer. */
     async function handleFileChange(event) {
@@ -1960,86 +1912,6 @@ function Inspect() {
     }
 
     // Cycles through the 8 CSS colors for the tokens
-    function renderTokens(tokens) {
-
-        if (
-            !tokens ||
-            tokens.length === 0
-        ) {
-
-            return "Your tokenized text will appear here.";
-
-        }
-
-        let sentences;
-
-        if (
-            Array.isArray(tokens[0])
-        ) {
-
-            sentences =
-                tokens;
-
-        }
-        else {
-
-            sentences = [
-                tokens
-            ];
-
-        }
-
-        const visibleSentences = sentences.slice(0, 10);
-        return (
-            <>
-                {visibleSentences.map(
-                    (
-                        sentence,
-                        sentenceIndex
-                    ) => (
-
-                        <div
-                            key={`sentence-${sentenceIndex}`}
-                            className="token-sentence"
-                        >
-
-                            {sentence.map(
-                                (
-                                    token,
-                                    tokenIndex
-                                ) => {
-
-                                    const colourIndex =
-                                        tokenIndex % 8;
-
-                                    const { text, newWord } =
-                                        readable(
-                                            Array.isArray(token)
-                                                ? token.join("")
-                                                : String(token)
-                                        );
-
-                                    return (
-                                        <span
-                                            key={`${sentenceIndex}-${tokenIndex}-${token}`}
-                                            className={`token-pill token-colour-${colourIndex}` + (newWord ? " token-new-word" : "")}
-                                            title={token}
-                                        >
-                                            {text}
-                                        </span>
-                                    );
-
-                                }
-                            )}
-
-                        </div>
-
-                    )
-                )}
-            </>
-        );
-
-    }
 
     return (
         <>
@@ -2445,9 +2317,7 @@ function Inspect() {
 
                                 <div className="tokenization-text">
 
-                                    {renderTokens(
-                                        corpusTokenizedText
-                                    )}
+                                    <TokenStream tokens={corpusTokenizedText} />
 
                                 </div>
 
@@ -2648,9 +2518,7 @@ function Inspect() {
 
                                             <div className="tokenization-text">
 
-                                                {renderTokens(
-                                                    data.tokenizedText
-                                                )}
+                                                <TokenStream tokens={data.tokenizedText} />
 
                                             </div>
 
@@ -2847,7 +2715,6 @@ function Inspect() {
                         metrics: textMetrics
                     }
                 ]}
-                renderTokens={renderTokens}
             />
 
         </>
