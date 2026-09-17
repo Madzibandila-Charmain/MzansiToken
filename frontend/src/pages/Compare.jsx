@@ -26,12 +26,12 @@ import CorpusUpload from "../components/CorpusUpload";
 import TokenizationMetrics from "../components/TokenizationMetrics";
 
 import TypeAnything from "../components/TypeAnything";
+import CompareCharts from "../components/CompareCharts";
 
 const GPT2_SPACE = "\u0120";
 const SENTENCEPIECE_SPACE = "\u2581";
 const WORDPIECE_PREFIX = "##";
 
-import CompareCharts from "../components/CompareCharts";
 
 function readable(token) {
 
@@ -1708,7 +1708,7 @@ function Compare() {
 
             </section>
 
-            {/* All eight languages, both tokenizers */}
+            {/* Side-by-side charts for the two selected tokenizers. */}
             <CompareCharts
                 tokenizerA={compareTokenizerOne}
                 tokenizerB={compareTokenizerTwo}
