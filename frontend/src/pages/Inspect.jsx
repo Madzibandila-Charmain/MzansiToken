@@ -297,6 +297,14 @@ function Inspect() {
     const [languageStatus, setLanguageStatus] = useState("");
     const [languageFailed, setLanguageFailed] = useState(false);
 
+    /*
+        Which panels are actually waiting on the backend. A single flag made
+        every panel say "Loading English" while isiXhosa was the one being
+        fetched, so the names are tracked instead of a yes/no.
+    */
+    const [busyLanguages, setBusyLanguages] = useState([]);
+    const [busyUpload, setBusyUpload] = useState(false);
+
     /* Stores an error returned by the backend. */
     const [error, setError] = useState("");
 
@@ -312,6 +320,21 @@ function Inspect() {
 
     /* Reference to the actual file input. */
     const fileInputRef = useRef(null);
+
+    /*
+        The label used to read "default", which is the internal name for the
+        built-in corpus and means nothing to a reader. Name the languages
+        actually on screen instead, and keep it correct for one or two.
+    */
+    const shown = selectedLanguages.length
+        ? selectedLanguages
+        : (language ? [language] : []);
+
+    const languageLabel = shown.length === 0
+        ? "no language selected"
+        : shown.length === 1
+            ? shown[0]
+            : `${shown.slice(0, -1).join(", ")} and ${shown[shown.length - 1]}`;
 
     /*
         Save selected languages so they remain unchanged
@@ -820,6 +843,8 @@ function Inspect() {
 
         setSelectionLoading(true);
 
+        setBusyLanguages([newLanguage]);
+
         setLanguageFailed(false);
 
         setLanguageStatus(
@@ -1000,6 +1025,9 @@ function Inspect() {
 
         }
         finally {
+
+            setBusyLanguages([]);
+            setBusyUpload(false);
 
             setSelectionLoading(false);
 
@@ -1350,6 +1378,9 @@ function Inspect() {
 
             setLoading(false);
 
+            setBusyLanguages([]);
+            setBusyUpload(false);
+
             setSelectionLoading(false);
 
         }
@@ -1374,6 +1405,21 @@ function Inspect() {
         }
 
         setSelectionLoading(true);
+
+        /*
+            A tokenizer change really does reload every panel on screen, so
+            here - and only here - they are all marked busy.
+        */
+        if (source === "upload") {
+            setBusyUpload(true);
+        }
+        else {
+            setBusyLanguages(
+                selectedLanguages.length > 0
+                    ? selectedLanguages
+                    : (language ? [language] : [])
+            );
+        }
 
         /*
             Clear the failure flag before the attempt, otherwise the status
@@ -1726,6 +1772,9 @@ function Inspect() {
         }
         finally {
 
+            setBusyLanguages([]);
+            setBusyUpload(false);
+
             setSelectionLoading(
                 false
             );
@@ -1898,6 +1947,9 @@ function Inspect() {
 
         }
         finally {
+
+            setBusyLanguages([]);
+            setBusyUpload(false);
 
             setSelectionLoading(
                 false
@@ -2319,14 +2371,14 @@ function Inspect() {
             <section className="corpus-box">
 
                 <div className="corpus-heading">
-                    Mzansi Explorer • Corpus Tokenization
+                    Corpus Tokenization
                 </div>
 
                 <p className="corpus-label">
 
                     {source === "upload"
-                        ? `${fileName} • Uploaded Corpus • ${tokenizer}`
-                        : `${fileName} • ${language} • ${tokenizer}`}
+                        ? `${fileName} \u2022 Uploaded corpus \u2022 ${tokenizer}`
+                        : `Built-in corpus \u2022 ${languageLabel} \u2022 ${tokenizer}`}
 
                 </p>
 
@@ -2354,18 +2406,18 @@ function Inspect() {
                         <div
                             className={
                                 "language-tokenization-block"
-                                + (selectionLoading ? " is-busy" : "")
+                                + (busyUpload ? " is-busy" : "")
                             }
                         >
 
                             {/* A spinning wheel over a blurred block, so it is
                                 obvious the panel is being refilled rather than
                                 showing stale numbers. */}
-                            {selectionLoading && (
+                            {busyUpload && (
                                 <div className="block-overlay">
                                     <span className="spinner"></span>
                                     <span className="block-overlay-text">
-                                        Tokenizing&hellip;
+                                        Loading uploaded corpus&hellip;
                                     </span>
                                 </div>
                             )}
@@ -2489,8 +2541,61 @@ function Inspect() {
                                         selectedLanguage
                                     ];
 
+                                const isBusy =
+                                    busyLanguages.includes(
+                                        selectedLanguage
+                                    );
+
+                                /*
+                                    A language that has just been picked has
+                                    no data yet. Returning null left the user
+                                    with no sign anything was happening, so
+                                    stand an empty panel in its place and put
+                                    the wheel in it.
+                                */
                                 if (!data) {
-                                    return null;
+
+                                    if (!isBusy) {
+                                        return null;
+                                    }
+
+                                    return (
+                                        <div
+                                            key={selectedLanguage}
+                                            className="language-tokenization-block is-busy is-empty"
+                                        >
+
+                                            <div className="block-overlay">
+                                                <span className="spinner"></span>
+                                                <span className="block-overlay-text">
+                                                    Loading {selectedLanguage}&hellip;
+                                                </span>
+                                            </div>
+
+                                            <div className="tokenization-result">
+
+                                                <div className="tokenization-language">
+
+                                                    <span
+                                                        className="swatch"
+                                                        style={{
+                                                            background:
+                                                                languageColour(
+                                                                    selectedLanguage
+                                                                )
+                                                        }}
+                                                    ></span>
+
+                                                    {selectedLanguage}
+
+                                                </div>
+
+                                                <div className="tokenization-text"></div>
+
+                                            </div>
+
+                                        </div>
+                                    );
                                 }
 
                                 return (
@@ -2499,20 +2604,18 @@ function Inspect() {
                                         key={selectedLanguage}
                                         className={
                                             "language-tokenization-block"
-                                            + (selectionLoading
-                                                ? " is-busy"
-                                                : "")
+                                            + (isBusy ? " is-busy" : "")
                                         }
                                     >
 
-                                        {/* Spinning wheel over a blurred
-                                            block while this language is
-                                            being tokenized again. */}
-                                        {selectionLoading && (
+                                        {/* Only the panel that is actually
+                                            waiting on the backend goes busy,
+                                            and it names its own language. */}
+                                        {isBusy && (
                                             <div className="block-overlay">
                                                 <span className="spinner"></span>
                                                 <span className="block-overlay-text">
-                                                    Tokenizing {selectedLanguage}&hellip;
+                                                    Loading {selectedLanguage}&hellip;
                                                 </span>
                                             </div>
                                         )}
