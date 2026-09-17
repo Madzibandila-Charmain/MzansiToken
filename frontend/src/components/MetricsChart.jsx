@@ -16,7 +16,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { getMetrics } from "../api/client";
+import { getMetrics, friendlyError } from "../api/client";
 
 /* One shared source of truth for language colours and families, so the
    pills, the reading panels and these charts can never disagree. */
@@ -99,6 +99,13 @@ function MetricsChart({ tokenizer }) {
 
     const [data, setData] = useState(null);
     const [error, setError] = useState("");
+
+    /*
+        The charts used to swap silently: the old tokenizer's slices stayed
+        on screen, at full clarity, until the new numbers happened to land.
+        This is what the blur and the wheel are driven by.
+    */
+    const [loading, setLoading] = useState(false);
     const [measure, setMeasure] = useState("fertility");
 
     /* Which language the pointer is on, and where to put the card. */
@@ -108,12 +115,11 @@ function MetricsChart({ tokenizer }) {
     /* Starts false so the slices grow in from nothing on first paint. */
     const [grown, setGrown] = useState(false);
 
-    /* True while a tokenizer is being fetched. The old numbers are cleared
-       the moment it goes true - these charts belong to one tokenizer, so
-       showing last one's figures under a new name would be a lie. */
-    const [loading, setLoading] = useState(false);
-
     const requestRef = useRef(0);
+
+    /* Whether anything has ever been drawn, so a tokenizer switch does not
+       collapse the slices to nothing behind the blur. */
+    const drawnRef = useRef(false);
 
     useEffect(() => {
 
@@ -130,10 +136,18 @@ function MetricsChart({ tokenizer }) {
         const id = requestRef.current + 1;
         requestRef.current = id;
 
-        setGrown(false);
+        /*
+            Only collapse the slices on the very first load, where growing
+            them in is the point. On a later switch the previous tokenizer's
+            chart stays on screen, blurred, and morphs into the new one -
+            collapsing it would leave an empty box behind the blur.
+        */
+        if (!drawnRef.current) {
+            setGrown(false);
+        }
+
         setError("");
         setLoading(true);
-        setData(null);
 
         getMetrics(tokenizer)
             .then((result) => {
@@ -144,6 +158,8 @@ function MetricsChart({ tokenizer }) {
 
                 setData(result);
                 setLoading(false);
+
+                drawnRef.current = true;
 
                 /* Next frame, so the transition has something to run from. */
                 requestAnimationFrame(() => setGrown(true));
@@ -157,7 +173,12 @@ function MetricsChart({ tokenizer }) {
 
                 setData(null);
                 setLoading(false);
-                setError(err.message || "Could not load metrics.");
+
+                drawnRef.current = false;
+
+                setError(
+                    friendlyError(err) || "Could not load metrics."
+                );
 
             });
 
@@ -173,34 +194,20 @@ function MetricsChart({ tokenizer }) {
 
     }
 
-    if (loading) {
+    if (!data) {
+
+        if (!loading) {
+            return null;
+        }
 
         return (
-            <section className="charts-box">
-
-                <div className="charts-head">
-                    <h2>All eight languages at once</h2>
-                    <p>Loading {tokenizer}&hellip;</p>
+            <section className="charts-box is-first-load">
+                <div className="charts-overlay">
+                    <span className="spinner is-big"></span>
+                    <span>Loading all eight languages at once&hellip;</span>
                 </div>
-
-                {/* Empty frames in the right shape, so the page does not
-                    jump when the real charts arrive. */}
-                <div className="charts-grid">
-                    <div className="chart-card">
-                        <div className="chart-skeleton is-ring"></div>
-                    </div>
-                    <div className="chart-card">
-                        <div className="chart-skeleton is-ring"></div>
-                    </div>
-                </div>
-
             </section>
         );
-
-    }
-
-    if (!data) {
-        return null;
     }
 
     /*
@@ -272,20 +279,12 @@ function MetricsChart({ tokenizer }) {
         const pad = Math.min(0.016, span / 8);
         const mid = angle + span / 2;
 
-        /* The share, printed on the slice itself when the slice is wide
-           enough to hold it. Anything narrower is left to the legend. */
-        const labelRadius = (DONUT_INNER + DONUT_OUTER) / 2;
-
         const slice = {
             name: name,
             path: sector(DONUT_INNER, DONUT_OUTER, angle + pad, angle + span - pad),
             dx: Math.cos(mid) * 12,
             dy: Math.sin(mid) * 12,
-            delay: index * 55,
-            share: (data[name].token_count / total * 100).toFixed(1) + "%",
-            roomForLabel: span > 0.34,
-            labelX: CENTRE + labelRadius * Math.cos(mid),
-            labelY: CENTRE + labelRadius * Math.sin(mid) + 4
+            delay: index * 55
         };
 
         angle = angle + span;
@@ -341,67 +340,6 @@ function MetricsChart({ tokenizer }) {
     const wordRank = byWord.indexOf(cheapest) + 1;
     const costRank = byTokens.indexOf(bestPerWord) + 1;
 
-    /*
-        The sentence has to stay true for any tokenizer, so it is built
-        from the numbers rather than written out. Three cases:
-
-        - the two measures agree, and there is nothing to explain;
-        - they disagree across language families, which is the orthography
-          story (conjunctive Nguni versus disjunctive Sotho-Tswana);
-        - they disagree inside one family, where that explanation would be
-          wrong, so it is not offered.
-    */
-    const agree = bestPerWord === cheapest;
-
-    const sameFamily =
-        FAMILY[bestPerWord] &&
-        FAMILY[bestPerWord] === FAMILY[cheapest];
-
-    let note;
-
-    if (southAfrican.length < 2) {
-
-        note = null;
-
-    }
-    else if (agree) {
-
-        note = (
-            <>
-                <b>{bestPerWord}</b> has both the shortest petal and the
-                smallest slice &mdash; for this tokenizer the per-word score
-                and the actual bill agree.
-            </>
-        );
-
-    }
-    else {
-
-        note = (
-            <>
-                On the wheel <b>{bestPerWord}</b> has the shortest petal
-                &mdash; the best tokens-per-word score. On the doughnut it
-                still takes {costRank === 1
-                    ? "the biggest slice of all"
-                    : `the ${costRank}${ordinal(costRank)} biggest slice`}.
-                {" "}
-                <b>{cheapest}</b> does the opposite: {wordRank === 1
-                    ? "the worst score per word"
-                    : `${wordRank}${ordinal(wordRank)} per word`}, yet the
-                smallest slice of the bill.
-                {" "}
-                {sameFamily
-                    ? `Per-word divides by written words, so it rewards a language
-                       for writing longer ones - which is not the same thing as
-                       costing less to tokenize.`
-                    : `Per-word divides by spaces, and ${FAMILY[bestPerWord]} and
-                       ${FAMILY[cheapest]} do not put their spaces in the same
-                       places.`}
-            </>
-        );
-
-    }
-
     /* ---------- one wedge, used by both charts ---------- */
 
     function wedge(item, scale) {
@@ -443,14 +381,21 @@ function MetricsChart({ tokenizer }) {
     }
 
     return (
-        <section className="charts-box">
+        <section
+            className={"charts-box" + (loading ? " is-busy" : "")}
+        >
+
+            {/* Blurs everything behind it, so nobody reads the old
+                tokenizer's slices as if they were the new one's. */}
+            {loading && (
+                <div className="charts-overlay">
+                    <span className="spinner is-big"></span>
+                    <span>Loading all eight languages at once&hellip;</span>
+                </div>
+            )}
 
             <div className="charts-head">
                 <h2>All eight languages at once</h2>
-                <p>
-                    Same tokenizer, same sentences &mdash; hover anything
-                    and it lights up in both charts.
-                </p>
             </div>
 
             <div className="charts-grid">
@@ -468,20 +413,6 @@ function MetricsChart({ tokenizer }) {
                         aria-label="Share of total tokens by language"
                     >
                         {donutSlices.map((slice) => wedge(slice, 1))}
-
-                        {donutSlices
-                            .filter((slice) => slice.roomForLabel)
-                            .map((slice) => (
-                                <text
-                                    key={slice.name}
-                                    className="chart-slice-label"
-                                    x={slice.labelX}
-                                    y={slice.labelY}
-                                    textAnchor="middle"
-                                >
-                                    {slice.share}
-                                </text>
-                            ))}
 
                         <text
                             className="chart-hub"
@@ -587,9 +518,16 @@ function MetricsChart({ tokenizer }) {
                 ))}
             </div>
 
-            {note && (
-                <p className="chart-note">{note}</p>
-            )}
+            <p className="chart-note">
+                On the wheel <b>{bestPerWord}</b> has the shortest petal
+                &mdash; the best tokens-per-word score. On the doughnut it
+                still takes the {costRank}{ordinal(costRank)} biggest slice.
+                {" "}
+                <b>{cheapest}</b> does the opposite: {wordRank}
+                {ordinal(wordRank)} per word, yet the smallest slice of the
+                bill. Per-word divides by spaces, and the two families do not
+                put their spaces in the same places.
+            </p>
 
             {/* Hover card */}
             <div
