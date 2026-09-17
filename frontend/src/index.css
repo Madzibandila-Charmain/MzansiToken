@@ -3168,3 +3168,475 @@ body {
     .chart-skeleton { animation: none; }
 
 }
+/* =========================================================
+   STATUS LINE - Mukovhe Ranwashe (RNWMUK001)
+   The status line used to be one short word like "ready", so
+   it was set to never wrap. It now carries whatever the
+   backend says, which can be a full sentence, so it has to be
+   allowed to wrap or it runs off the side of the page.
+   ========================================================= */
+
+.selection-status {
+    align-items: flex-start;
+
+    white-space: normal;
+}
+
+.selection-status .status-dot {
+    flex: none;
+
+    margin-top: 5px;
+}
+
+.status-text {
+    min-width: 0;
+
+    line-height: 1.5;
+
+    overflow-wrap: anywhere;
+}
+
+/* The fix for a gated or missing model is on Hugging Face, so the
+   link has to look like a link and not like more error text. */
+.status-link {
+    color: inherit;
+
+    font-weight: 700;
+
+    text-decoration: underline;
+    text-underline-offset: 2px;
+
+    /* An address is one long word, so it has to be allowed to break or it
+       pushes the whole control bar sideways. */
+    overflow-wrap: anywhere;
+}
+
+.status-link:hover {
+    text-decoration-thickness: 2px;
+}
+
+/* =========================================================
+   COMPARE CHARTS - Mukovhe Ranwashe (RNWMUK001)
+   ========================================================= */
+
+.compare-charts {
+    position: relative;
+
+    width: calc(100% - 40px);
+    max-width: 1250px;
+
+    margin: 0 auto 60px;
+    padding: 26px 30px 18px;
+
+    box-sizing: border-box;
+
+    background: oklch(0.99 0.008 242 / 0.84);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 18px;
+
+    box-shadow:
+        0 18px 45px oklch(0.25 0.025 252 / 0.08),
+        0 4px 14px oklch(0.25 0.025 252 / 0.04);
+
+    backdrop-filter: blur(14px);
+}
+
+.compare-body {
+    transition: filter .25s ease, opacity .25s ease;
+}
+
+.compare-body.is-loading {
+    filter: blur(7px);
+    opacity: .45;
+
+    pointer-events: none;
+    user-select: none;
+}
+
+.compare-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 16px;
+
+    margin-bottom: 16px;
+}
+
+.compare-head h2 {
+    margin: 0;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+}
+
+.compare-legend {
+    display: flex;
+    gap: 16px;
+
+    margin-left: auto;
+
+    font-size: 12.5px;
+
+    color: oklch(0.45 0.025 252);
+}
+
+.compare-legend i {
+    display: inline-block;
+
+    width: 10px;
+    height: 10px;
+
+    margin-right: 6px;
+
+    border-radius: 50%;
+
+    vertical-align: -1px;
+}
+
+/* ---- headline numbers ---- */
+
+.compare-verdict {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+
+    /* Under the chart, not above it - the chart is the point, these
+       are the summary of what it shows. */
+    margin-top: 18px;
+}
+
+.compare-verdict .stat {
+    display: flex;
+    flex-direction: column;
+
+    padding: 13px 15px;
+
+    background: oklch(1 0 0 / 0.66);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 13px;
+}
+
+.compare-verdict .k {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+
+    color: oklch(0.62 0.02 252);
+}
+
+.compare-verdict .v {
+    margin-top: 5px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 23px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+
+    font-variant-numeric: tabular-nums;
+}
+
+.compare-verdict .v.up   { color: #2f7d4f; }
+.compare-verdict .v.down { color: #b23b3b; }
+
+.compare-verdict .n {
+    margin-top: 2px;
+
+    font-size: 11.5px;
+
+    color: oklch(0.62 0.02 252);
+}
+
+/* ---- measure switcher ---- */
+
+.compare-switch {
+    display: inline-flex;
+    gap: 4px;
+
+    margin-bottom: 16px;
+    padding: 4px;
+
+    background: oklch(0.92 0.015 242 / 0.7);
+    border-radius: 12px;
+}
+
+.compare-switch button {
+    padding: 6px 13px;
+
+    border: 0;
+    border-radius: 9px;
+
+    background: transparent;
+
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+
+    color: oklch(0.45 0.025 252);
+
+    cursor: pointer;
+}
+
+.compare-switch button[aria-pressed="true"] {
+    background: #ffffff;
+
+    color: oklch(0.25 0.025 252);
+
+    box-shadow: 0 1px 4px oklch(0.25 0.025 252 / 0.14);
+}
+
+/* ---- the two charts ---- */
+
+.compare-card {
+    padding: 16px 18px 8px;
+
+    background: oklch(1 0 0 / 0.62);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 16px;
+}
+
+.compare-card h3 {
+    margin: 0 0 2px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.compare-card p {
+    margin: 0 0 12px;
+
+    font-size: 12px;
+
+    color: oklch(0.62 0.02 252);
+}
+
+.compare-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+
+    overflow: visible;
+}
+
+/* ---- marks ---- */
+
+.compare-row { cursor: default; transition: opacity .18s ease; }
+.compare-row.is-dim { opacity: .3; }
+
+.compare-grid-line { stroke: oklch(0.90 0.02 242); stroke-width: 1; }
+.compare-zero      { stroke: oklch(0.62 0.02 252); stroke-width: 1; }
+
+.compare-connector {
+    stroke: oklch(0.62 0.02 252);
+    stroke-width: 2;
+    opacity: .4;
+}
+
+.compare-row.is-on .compare-connector { opacity: .75; }
+
+/* A ring of surface colour so overlapping dots stay countable. */
+.compare-dot { stroke: #ffffff; stroke-width: 2; }
+
+.compare-row.is-on .compare-dot {
+    filter: drop-shadow(0 3px 8px oklch(0.25 0.025 252 / .3));
+}
+
+.compare-bar { rx: 3; opacity: .9; }
+.compare-row.is-on .compare-bar { opacity: 1; }
+
+.compare-lang {
+    font-family: "Plus Jakarta Sans", "DM Sans", sans-serif;
+    font-size: 12.5px;
+    font-weight: 500;
+
+    fill: oklch(0.25 0.025 252);
+}
+
+.compare-family {
+    font-family: "Plus Jakarta Sans", "DM Sans", sans-serif;
+    font-size: 10px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+
+    fill: oklch(0.62 0.02 252);
+}
+
+.compare-value,
+.compare-axis {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+
+    fill: oklch(0.45 0.025 252);
+}
+
+.compare-axis { fill: oklch(0.62 0.02 252); font-size: 10.5px; }
+
+.compare-note {
+    max-width: 92ch;
+
+    margin: 18px 0 0;
+    padding: 13px 16px;
+
+    background: oklch(1 0 0 / 0.72);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-left: 4px solid #2f6fd0;
+    border-radius: 13px;
+
+    font-size: 13.5px;
+
+    color: oklch(0.45 0.025 252);
+}
+
+.compare-note b { color: oklch(0.25 0.025 252); }
+
+/* ---- chart shape switcher ---- */
+
+.compare-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+
+/* =========================================================
+   NEW - Mukovhe Ranwashe (RNWMUK001), 17 September 2026
+   What "better" means, the stat tiles, and the spinning
+   wheel that covers a block while it is being refilled.
+   ========================================================= */
+
+/* The line that says which direction is good, before any
+   number below it claims a winner. */
+.compare-meaning {
+    margin: 16px 0 0;
+    padding: 10px 14px;
+
+    background: oklch(0.96 0.02 242 / 0.7);
+
+    border-radius: 11px;
+
+    font-size: 12.5px;
+    line-height: 1.5;
+
+    color: oklch(0.45 0.025 252);
+}
+
+.compare-meaning b {
+    color: oklch(0.25 0.025 252);
+}
+
+/* A tokenizer id is long, so the tile that holds one uses a
+   smaller size than the tiles that hold a percentage. */
+.compare-verdict .v.v-name {
+    font-size: 16px;
+
+    overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------
+   SPINNING WHEEL
+   Used over the compare charts and over each Inspect block.
+   --------------------------------------------------------- */
+
+.spinner {
+    display: inline-block;
+
+    width: 22px;
+    height: 22px;
+
+    box-sizing: border-box;
+
+    border: 2.5px solid oklch(0.86 0.03 240);
+    border-top-color: oklch(0.69 0.19 44);
+    border-radius: 50%;
+
+    animation: spin 0.85s linear infinite;
+}
+
+.spinner.is-big {
+    width: 34px;
+    height: 34px;
+
+    border-width: 3.5px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Someone who has asked their system for less motion gets a
+   pulse instead of a rotation - still clearly "working". */
+@media (prefers-reduced-motion: reduce) {
+
+    .spinner {
+        animation: pulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        50% { opacity: 0.3; }
+    }
+}
+
+/* ---------------------------------------------------------
+   BUSY OVERLAYS
+   The content behind stays in place and is blurred, so the
+   panel does not collapse and jump when new data arrives.
+   --------------------------------------------------------- */
+
+.charts-overlay,
+.block-overlay {
+    position: absolute;
+    inset: 0;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+
+    border-radius: inherit;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    color: oklch(0.35 0.025 252);
+}
+
+.block-overlay {
+    z-index: 2;
+
+    background: oklch(1 0 0 / 0.35);
+}
+
+.block-overlay-text {
+    padding: 5px 12px;
+
+    background: oklch(1 0 0 / 0.85);
+
+    border-radius: 999px;
+
+    font-size: 12px;
+}
+
+.language-tokenization-block {
+    position: relative;
+}
+
+/* Blur everything in the block except the overlay itself. */
+.language-tokenization-block.is-busy > *:not(.block-overlay) {
+    filter: blur(5px);
+    opacity: 0.55;
+
+    pointer-events: none;
+    user-select: none;
+
+    transition: filter 0.25s ease, opacity 0.25s ease;
+}
