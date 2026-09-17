@@ -1,7 +1,14 @@
 /*
     Reusable tokenization and metrics display
     Author: Madzibandila Charmain
+
+    Amended by Mukovhe Ranwashe (RNWMUK001), 17 September 2026: the
+    renderTokens prop is gone. Passing a render function in was only ever a
+    way of reaching the copy of it that lived in the calling page; the shared
+    TokenStream component is imported directly.
 */
+
+import TokenStream from "./TokenStream";
 
 function TokenizationMetrics({
     title,
@@ -9,7 +16,6 @@ function TokenizationMetrics({
     metrics,
     mbi,
     showMbi,
-    renderTokens,
     tokenizerSelector,
     tokenizerType
 }) {
@@ -39,7 +45,7 @@ function TokenizationMetrics({
 
                 <div className="tokenization-text">
 
-                    {renderTokens(tokens)}
+                    <TokenStream tokens={tokens} />
 
                 </div>
 
