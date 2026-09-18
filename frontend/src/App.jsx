@@ -26,34 +26,51 @@ function PageBoundary({ children }) {
     );
 }
 
+/*
+    The lava-lamp layer lives out here, as a sibling of <main>, so a page
+    cannot reach it with a CSS descendant selector. The home page needs it
+    in the flag's colours and behind the map, so the shell carries a class
+    saying which page is open and the stylesheet keys off that.
+*/
+function Shell() {
+
+    const location = useLocation();
+
+    const isHome = location.pathname === "/";
+
+    return (
+        <div className={"app-shell" + (isHome ? " is-home" : "")}>
+
+            <div className="ambient-gradient"></div>
+
+            <Header />
+
+            <main>
+
+                <PageBoundary>
+
+                    <Routes>
+                        <Route path="/" element={<Home />} />
+                        <Route path="/inspect" element={<Inspect />} />
+                        <Route path="/compare" element={<Compare />} />
+                        <Route path="/rank" element={<Rank />} />
+                    </Routes>
+
+                </PageBoundary>
+
+            </main>
+
+        </div>
+    );
+}
+
 function App() {
     return (
         <BrowserRouter>
 
             <AppStateProvider>
 
-                <div className="app-shell">
-
-                    <div className="ambient-gradient"></div>
-
-                    <Header />
-
-                    <main>
-
-                        <PageBoundary>
-
-                            <Routes>
-                                <Route path="/" element={<Home />} />
-                                <Route path="/inspect" element={<Inspect />} />
-                                <Route path="/compare" element={<Compare />} />
-                                <Route path="/rank" element={<Rank />} />
-                            </Routes>
-
-                        </PageBoundary>
-
-                    </main>
-
-                </div>
+                <Shell />
 
             </AppStateProvider>
 

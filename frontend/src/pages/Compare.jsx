@@ -16,7 +16,8 @@ import {
     uploadCorpus,
     tokenizeText,
     compareMBI,
-    getTokenizerInfo
+    getTokenizerInfo,
+    friendlyError,
 } from "../api/client";
 
 import { useAppState } from "../context/AppStateContext";
@@ -28,37 +29,15 @@ import TokenizationMetrics from "../components/TokenizationMetrics";
 import TypeAnything from "../components/TypeAnything";
 import CompareCharts from "../components/CompareCharts";
 
-const GPT2_SPACE = "\u0120";
-const SENTENCEPIECE_SPACE = "\u2581";
-const WORDPIECE_PREFIX = "##";
+import TokenStream from "../components/TokenStream";
+
+import StatusMessage from "../components/StatusMessage";
+
+import { languageColour } from "../components/languageColours";
+
+import { formatTokenizedText } from "../lib/tokenText";
 
 
-function readable(token) {
-
-    if (
-        token.startsWith(GPT2_SPACE) ||
-        token.startsWith(SENTENCEPIECE_SPACE)
-    ) {
-        return {
-            text: token.slice(1),
-            newWord: true
-        };
-    }
-
-    if (
-        token.startsWith(WORDPIECE_PREFIX)
-    ) {
-        return {
-            text: token.slice(2),
-            newWord: false
-        };
-    }
-
-    return {
-        text: token,
-        newWord: false
-    };
-}
 
 function Compare() {
 
@@ -86,7 +65,6 @@ function Compare() {
     */
     const [inputText, setInputText] = useState("");
 
-    const [showCustomize, setShowCustomize] = useState(false);
 
     /*
         Languages and tokenizers provided by the backend.
@@ -185,10 +163,19 @@ function Compare() {
         This keeps Tokenizer 1 and Tokenizer 2 independent.
     */
     const [tokenizerOneLoading, setTokenizerOneLoading] = useState(false);
+    /*
+        The selection status had no failure state at all, so "Language
+        failed" rendered in the green ready style. A failure that looks
+        like a success is worse than no message.
+    */
+    const [selectionFailed, setSelectionFailed] = useState(false);
+
     const [tokenizerOneStatus, setTokenizerOneStatus] = useState("");
+    const [tokenizerOneFailed, setTokenizerOneFailed] = useState(false);
 
     const [tokenizerTwoLoading, setTokenizerTwoLoading] = useState(false);
     const [tokenizerTwoStatus, setTokenizerTwoStatus] = useState("");
+    const [tokenizerTwoFailed, setTokenizerTwoFailed] = useState(false);
 
     const [error, setError] = useState("");
 
@@ -196,6 +183,19 @@ function Compare() {
         File input reference.
     */
     const fileInputRef = useRef(null);
+
+    /*
+        The label read "default", which is the internal name for the
+        built-in corpus and means nothing to a reader. Name what is
+        actually on screen instead - same wording as Inspect.
+    */
+    const corpusLabel = compareSource === "upload"
+        ? `${compareFileName} \u2022 Uploaded corpus \u2022 `
+            + `${compareTokenizerOne || "tokenizer 1"} vs `
+            + `${compareTokenizerTwo || "tokenizer 2"}`
+        : `Built-in corpus \u2022 ${compareLanguage || "no language selected"}`
+            + ` \u2022 ${compareTokenizerOne || "tokenizer 1"} vs `
+            + `${compareTokenizerTwo || "tokenizer 2"}`;
 
     /*
         Load backend options when Compare opens.
@@ -271,7 +271,10 @@ function Compare() {
 
             } catch (err) {
 
-                setError(err.message);
+                setError(
+                    friendlyError(err) ||
+                    "Could not load the backend options."
+                );
 
             } finally {
 
@@ -420,11 +423,16 @@ function Compare() {
             return;
         }
 
+        /*
+            loadDefaultCorpus re-throws now, and an effect cannot catch for
+            us. The message is already in `error` by the time it rejects,
+            so this only stops it surfacing as an unhandled rejection.
+        */
         loadDefaultCorpus(
             compareLanguage,
             compareTokenizerOne,
             compareTokenizerTwo
-        );
+        ).catch(() => {});
 
     }, [
         compareLanguage,
@@ -525,7 +533,10 @@ function Compare() {
 
             } catch (err) {
 
-                setError(err.message);
+                setError(
+                    friendlyError(err) ||
+                    "Could not tokenize the text."
+                );
 
             }
 
@@ -543,121 +554,10 @@ function Compare() {
     /*
         Converts backend tokenized text into an array.
     */
-    function formatTokenizedText(tokenizedText) {
-
-        if (!tokenizedText) {
-            return [];
-        }
-
-        if (Array.isArray(tokenizedText)) {
-            return tokenizedText;
-        }
-
-        if (typeof tokenizedText === "string") {
-
-            return tokenizedText
-                .split(/\n+/)
-                .map((sentence) =>
-                    sentence
-                        .split(/\s+/)
-                        .filter(Boolean)
-                )
-                .filter(
-                    (sentence) =>
-                        sentence.length > 0
-                );
-        }
-
-        return [];
-    }
 
     /*
         Render tokens using the same token-pill style as Inspect.
     */
-    function renderTokens(tokens) {
-
-        if (
-            !tokens ||
-            tokens.length === 0
-        ) {
-            return "Your tokenized text will appear here.";
-        }
-
-        let sentences;
-
-        if (
-            Array.isArray(tokens[0])
-        ) {
-            sentences = tokens;
-        } else {
-            sentences = [
-                tokens
-            ];
-        }
-
-        const visibleSentences =
-            sentences.slice(0, 10);
-
-        return (
-            <>
-                {visibleSentences.map(
-                    (
-                        sentence,
-                        sentenceIndex
-                    ) => (
-
-                        <div
-                            key={`sentence-${sentenceIndex}`}
-                            className="token-sentence"
-                        >
-
-                            {sentence.map(
-                                (
-                                    token,
-                                    tokenIndex
-                                ) => {
-
-                                    const colourIndex =
-                                        tokenIndex % 8;
-
-                                    const {
-                                        text,
-                                        newWord
-                                    } = readable(
-                                        Array.isArray(token)
-                                            ? token.join("")
-                                            : String(token)
-                                    );
-
-                                    return (
-
-                                        <span
-                                            key={`${sentenceIndex}-${tokenIndex}-${token}`}
-                                            className={
-                                                `token-pill token-colour-${colourIndex}` +
-                                                (
-                                                    newWord
-                                                        ? " token-new-word"
-                                                        : ""
-                                                )
-                                            }
-                                            title={String(token)}
-                                        >
-                                            {text}
-                                        </span>
-
-                                    );
-
-                                }
-                            )}
-
-                        </div>
-
-                    )
-                )}
-            </>
-        );
-    }
 
     /*
         Converts backend metrics into the Compare format.
@@ -793,7 +693,19 @@ function Compare() {
 
         } catch (err) {
 
-            setError(err.message);
+            setError(
+                friendlyError(err) ||
+                "Could not load the corpus."
+            );
+
+            /*
+                Re-thrown on purpose. This was swallowed here, so the
+                caller's catch never ran and handleLanguageChange went on
+                to report "ready" for a load that had failed - a green
+                status line over no data. Inspect's version has always
+                re-thrown; this one did not.
+            */
+            throw err;
 
         } finally {
 
@@ -865,10 +777,18 @@ function Compare() {
                 err
             );
 
-            setError(
-                err.message ||
-                "Could not process the uploaded corpus."
-            );
+            const detail =
+                friendlyError(err) ||
+                "Could not process the uploaded corpus.";
+
+            setError(detail);
+
+            setSelectionFailed(true);
+
+            setSelectionStatus(detail);
+
+            /* Same reason as loadDefaultCorpus: the caller has to know. */
+            throw err;
 
         } finally {
 
@@ -890,12 +810,20 @@ function Compare() {
             return;
         }
 
-        await processUploadedCorpus(
-            file,
-            compareLanguage,
-            compareTokenizerOne,
-            compareTokenizerTwo
-        );
+        /* Same reason: the handler owns the message, not the browser. */
+        try {
+
+            await processUploadedCorpus(
+                file,
+                compareLanguage,
+                compareTokenizerOne,
+                compareTokenizerTwo
+            );
+
+        }
+        catch {
+            /* Already reported by processUploadedCorpus. */
+        }
     }
 
     /*
@@ -911,6 +839,8 @@ function Compare() {
         setCompareLanguage(newLanguage);
 
         setSelectionLoading(true);
+        setSelectionFailed(false);
+
         setSelectionType("language");
         setSelectionStatus("Loading language...");
 
@@ -936,17 +866,29 @@ function Compare() {
                 );
             }
 
+            setSelectionFailed(false);
+
             setSelectionStatus(
-                "Language ready"
+                `${newLanguage} ready.`
             );
 
         } catch (err) {
 
-            setError(err.message);
-
-            setSelectionStatus(
-                "Language failed"
+            console.error(
+                "Language loading error:",
+                err
             );
+
+            /* What the backend said, not "Language failed". */
+            const detail =
+                friendlyError(err) ||
+                "Could not load the language corpus.";
+
+            setError(detail);
+
+            setSelectionFailed(true);
+
+            setSelectionStatus(detail);
 
         } finally {
 
@@ -988,6 +930,8 @@ function Compare() {
         }
 
         setTokenizerOneLoading(true);
+
+        setTokenizerOneFailed(false);
 
         setTokenizerOneStatus(
             "Loading tokenizer 1..."
@@ -1065,21 +1009,33 @@ function Compare() {
                 newTokenizer
             );
 
+            setTokenizerOneFailed(false);
+
             setTokenizerOneStatus(
-                "Tokenizer 1 is ready"
+                `${newTokenizer} ready.`
             );
 
         }
         catch (err) {
 
-            setTokenizerOneStatus(
-            "Tokenizer 1 not available."
+            console.error(
+                "Tokenizer 1 loading error:",
+                err
             );
 
-            setError(
-                err.message ||
-                "Could not load tokenizer 1."
-            );
+            /*
+                The backend says exactly what is wrong. The old flat
+                sentence threw that away, so every failure looked the same.
+            */
+            const detail =
+                friendlyError(err) ||
+                "Could not load tokenizer 1.";
+
+            setError(detail);
+
+            setTokenizerOneFailed(true);
+
+            setTokenizerOneStatus(detail);
 
         }
         finally {
@@ -1121,6 +1077,8 @@ function Compare() {
         }
 
         setTokenizerTwoLoading(true);
+
+        setTokenizerTwoFailed(false);
 
         setTokenizerTwoStatus(
             "Loading tokenizer 2..."
@@ -1197,21 +1155,29 @@ function Compare() {
                 newTokenizer
             );
 
+            setTokenizerTwoFailed(false);
+
             setTokenizerTwoStatus(
-                "Tokenizer 2 is ready"
+                `${newTokenizer} ready.`
             );
 
         }
         catch (err) {
 
-            setTokenizerTwoStatus(
-                "Tokenizer 2 not available."
+            console.error(
+                "Tokenizer 2 loading error:",
+                err
             );
 
-            setError(
-                err.message ||
-                "Could not load tokenizer 2."
-            );
+            const detail =
+                friendlyError(err) ||
+                "Could not load tokenizer 2.";
+
+            setError(detail);
+
+            setTokenizerTwoFailed(true);
+
+            setTokenizerTwoStatus(detail);
 
         }
         finally {
@@ -1251,17 +1217,28 @@ function Compare() {
                 fileInputRef.current.value = "";
             }
 
+            setSelectionFailed(false);
+
             setSelectionStatus(
-                "Default corpus ready"
+                "Built-in corpus ready."
             );
 
         } catch (err) {
 
-            setError(err.message);
-
-            setSelectionStatus(
-                "Default corpus failed"
+            console.error(
+                "Default corpus error:",
+                err
             );
+
+            const detail =
+                friendlyError(err) ||
+                "Could not load the built-in corpus.";
+
+            setError(detail);
+
+            setSelectionFailed(true);
+
+            setSelectionStatus(detail);
 
         } finally {
 
@@ -1293,22 +1270,72 @@ function Compare() {
                     language and corpus.
                 </p>
 
-                <button
-                    className="customize-button"
-                    onClick={() =>
-                        setShowCustomize(!showCustomize)
-                    }
-                >
-                    {showCustomize
-                        ? "Close"
-                        : "Customize"}
-                </button>
-
             </section>
 
-            {/* Tokenizer Selection */}
+            {/* Corpus language, as pills.
 
-            <section className="compare-tokenizer-filter">
+                It used to live only inside the Customize panel, so the one
+                thing that decides what both tokenizers are reading was
+                hidden behind a button. Same coloured pills as Inspect, and
+                the colour is the one that language carries in every chart. */}
+
+            <section className="compare-setup">
+
+                <div className="compare-tokenizer-filter-heading">
+                    Corpus language
+                </div>
+
+                <div className="language-pills">
+
+                    {languages.map((item) => (
+
+                        <button
+                            key={item}
+                            type="button"
+                            className={`language-pill ${
+                                compareLanguage === item
+                                    ? "is-selected"
+                                    : ""
+                            }`}
+                            onClick={() =>
+                                handleLanguageChange(item)
+                            }
+                            disabled={
+                                selectionLoading ||
+                                loading ||
+                                tokenizerOneLoading ||
+                                tokenizerTwoLoading ||
+                                compareSource === "upload"
+                            }
+                        >
+
+                            <span
+                                className="pill-dot"
+                                style={{
+                                    background: languageColour(item)
+                                }}
+                            ></span>
+
+                            {item}
+
+                        </button>
+
+                    ))}
+
+                </div>
+
+                {compareSource === "upload" && (
+                    <div className="selection-status">
+                        <span className="status-dot"></span>
+                        <span>
+                            Language is off while an uploaded corpus is active.
+                        </span>
+                    </div>
+                )}
+
+                {/* Tokenizer Selection - same card, because picking a
+                    language and picking two tokenizers is one decision:
+                    what is being compared, and on what. */}
 
                 <div className="compare-tokenizer-filter-heading">
                     Compare Tokenizers
@@ -1409,12 +1436,9 @@ function Compare() {
 
                             <div
                                 className={`selection-status ${
-                                    tokenizerOneStatus ===
-                                    "Tokenizer 1 not available."
+                                    tokenizerOneFailed
                                         ? "is-error"
-                                        : tokenizerOneStatus.startsWith(
-                                            "Loading "
-                                        )
+                                        : tokenizerOneLoading
                                             ? "is-loading"
                                             : "is-ready"
                                 }`}
@@ -1422,9 +1446,11 @@ function Compare() {
 
                                 <span className="status-dot"></span>
 
-                                <span>
-                                    {tokenizerOneStatus}
-                                </span>
+                                <StatusMessage
+                                    text={tokenizerOneStatus}
+                                    failed={tokenizerOneFailed}
+                                    modelName={tokenizerOneInput}
+                                />
 
                             </div>
 
@@ -1523,12 +1549,9 @@ function Compare() {
 
                             <div
                                 className={`selection-status ${
-                                    tokenizerTwoStatus ===
-                                    "Tokenizer 2 not available."
+                                    tokenizerTwoFailed
                                         ? "is-error"
-                                        : tokenizerTwoStatus.startsWith(
-                                            "Loading "
-                                        )
+                                        : tokenizerTwoLoading
                                             ? "is-loading"
                                             : "is-ready"
                                 }`}
@@ -1536,9 +1559,11 @@ function Compare() {
 
                                 <span className="status-dot"></span>
 
-                                <span>
-                                    {tokenizerTwoStatus}
-                                </span>
+                                <StatusMessage
+                                    text={tokenizerTwoStatus}
+                                    failed={tokenizerTwoFailed}
+                                    modelName={tokenizerTwoInput}
+                                />
 
                             </div>
 
@@ -1550,62 +1575,6 @@ function Compare() {
 
             </section>
 
-            {/* Customize Panel */}
-
-            {showCustomize && (
-
-                <div className="customize-panel">
-
-                    <div className="customize-section">
-
-                        <h2>
-                            Corpus language
-                        </h2>
-
-                        <div className="round-options">
-
-                            {languages.map((item) => (
-
-                                <button
-                                    key={item}
-                                    className={`round-option ${
-                                        compareLanguage === item
-                                            ? "selected"
-                                            : ""
-                                    }`}
-                                    onClick={() =>
-                                        handleLanguageChange(item)
-                                    }
-                                    disabled={
-                                        selectionLoading ||
-                                        loading
-                                    }
-                                >
-                                    {item}
-                                </button>
-
-                            ))}
-
-                        </div>
-
-                    </div>
-
-                    <div className="selection-summary">
-
-                        <span>
-                            {compareLanguage}
-                        </span>
-
-                        <span>
-                            Comparing two tokenizers
-                        </span>
-
-                    </div>
-
-                </div>
-
-            )}
-
             {/* Error */}
 
             {error && (
@@ -1616,16 +1585,16 @@ function Compare() {
 
             )}
 
-            {/* Mzansi Explorer */}
+            {/* Corpus tokenization */}
 
             <section className="compare-corpus-box">
 
                 <div className="compare-corpus-heading">
-                    Mzansi Explorer • Corpus Tokenization
+                    Corpus Tokenization
                 </div>
 
                 <p className="compare-corpus-label">
-                    {compareFileName} • {compareLanguage}
+                    {corpusLabel}
                 </p>
 
                 <CorpusUpload
@@ -1650,17 +1619,20 @@ function Compare() {
 
                     <div
                         className={`compare-selection-status ${
-                            selectionLoading
-                                ? "is-loading"
-                                : "is-ready"
+                            selectionFailed
+                                ? "is-error"
+                                : selectionLoading
+                                    ? "is-loading"
+                                    : "is-ready"
                         }`}
                     >
 
                         <span className="compare-status-dot"></span>
 
-                        <span>
-                            {selectionStatus}
-                        </span>
+                        <StatusMessage
+                            text={selectionStatus}
+                            failed={selectionFailed}
+                        />
 
                     </div>
 
@@ -1683,8 +1655,17 @@ function Compare() {
                             mbiComparison.tokenizerA
                         }
                         showMbi={hasMbiMetrics()}
-                        renderTokens={renderTokens}
                         tokenizerType="1"
+                        busy={
+                            tokenizerOneLoading ||
+                            selectionLoading
+                        }
+                        busyLabel={
+                            tokenizerOneLoading
+                                ? `Loading ${tokenizerOneInput
+                                    || "tokenizer 1"}\u2026`
+                                : `Loading ${compareLanguage}\u2026`
+                        }
                     />
 
                     {/* TOKENIZER 2 */}
@@ -1700,8 +1681,17 @@ function Compare() {
                             mbiComparison.tokenizerB
                         }
                         showMbi={hasMbiMetrics()}
-                        renderTokens={renderTokens}
                         tokenizerType="2"
+                        busy={
+                            tokenizerTwoLoading ||
+                            selectionLoading
+                        }
+                        busyLabel={
+                            tokenizerTwoLoading
+                                ? `Loading ${tokenizerTwoInput
+                                    || "tokenizer 2"}\u2026`
+                                : `Loading ${compareLanguage}\u2026`
+                        }
                     />
 
                 </div>
@@ -1732,7 +1722,6 @@ function Compare() {
                         metrics: typedTokenizerTwoMetrics
                     }
                 ]}
-                renderTokens={renderTokens}
             />
 
         </div>

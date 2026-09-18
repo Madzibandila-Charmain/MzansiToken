@@ -413,26 +413,27 @@ export async function getSentenceCount(
 
 // COMPARE TOKENIZERS
 
+/*
+    This POSTed to /compare with a JSON body, but the backend serves
+    GET /compare?model_a=...&model_b=... - a guaranteed 405 the moment
+    anything called it. Nothing does today, because CompareCharts reads
+    GET /metrics/{model} twice instead, so the mismatch sat here unnoticed.
+    Corrected to the route that exists.
+*/
 export async function compareTokenizers(
     tokenizerA,
     tokenizerB,
     signal
 ) {
 
+    const params = new URLSearchParams({
+        model_a: tokenizerA,
+        model_b: tokenizerB,
+    });
+
     const response = await fetch(
-        `${API_BASE_URL}/compare`,
+        `${API_BASE_URL}/compare?${params.toString()}`,
         {
-            method: "POST",
-
-            headers: {
-                "Content-Type": "application/json",
-            },
-
-            body: JSON.stringify({
-                tokenizer_a: tokenizerA,
-                tokenizer_b: tokenizerB,
-            }),
-
             signal,
         }
     );

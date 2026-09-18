@@ -1,0 +1,160 @@
+/*
+    SouthAfricaMap.jsx
+    Author: Mukovhe Ranwashe (RNWMUK001)
+    Date: 17 September 2026
+
+    The country, with the flag inside it.
+
+    The outline is real geometry, not a drawing: it is Natural Earth's
+    1:50m country boundary (public domain), projected with a Mercator fit
+    to this box and rounded to one decimal. Lesotho is cut out of it,
+    because it genuinely is a hole in South Africa rather than part of it.
+
+    The flag is constructed rather than traced, so the proportions are the
+    specified ones: the green band is a fifth of the height, each
+    fimbriation a fifteenth, and the pall converges a third of the way
+    along. The two triangle apexes are offset along the axis by
+    t / sin(phi), which is what puts the gold band at an even width all the
+    way down the V instead of pinching at the point.
+*/
+
+/* Pantone-matched values used by Brand South Africa. */
+export const FLAG = {
+    green: "#007749",
+    gold: "#FFB81C",
+    red: "#E03C31",
+    blue: "#001489",
+    black: "#000000",
+    white: "#FFFFFF"
+};
+
+const W = 520;
+const H = 440;
+
+/* Flag construction, all derived from the height. */
+const G = H / 5;            /* green band */
+const F = H / 15;           /* each fimbriation */
+const AX = W / 3;           /* where the Y converges */
+
+const PHI = Math.atan((H / 2) / AX);
+const APEX_GOLD = AX - (G / 2 + F) / Math.sin(PHI);
+const APEX_BLACK = APEX_GOLD - F / Math.sin(PHI);
+
+/* The pall: two arms to the hoist corners and one band to the fly. Drawn
+   as a stroke, so one width change moves every edge together. */
+const PALL = `M ${AX} ${H / 2} L -4 -4 M ${AX} ${H / 2} L -4 ${H + 4} M ${AX} ${H / 2} L ${W + 4} ${H / 2}`;
+
+const ZA_PATH = "M399.4,7.6L399.8,7.5L408.3,6L415.4,7.2L424.0,10.7L432.0,11.9L439.3,10.9L445.4,10.7L450.1,11.2L453.8,12.4L456.4,14.2L456.7,15.9L456.9,16.7L458.3,21.2L460.4,27.8L461.8,34.0L463.7,42.5L463.7,47.2L464.1,49.0L465.8,51.3L468.0,55.3L468.7,57.5L469.5,59.2L471.7,62.3L473.4,67.1L474.9,73.5L476.2,76.5L476.6,78.1L477.2,80.8L477.2,86.6L477.2,93.3L477.2,100.8L477.3,107.1L477.1,110.2L477.2,119.1L475.2,123.8L475.5,127.5L476.1,129.9L475.3,130.2L473.9,130.7L466.9,126.9L460.3,122.9L459.3,122.8L457.9,123.2L454.1,126.1L450.6,130.6L449.0,134.5L446.3,138.5L442.1,144.9L441.7,146.4L441.6,151.6L441.8,156.6L442.2,157.3L444.5,157.6L446.1,161.7L449.8,168.2L456.1,172.4L461.9,174.3L470.0,174.8L476.4,174.7L476.0,170.2L476.6,163.2L477.5,158.4L478.3,158.2L480.0,158.6L481.0,159.1L483.6,158.9L488.1,159.9L491.8,159.8L495.1,159.6L500.7,159.5L503.9,159.5L502.8,167.1L498.5,179.2L497.1,184.7L493.5,204.6L488.8,214.7L486.1,218.8L478.4,226.2L476.3,227.7L474.4,228.7L471.1,229.5L457.9,244.5L453.0,251.8L448.6,262.3L444.4,268.2L438.0,280.7L432.3,290.3L426.9,299.1L417.4,311.4L413.3,314.9L410.4,316.5L402.9,323.6L392.3,335.1L384.3,345.3L372.3,356.9L365.3,362.0L354.7,372.1L351.9,373.6L340.0,382.9L331.6,388.7L317.8,395.3L312.3,397.2L299.3,395.4L293.9,396.4L289.3,400.4L288.8,406.2L286.9,407.0L284.0,406.8L275.0,404.4L270.0,404.8L267.2,407.9L264.8,411.8L258.0,412.0L245.7,408.0L231.3,405.5L228.0,405.2L221.0,408.2L218.6,408.6L208.4,408.0L202.7,406.1L197.3,406.1L193.2,407.7L188.2,408.2L174.7,419.1L167.6,419.1L161.6,420.4L158.6,420.4L153.0,418.9L150.9,418.9L147.7,419.6L144.5,421.5L137.3,422.4L134.5,424.0L122.2,434L119.4,433.6L117.1,432.9L110.8,432.9L103.5,427.5L100.7,427.9L101.5,426.2L101.7,423.4L100.2,421.4L99.1,420.5L96.4,420.7L94.9,418.3L90.5,418.1L89.0,418.7L86.8,418.8L86.7,416.4L86.8,414.9L86.7,412.5L86.2,409.6L84.5,408.7L83.2,408.3L80.2,408.5L78.1,408.8L77.0,409.7L76.0,411.8L76.0,418.2L74.3,416.4L72.6,412.5L72.1,408.4L72.7,403.5L76.1,401.7L75.7,398.5L75.1,395.7L71.4,388.4L70.0,385.1L66.9,382.9L64.4,377.5L62.0,375.6L61.0,371.8L58.6,368.8L57.8,364.1L59.1,361.4L61.2,359.9L63.3,362.2L65.9,361.3L69.7,357.9L71.9,352.7L72,344.5L71.5,339.3L68.5,326.0L67.1,323.0L60.4,313.5L52.7,300.8L42.8,281.1L38.1,269.2L31.1,245.4L24.8,232.0L17.1,219.5L16.1,218.7L17.3,217.2L21.5,214.3L23.3,213.5L24.4,213.9L25.3,213.1L26.3,211.2L26.5,209.4L26.9,206.8L27.9,205.2L28.8,202.2L30.6,200.2L34.2,198.9L37.0,200.7L38.1,202.4L38.7,204.6L39.8,205.6L41.8,205.6L43.2,207.0L44.0,209.8L43.8,211.8L42.7,213.1L42.8,214.8L44.3,216.8L44.9,218.8L45.8,221.5L50.9,222.9L53.3,223.8L57.5,224.1L61.5,225.3L65.3,227.3L71.5,227.8L80.0,226.8L87.1,227.2L92.6,229.2L96.7,229.6L99.2,228.3L100.3,226.5L100.0,224.1L101.2,222.6L103.9,222.0L106.2,220.2L107.9,217.2L111.8,214.9L117.9,213.0L121.0,213.1L121.0,208.3L121.0,193.4L121.0,178.5L121.0,163.6L121.0,148.9L121.0,134.1L121.0,119.5L121.0,104.9L121.0,91.1L122.4,92.1L131.8,99.4L134.4,103.2L135.6,105.7L139.6,114.5L142.6,122.5L145.1,128.5L145.3,131.3L145.6,134.0L146.0,135.3L145.7,136.7L144.0,140.0L142.3,142.5L140.2,146.0L139.9,150.5L140.6,155.9L141.9,158.5L143.6,159.4L147.4,158.1L149.9,158.5L153.3,159.5L164.7,158.9L166.1,159.2L170.4,159.6L171.9,159.2L173.2,158.0L174.7,154.8L175.9,153.8L178.4,153.2L181.3,152.4L183.6,150.5L187.4,144.1L194.8,138.5L197.2,137.2L198.7,135.7L199.9,133.6L202.5,126.6L204.6,120.7L205.2,117.9L207.0,113.4L209.2,110.6L211.2,109.0L212.3,108.6L215.0,107.9L218.4,107.2L222.1,108.0L226.0,109.7L230.5,112.6L235.0,116.3L237.1,118.1L239.4,119.0L243.3,119.3L246.0,119.2L250.1,122.8L252.1,123.0L256.8,124.1L262.5,125.3L266.1,125.2L269.9,123.2L272.7,123.1L276.2,123.3L280.2,122.7L283.1,121.9L285.3,120.2L287.2,118.3L289.5,112.8L290.8,108.3L292.8,103.2L295.3,96.3L296.1,91.5L297.0,90.2L300.5,88.7L303.5,87.7L311.4,85.8L313.0,84.8L314.5,82.5L317.9,78.7L322.2,75.5L324.4,73.6L328.4,58.1L328.9,56.2L331.8,52.1L333.6,50.4L334.8,50.4L336.4,49.3L338.5,47.2L341.1,45.8L344.1,45.3L346.0,43.9L346.8,41.6L348.3,40.5L350.6,40.6L351.8,39.8L352.1,38.3L353.4,36.9L355.7,35.9L356.9,34.6L357.0,33.1L359.8,29.4L365.2,23.6L370.2,20.4L375.0,19.7L379.5,18.5L383.8,16.7L387.0,14.0L389.0,10.3L392.5,8.2ZM380.8,269.2L385.6,267.1L387.9,265.7L389.5,264.7L391.5,263.0L392.2,259.0L392.8,255.5L394.4,253.9L396.0,252.7L397.4,251.0L399.0,246.7L400.0,242.6L400.3,240.8L399.6,239.1L398.5,237.2L397.6,234.7L396.3,234.4L393.8,232.9L390.3,230.1L387.2,227.6L384.3,224.1L383.2,223.5L380.4,221.1L379.1,219.7L378.2,218.1L377.5,217.5L376.2,217.9L372.9,218.7L365.9,221.5L361.5,224.2L357.7,227.3L353.9,228.6L351.1,229.6L348.9,233.2L346.7,236.7L344.9,239.7L343.9,241.1L342.9,242.0L341.8,243.9L339.9,247.2L338.0,249.4L335.4,250.5L332.1,252.1L330.9,253.0L330.8,254.3L332.0,257.4L333.2,260.3L335.0,263.8L336.4,266.3L338.5,269.4L339.8,271.2L339.7,274.2L340.1,275.3L340.8,276.6L341.4,276.9L342.0,277.3L343.9,278.2L344.3,278.8L345.6,279.9L346.7,281.8L349.1,284.4L351.6,286.4L356.0,287.2L359.4,287.8L360.6,287.4L361.8,285.8L362.8,283.8L363.1,281.2L364.1,279.9L368.3,273.2L370.6,270.8L371.9,270.7L373.8,270.2L376.0,270.0L377.7,270.2L378.1,270.1Z";
+
+const LESOTHO_PATH = "M380.8,269.2L378.1,270.1L377.7,270.2L376.0,270.0L373.8,270.2L371.9,270.7L370.6,270.8L368.3,273.2L364.1,279.9L363.1,281.2L362.8,283.8L361.8,285.8L360.6,287.4L359.4,287.8L356.0,287.2L351.6,286.4L349.1,284.4L346.7,281.8L345.6,279.9L344.3,278.8L343.9,278.2L342.0,277.3L341.4,276.9L340.8,276.6L340.1,275.3L339.7,274.2L339.8,271.2L338.5,269.4L336.4,266.3L335.0,263.8L333.2,260.3L332.0,257.4L330.8,254.3L330.9,253.0L332.1,252.1L335.4,250.5L338.0,249.4L339.9,247.2L341.8,243.9L342.9,242.0L343.9,241.1L344.9,239.7L346.7,236.7L348.9,233.2L351.1,229.6L353.9,228.6L357.7,227.3L361.5,224.2L365.9,221.5L372.9,218.7L376.2,217.9L377.5,217.5L378.2,218.1L379.1,219.7L380.4,221.1L383.2,223.5L384.3,224.1L387.2,227.6L390.3,230.1L393.8,232.9L396.3,234.4L397.6,234.7L398.5,237.2L399.6,239.1L400.3,240.8L400.0,242.6L399.0,246.7L397.4,251.0L396.0,252.7L394.4,253.9L392.8,255.5L392.2,259.0L391.5,263.0L389.5,264.7L387.9,265.7L385.6,267.1Z";
+
+/*
+    decorative = true is the backdrop use: no drop shadow and no coastline
+    stroke, because both turn muddy once the whole thing is faded back, and
+    a shadow behind a watermark reads as a printing error.
+*/
+function SouthAfricaMap({ title = "South Africa", decorative = false }) {
+
+    return (
+        <svg
+            className={"za-map" + (decorative ? " is-decorative" : "")}
+            viewBox={`0 0 ${W} ${H}`}
+            role="img"
+            aria-label={`Map of ${title}, filled with the national flag`}
+        >
+
+            <defs>
+
+                {/* Everything the flag is painted on is clipped to the
+                    country, so the flag only ever shows inside it. */}
+                <clipPath id="za-clip">
+                    <path d={ZA_PATH} />
+                </clipPath>
+
+                <filter
+                    id="za-lift"
+                    x="-10%"
+                    y="-10%"
+                    width="120%"
+                    height="125%"
+                >
+                    <feDropShadow
+                        dx="0"
+                        dy="10"
+                        stdDeviation="12"
+                        floodColor="#1d2433"
+                        floodOpacity="0.22"
+                    />
+                </filter>
+
+            </defs>
+
+            <g filter={decorative ? undefined : "url(#za-lift)"}>
+
+                <g clipPath="url(#za-clip)">
+
+                    {/* Red over blue */}
+                    <rect
+                        x="0"
+                        y="0"
+                        width={W}
+                        height={H / 2}
+                        fill={FLAG.red}
+                    />
+                    <rect
+                        x="0"
+                        y={H / 2}
+                        width={W}
+                        height={H / 2}
+                        fill={FLAG.blue}
+                    />
+
+                    {/* White fimbriation, then the green over it */}
+                    <path
+                        d={PALL}
+                        fill="none"
+                        stroke={FLAG.white}
+                        strokeWidth={G + 2 * F}
+                    />
+                    <path
+                        d={PALL}
+                        fill="none"
+                        stroke={FLAG.green}
+                        strokeWidth={G}
+                    />
+
+                    {/* Gold first, then black on top of it, which leaves
+                        the gold showing as an even band. */}
+                    <path
+                        d={`M ${APEX_GOLD} ${H / 2} L -4 -4 L -4 ${H + 4} Z`}
+                        fill={FLAG.gold}
+                    />
+                    <path
+                        d={`M ${APEX_BLACK} ${H / 2} L -4 -4 L -4 ${H + 4} Z`}
+                        fill={FLAG.black}
+                    />
+
+                </g>
+
+                {/* Lesotho is a country, not a province - it is cut out
+                    above and outlined here so the hole reads as deliberate. */}
+                <path
+                    className="za-lesotho"
+                    d={LESOTHO_PATH}
+                />
+
+                {/* The coastline last, so it sits over the flag. */}
+                {!decorative && (
+                    <path
+                        className="za-outline"
+                        d={ZA_PATH}
+                    />
+                )}
+
+            </g>
+
+        </svg>
+    );
+}
+
+export default SouthAfricaMap;

@@ -26,192 +26,17 @@ import CorpusUpload from "../components/CorpusUpload";
 
 import TypeAnything from "../components/TypeAnything";
 
-const GPT2_SPACE = "\u0120";
-const SENTENCEPIECE_SPACE = "\u2581";
-const WORDPIECE_PREFIX = "##";
+import TokenStream from "../components/TokenStream";
+
+import MetricCards from "../components/MetricCards";
+
+import StatusMessage from "../components/StatusMessage";
+
+import { formatTokenizedText } from "../lib/tokenText";
 
 /* Two side by side is what fits without scrolling. */
 const MAX_INSPECT_LANGUAGES = 2;
 
-/*
-    The status line wraps now, so a full backend sentence is fine. What is
-    not fine is an unbounded string - a stack trace or an HTML error page
-    would push the whole control bar off the screen - so it is capped.
-*/
-const STATUS_LIMIT = 220;
-
-function shortStatus(text) {
-
-    const value = String(text || "").trim();
-
-    if (value.length <= STATUS_LIMIT) {
-        return value;
-    }
-
-    return `${value.slice(0, STATUS_LIMIT).trimEnd()}...`;
-}
-
-/*
-    The backend writes the Hugging Face address straight into its message
-    ("...accept its terms at https://huggingface.co/meta-llama/Llama-2-7b-hf
-    and set an HF_TOKEN"), so the useful part of the sentence arrives as
-    plain text. This splits the message into the words around each address
-    and the addresses themselves, so the addresses can be rendered as real
-    links instead of something the user has to copy out by hand.
-*/
-const URL_PATTERN = /https?:\/\/[^\s<>"']+/g;
-
-function statusParts(text) {
-
-    const value = shortStatus(text);
-
-    const parts = [];
-
-    let cursor = 0;
-    let match;
-
-    URL_PATTERN.lastIndex = 0;
-
-    while ((match = URL_PATTERN.exec(value)) !== null) {
-
-        let url = match[0];
-
-        /*
-            A sentence usually ends right after the address, and that full
-            stop is not part of the address.
-        */
-        const trailing = url.match(/[.,;:!?)\]]+$/);
-
-        if (trailing) {
-            url = url.slice(0, url.length - trailing[0].length);
-        }
-
-        if (match.index > cursor) {
-            parts.push(value.slice(cursor, match.index));
-        }
-
-        /*
-            Our own backend address appears in the "is the backend running"
-            message. Linking it would invite the user to click something that
-            is, by definition, not answering, so it stays plain text.
-        */
-        if (/^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)/i.test(url)) {
-            parts.push(url);
-        }
-        else {
-            parts.push({ url: url });
-        }
-
-        cursor = match.index + url.length;
-
-        URL_PATTERN.lastIndex = cursor;
-    }
-
-    if (cursor < value.length) {
-        parts.push(value.slice(cursor));
-    }
-
-    return parts;
-}
-
-/*
-    A gated or missing model is fixed on Hugging Face, not in our app, so the
-    status line links straight to the page the user has to visit. Only for
-    those two cases - a dead backend has nothing to do with Hugging Face.
-*/
-function modelPageUrl(name, message) {
-
-    const id = String(name || "").trim();
-
-    if (!/^[\w.-]+(\/[\w.-]+)?$/.test(id)) {
-        return "";
-    }
-
-    const isModelProblem = /gated|licen[cs]e|not be found|does not exist|no such|unknown|invalid/i
-        .test(String(message || ""));
-
-    if (!isModelProblem) {
-        return "";
-    }
-
-    return `https://huggingface.co/${id}`;
-}
-
-/*
-    One status line for every kind of message: plain words stay plain, any
-    address in the message becomes a link, and if the backend named a broken
-    model without giving an address we add one.
-*/
-function StatusMessage({ text, failed, modelName }) {
-
-    const parts = statusParts(text);
-
-    const hasLink = parts.some(
-        (part) => typeof part !== "string"
-    );
-
-    const fallback = hasLink
-        ? ""
-        : modelPageUrl(modelName, text);
-
-    return (
-        <span className="status-text">
-
-            {parts.map((part, index) => (
-
-                typeof part === "string"
-                    ? (
-                        <span key={index}>
-                            {part}
-                        </span>
-                    )
-                    : (
-                        <a
-                            key={index}
-                            className="status-link"
-                            href={part.url}
-                            target="_blank"
-                            rel="noreferrer"
-                        >
-                            {part.url.replace(/^https?:\/\//, "")}
-                        </a>
-                    )
-
-            ))}
-
-            {failed && fallback && (
-                <>
-                    {" "}
-                    <a
-                        className="status-link"
-                        href={fallback}
-                        target="_blank"
-                        rel="noreferrer"
-                    >
-                        Open it on Hugging Face
-                    </a>
-                </>
-            )}
-
-        </span>
-    );
-}
-
-function readable(token) {
-
-    if (
-        token.startsWith(GPT2_SPACE) ||
-        token.startsWith(SENTENCEPIECE_SPACE)
-    ) {
-        return { text: token.slice(1), newWord: true };
-    }
-
-    if (token.startsWith(WORDPIECE_PREFIX)) {
-        return { text: token.slice(2), newWord: false };
-    }
-
-    return { text: token, newWord: false };
-}
 
 function Inspect() {
 
@@ -297,6 +122,14 @@ function Inspect() {
     const [languageStatus, setLanguageStatus] = useState("");
     const [languageFailed, setLanguageFailed] = useState(false);
 
+    /*
+        Which panels are actually waiting on the backend. A single flag made
+        every panel say "Loading English" while isiXhosa was the one being
+        fetched, so the names are tracked instead of a yes/no.
+    */
+    const [busyLanguages, setBusyLanguages] = useState([]);
+    const [busyUpload, setBusyUpload] = useState(false);
+
     /* Stores an error returned by the backend. */
     const [error, setError] = useState("");
 
@@ -312,6 +145,21 @@ function Inspect() {
 
     /* Reference to the actual file input. */
     const fileInputRef = useRef(null);
+
+    /*
+        The label used to read "default", which is the internal name for the
+        built-in corpus and means nothing to a reader. Name the languages
+        actually on screen instead, and keep it correct for one or two.
+    */
+    const shown = selectedLanguages.length
+        ? selectedLanguages
+        : (language ? [language] : []);
+
+    const languageLabel = shown.length === 0
+        ? "no language selected"
+        : shown.length === 1
+            ? shown[0]
+            : `${shown.slice(0, -1).join(", ")} and ${shown[shown.length - 1]}`;
 
     /*
         Save selected languages so they remain unchanged
@@ -820,6 +668,8 @@ function Inspect() {
 
         setSelectionLoading(true);
 
+        setBusyLanguages([newLanguage]);
+
         setLanguageFailed(false);
 
         setLanguageStatus(
@@ -1001,6 +851,9 @@ function Inspect() {
         }
         finally {
 
+            setBusyLanguages([]);
+            setBusyUpload(false);
+
             setSelectionLoading(false);
 
         }
@@ -1169,39 +1022,6 @@ function Inspect() {
 
     }
 
-    function formatTokenizedText(tokenizedText) {
-
-        if (!tokenizedText) {
-            return [];
-        }
-
-        // Backend returned a list of tokens
-
-        if (Array.isArray(tokenizedText)) {
-            return tokenizedText;
-        }
-
-        // Backend returned text as a string
-
-        if (typeof tokenizedText === "string") {
-
-            return tokenizedText
-                .split(/\n+/)
-                .map((sentence) =>
-                    sentence
-                        .split(/\s+/)
-                        .filter(Boolean)
-                )
-                .filter(
-                    (sentence) =>
-                        sentence.length > 0
-                );
-
-        }
-
-        return [];
-
-    }
 
     /* Handled file slection from user computer. */
     async function handleFileChange(event) {
@@ -1350,6 +1170,9 @@ function Inspect() {
 
             setLoading(false);
 
+            setBusyLanguages([]);
+            setBusyUpload(false);
+
             setSelectionLoading(false);
 
         }
@@ -1374,6 +1197,21 @@ function Inspect() {
         }
 
         setSelectionLoading(true);
+
+        /*
+            A tokenizer change really does reload every panel on screen, so
+            here - and only here - they are all marked busy.
+        */
+        if (source === "upload") {
+            setBusyUpload(true);
+        }
+        else {
+            setBusyLanguages(
+                selectedLanguages.length > 0
+                    ? selectedLanguages
+                    : (language ? [language] : [])
+            );
+        }
 
         /*
             Clear the failure flag before the attempt, otherwise the status
@@ -1726,6 +1564,9 @@ function Inspect() {
         }
         finally {
 
+            setBusyLanguages([]);
+            setBusyUpload(false);
+
             setSelectionLoading(
                 false
             );
@@ -1899,6 +1740,9 @@ function Inspect() {
         }
         finally {
 
+            setBusyLanguages([]);
+            setBusyUpload(false);
+
             setSelectionLoading(
                 false
             );
@@ -1908,86 +1752,6 @@ function Inspect() {
     }
 
     // Cycles through the 8 CSS colors for the tokens
-    function renderTokens(tokens) {
-
-        if (
-            !tokens ||
-            tokens.length === 0
-        ) {
-
-            return "Your tokenized text will appear here.";
-
-        }
-
-        let sentences;
-
-        if (
-            Array.isArray(tokens[0])
-        ) {
-
-            sentences =
-                tokens;
-
-        }
-        else {
-
-            sentences = [
-                tokens
-            ];
-
-        }
-
-        const visibleSentences = sentences.slice(0, 10);
-        return (
-            <>
-                {visibleSentences.map(
-                    (
-                        sentence,
-                        sentenceIndex
-                    ) => (
-
-                        <div
-                            key={`sentence-${sentenceIndex}`}
-                            className="token-sentence"
-                        >
-
-                            {sentence.map(
-                                (
-                                    token,
-                                    tokenIndex
-                                ) => {
-
-                                    const colourIndex =
-                                        tokenIndex % 8;
-
-                                    const { text, newWord } =
-                                        readable(
-                                            Array.isArray(token)
-                                                ? token.join("")
-                                                : String(token)
-                                        );
-
-                                    return (
-                                        <span
-                                            key={`${sentenceIndex}-${tokenIndex}-${token}`}
-                                            className={`token-pill token-colour-${colourIndex}` + (newWord ? " token-new-word" : "")}
-                                            title={token}
-                                        >
-                                            {text}
-                                        </span>
-                                    );
-
-                                }
-                            )}
-
-                        </div>
-
-                    )
-                )}
-            </>
-        );
-
-    }
 
     return (
         <>
@@ -2319,14 +2083,14 @@ function Inspect() {
             <section className="corpus-box">
 
                 <div className="corpus-heading">
-                    Mzansi Explorer • Corpus Tokenization
+                    Corpus Tokenization
                 </div>
 
                 <p className="corpus-label">
 
                     {source === "upload"
-                        ? `${fileName} • Uploaded Corpus • ${tokenizer}`
-                        : `${fileName} • ${language} • ${tokenizer}`}
+                        ? `${fileName} \u2022 Uploaded corpus \u2022 ${tokenizer}`
+                        : `Built-in corpus \u2022 ${languageLabel} \u2022 ${tokenizer}`}
 
                 </p>
 
@@ -2354,18 +2118,18 @@ function Inspect() {
                         <div
                             className={
                                 "language-tokenization-block"
-                                + (selectionLoading ? " is-busy" : "")
+                                + (busyUpload ? " is-busy" : "")
                             }
                         >
 
                             {/* A spinning wheel over a blurred block, so it is
                                 obvious the panel is being refilled rather than
                                 showing stale numbers. */}
-                            {selectionLoading && (
+                            {busyUpload && (
                                 <div className="block-overlay">
                                     <span className="spinner"></span>
                                     <span className="block-overlay-text">
-                                        Tokenizing&hellip;
+                                        Loading uploaded corpus&hellip;
                                     </span>
                                 </div>
                             )}
@@ -2393,9 +2157,7 @@ function Inspect() {
 
                                 <div className="tokenization-text">
 
-                                    {renderTokens(
-                                        corpusTokenizedText
-                                    )}
+                                    <TokenStream tokens={corpusTokenizedText} />
 
                                 </div>
 
@@ -2403,79 +2165,9 @@ function Inspect() {
 
                             {/* Tokenization metrics */}
 
-                            <div className="tokenization-metrics">
-
-                                {/* Row 1 - Existing metrics */}
-
-                                <div className="metric-row">
-
-                                    <div className="metric-card">
-
-                                        <span className="metric-name">
-                                            Tokens
-                                        </span>
-
-                                        <span className="metric-value">
-                                            {corpusMetrics.tokens}
-                                        </span>
-
-                                    </div>
-
-                                    <div className="metric-card">
-
-                                        <span className="metric-name">
-                                            Fertility
-                                        </span>
-
-                                        <span className="metric-value">
-
-                                            {Number(
-                                                corpusMetrics.fertility
-                                            ).toFixed(2)}
-
-                                        </span>
-
-                                    </div>
-
-                                    <div className="metric-card">
-
-                                        <span className="metric-name">
-                                            Compression
-                                        </span>
-
-                                        <span className="metric-value">
-
-                                            {Number(
-                                                corpusMetrics.compression
-                                            ).toFixed(2)}
-
-                                        </span>
-
-                                    </div>
-
-                                    <div className="metric-card">
-
-                                        <span className="metric-name">
-                                            Token Premium
-                                        </span>
-
-                                        <span className="metric-value">
-
-                                            {corpusMetrics.token_premium ===
-                                            null
-                                                ? "N/A"
-                                                : Number(
-                                                    corpusMetrics.token_premium
-                                                ).toFixed(2)
-                                            }
-
-                                        </span>
-
-                                    </div>
-
-                                </div>
-
-                            </div>
+                            <MetricCards
+                                metrics={corpusMetrics}
+                            />
 
                         </div>
 
@@ -2489,8 +2181,61 @@ function Inspect() {
                                         selectedLanguage
                                     ];
 
+                                const isBusy =
+                                    busyLanguages.includes(
+                                        selectedLanguage
+                                    );
+
+                                /*
+                                    A language that has just been picked has
+                                    no data yet. Returning null left the user
+                                    with no sign anything was happening, so
+                                    stand an empty panel in its place and put
+                                    the wheel in it.
+                                */
                                 if (!data) {
-                                    return null;
+
+                                    if (!isBusy) {
+                                        return null;
+                                    }
+
+                                    return (
+                                        <div
+                                            key={selectedLanguage}
+                                            className="language-tokenization-block is-busy is-empty"
+                                        >
+
+                                            <div className="block-overlay">
+                                                <span className="spinner"></span>
+                                                <span className="block-overlay-text">
+                                                    Loading {selectedLanguage}&hellip;
+                                                </span>
+                                            </div>
+
+                                            <div className="tokenization-result">
+
+                                                <div className="tokenization-language">
+
+                                                    <span
+                                                        className="swatch"
+                                                        style={{
+                                                            background:
+                                                                languageColour(
+                                                                    selectedLanguage
+                                                                )
+                                                        }}
+                                                    ></span>
+
+                                                    {selectedLanguage}
+
+                                                </div>
+
+                                                <div className="tokenization-text"></div>
+
+                                            </div>
+
+                                        </div>
+                                    );
                                 }
 
                                 return (
@@ -2499,20 +2244,18 @@ function Inspect() {
                                         key={selectedLanguage}
                                         className={
                                             "language-tokenization-block"
-                                            + (selectionLoading
-                                                ? " is-busy"
-                                                : "")
+                                            + (isBusy ? " is-busy" : "")
                                         }
                                     >
 
-                                        {/* Spinning wheel over a blurred
-                                            block while this language is
-                                            being tokenized again. */}
-                                        {selectionLoading && (
+                                        {/* Only the panel that is actually
+                                            waiting on the backend goes busy,
+                                            and it names its own language. */}
+                                        {isBusy && (
                                             <div className="block-overlay">
                                                 <span className="spinner"></span>
                                                 <span className="block-overlay-text">
-                                                    Tokenizing {selectedLanguage}&hellip;
+                                                    Loading {selectedLanguage}&hellip;
                                                 </span>
                                             </div>
                                         )}
@@ -2545,9 +2288,7 @@ function Inspect() {
 
                                             <div className="tokenization-text">
 
-                                                {renderTokens(
-                                                    data.tokenizedText
-                                                )}
+                                                <TokenStream tokens={data.tokenizedText} />
 
                                             </div>
 
@@ -2555,148 +2296,13 @@ function Inspect() {
 
                                         {/* Tokenization metrics */}
 
-                                        <div className="tokenization-metrics">
-
-                                            {/* Row 1 - Existing metrics */}
-
-                                            <div className="metric-row">
-
-                                                <div className="metric-card">
-
-                                                    <span className="metric-name">
-                                                        Tokens
-                                                    </span>
-
-                                                    <span className="metric-value">
-                                                        {data.metrics.tokens}
-                                                    </span>
-
-                                                </div>
-
-                                                <div className="metric-card">
-
-                                                    <span className="metric-name">
-                                                        Fertility
-                                                    </span>
-
-                                                    <span className="metric-value">
-
-                                                        {Number(
-                                                            data.metrics.fertility
-                                                        ).toFixed(2)}
-
-                                                    </span>
-
-                                                </div>
-
-                                                <div className="metric-card">
-
-                                                    <span className="metric-name">
-                                                        Compression
-                                                    </span>
-
-                                                    <span className="metric-value">
-
-                                                        {Number(
-                                                            data.metrics.compression
-                                                        ).toFixed(2)}
-
-                                                    </span>
-
-                                                </div>
-
-                                                <div className="metric-card">
-
-                                                    <span className="metric-name">
-                                                        Token Premium
-                                                    </span>
-
-                                                    <span className="metric-value">
-
-                                                        {data.metrics.token_premium ===
-                                                        null
-                                                            ? "N/A"
-                                                            : Number(
-                                                                data.metrics.token_premium
-                                                            ).toFixed(2)
-                                                        }
-
-                                                    </span>
-
-                                                </div>
-
-                                            </div>
-
-                                            {/* Row 2 - Placeholder metrics */}
-
-                                            {hasMbiMetrics(
+                                        <MetricCards
+                                            metrics={data.metrics}
+                                            mbi={data.mbi}
+                                            showMbi={hasMbiMetrics(
                                                 selectedLanguage
-                                            ) && (
-
-                                                <div className="metric-row metric-row-centered">
-
-                                                    <div className="metric-card">
-
-                                                        <span className="metric-name">
-                                                            Precision
-                                                        </span>
-
-                                                        <span className="metric-value">
-
-                                                            {data.mbi === null
-                                                                ? "N/A"
-                                                                : Number(
-                                                                    data.mbi.precision
-                                                                ).toFixed(2)
-                                                            }
-
-                                                        </span>
-
-                                                    </div>
-
-                                                    <div className="metric-card">
-
-                                                        <span className="metric-name">
-                                                            F1
-                                                        </span>
-
-                                                        <span className="metric-value">
-
-                                                            {data.mbi === null
-                                                                ? "N/A"
-                                                                : Number(
-                                                                    data.mbi.f1
-                                                                ).toFixed(2)
-                                                            }
-
-                                                        </span>
-
-                                                    </div>
-
-                                                    <div className="metric-card">
-
-                                                        <span className="metric-name">
-                                                            Recall
-                                                        </span>
-
-                                                        <span className="metric-value">
-
-                                                            {data.mbi === null
-                                                                ? "N/A"
-                                                                : Number(
-                                                                    data.mbi.recall
-                                                                ).toFixed(2)
-                                                            }
-
-                                                        </span>
-
-                                                    </div>
-
-                                                </div>
-
                                             )}
-
-                                        </div>
+                                        />
 
                                     </div>
 
@@ -2744,7 +2350,6 @@ function Inspect() {
                         metrics: textMetrics
                     }
                 ]}
-                renderTokens={renderTokens}
             />
 
         </>

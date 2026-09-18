@@ -3626,12 +3626,16 @@ body {
     font-size: 12px;
 }
 
-.language-tokenization-block {
+/* Both pages use the same busy treatment, so both panel classes are
+   listed here rather than the rule being written out twice. */
+.language-tokenization-block,
+.tokenization-display-block {
     position: relative;
 }
 
 /* Blur everything in the block except the overlay itself. */
-.language-tokenization-block.is-busy > *:not(.block-overlay) {
+.language-tokenization-block.is-busy > *:not(.block-overlay),
+.tokenization-display-block.is-busy > *:not(.block-overlay) {
     filter: blur(5px);
     opacity: 0.55;
 
@@ -3639,4 +3643,1077 @@ body {
     user-select: none;
 
     transition: filter 0.25s ease, opacity 0.25s ease;
+}
+
+
+/* ---------------------------------------------------------
+   PIE CHARTS - busy state
+   Same treatment as the reading blocks: the charts stay put
+   and go soft, so nobody reads the previous tokenizer's
+   slices as if they belonged to the new one.
+   --------------------------------------------------------- */
+
+.charts-box {
+    position: relative;
+}
+
+/* The hover card is a child of the box and is normally held at
+   opacity 0. Dimming "everything" would drag it UP to 0.5 and make
+   an empty dark pill appear in the corner, so it is excluded. */
+.charts-box.is-busy > *:not(.charts-overlay):not(.chart-tip) {
+    filter: blur(6px);
+    opacity: 0.5;
+
+    pointer-events: none;
+    user-select: none;
+
+    transition: filter 0.25s ease, opacity 0.25s ease;
+}
+
+.charts-box .charts-overlay {
+    z-index: 3;
+
+    background: oklch(1 0 0 / 0.4);
+}
+
+/* Nothing has been drawn yet on a first load, so the box needs a
+   height of its own or the wheel has nowhere to sit. */
+.charts-box.is-first-load {
+    min-height: 260px;
+}
+
+.charts-box.is-busy > .chart-tip {
+    opacity: 0;
+}
+
+/* A language that has been picked but has not arrived yet still needs a
+   panel of roughly the right size, or the grid jumps when it lands. */
+.language-tokenization-block.is-empty {
+    min-height: 210px;
+}
+
+/* =========================================================
+   HOME PAGE - Mukovhe Ranwashe (RNWMUK001), 17 September 2026
+   ========================================================= */
+
+.home {
+    width: calc(100% - 40px);
+    max-width: 1180px;
+
+    margin: 0 auto;
+
+    box-sizing: border-box;
+}
+
+/* ---------------------------------------------------------
+   HERO
+   --------------------------------------------------------- */
+
+.home-hero {
+    position: relative;
+
+    padding: 78px 0 56px;
+
+    text-align: center;
+}
+
+/* The demonstration sits behind the words, faint enough to read
+   through but close enough to notice. */
+.home-hero-tokens {
+    position: absolute;
+    inset: 18px 0 auto 0;
+
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 7px;
+
+    opacity: 0.22;
+
+    pointer-events: none;
+    user-select: none;
+}
+
+.home-hero-token {
+    padding: 7px 14px;
+
+    border-radius: 9px;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 15px;
+    font-weight: 500;
+
+    color: #ffffff;
+
+    animation: token-rise 0.6s ease both;
+}
+
+@keyframes token-rise {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-hero-token {
+        animation: none;
+    }
+}
+
+.home-pill {
+    position: relative;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+
+    margin-bottom: 26px;
+    padding: 8px 17px;
+
+    background: oklch(1 0 0 / 0.78);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 999px;
+
+    font-size: 12.5px;
+    font-weight: 600;
+
+    color: oklch(0.45 0.025 252);
+
+    backdrop-filter: blur(8px);
+}
+
+.home-pill-dot {
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: #5aa544;
+}
+
+.home-title {
+    position: relative;
+
+    max-width: 15ch;
+
+    margin: 0 auto 20px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: clamp(38px, 6.4vw, 74px);
+    font-weight: 700;
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+
+    color: oklch(0.22 0.03 252);
+}
+
+.home-title-accent {
+    display: block;
+
+    /* The accent carries the second line, the way a headline in the
+       reference does - one colour change, not a gradient per word. */
+    color: oklch(0.62 0.19 44);
+}
+
+.home-lede {
+    position: relative;
+
+    max-width: 60ch;
+
+    margin: 0 auto 32px;
+
+    font-size: 16.5px;
+    line-height: 1.62;
+
+    color: oklch(0.45 0.025 252);
+}
+
+.home-cta {
+    position: relative;
+
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+}
+
+.home-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+
+    padding: 13px 24px;
+
+    background: oklch(1 0 0 / 0.86);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 999px;
+
+    font-size: 14.5px;
+    font-weight: 600;
+
+    color: oklch(0.25 0.025 252);
+
+    text-decoration: none;
+
+    transition:
+        transform 0.16s ease,
+        box-shadow 0.16s ease,
+        background-color 0.16s ease;
+}
+
+.home-button:hover {
+    transform: translateY(-2px);
+
+    box-shadow: 0 10px 24px oklch(0.25 0.025 252 / 0.13);
+}
+
+.home-button.is-primary {
+    background: oklch(0.25 0.025 252);
+    border-color: oklch(0.25 0.025 252);
+
+    color: #ffffff;
+}
+
+.home-button.is-primary:hover {
+    background: oklch(0.2 0.03 252);
+}
+
+/* ---------------------------------------------------------
+   LIVE NUMBERS
+   --------------------------------------------------------- */
+
+.home-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 16px;
+
+    margin-bottom: 18px;
+}
+
+.home-stat {
+    display: flex;
+    flex-direction: column;
+
+    padding: 22px 24px;
+
+    background: oklch(1 0 0 / 0.76);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 18px;
+
+    box-shadow: 0 10px 30px oklch(0.25 0.025 252 / 0.06);
+
+    backdrop-filter: blur(10px);
+}
+
+.home-stat-icon svg,
+.home-feature-icon svg,
+.home-card-icon svg {
+    width: 20px;
+    height: 20px;
+
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.home-stat-icon {
+    margin-bottom: 12px;
+
+    color: oklch(0.62 0.19 44);
+}
+
+.home-stat-value {
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+
+    font-variant-numeric: tabular-nums;
+
+    color: oklch(0.22 0.03 252);
+}
+
+.home-stat-label {
+    margin-top: 2px;
+
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+
+    color: oklch(0.55 0.02 252);
+}
+
+.home-stat-note {
+    margin-top: 8px;
+
+    font-size: 12.5px;
+    line-height: 1.5;
+
+    color: oklch(0.55 0.02 252);
+}
+
+/* Shown only when /status could not be reached, so the page is honest
+   about the numbers being missing rather than showing zeros. */
+.home-offline {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+
+    margin: 0 0 8px;
+    padding: 11px 15px;
+
+    background: oklch(0.97 0.03 30 / 0.7);
+
+    border: 1px solid oklch(0.86 0.06 30);
+    border-radius: 12px;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    color: #8a3a12;
+}
+
+.home-offline .status-dot {
+    flex: none;
+
+    margin-top: 6px;
+
+    background: #b23b3b;
+}
+
+/* ---------------------------------------------------------
+   SECTIONS
+   --------------------------------------------------------- */
+
+.home-section {
+    padding: 66px 0 10px;
+
+    text-align: center;
+}
+
+.home-heading {
+    margin: 0 0 12px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: clamp(27px, 3.6vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+
+    color: oklch(0.22 0.03 252);
+}
+
+.home-sub {
+    max-width: 62ch;
+
+    margin: 0 auto 34px;
+
+    font-size: 15px;
+    line-height: 1.62;
+
+    color: oklch(0.5 0.025 252);
+}
+
+.home-features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
+    gap: 16px;
+
+    text-align: left;
+}
+
+.home-feature {
+    padding: 24px 24px 26px;
+
+    background: oklch(1 0 0 / 0.72);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 18px;
+}
+
+.home-feature-icon,
+.home-card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 40px;
+    height: 40px;
+
+    margin-bottom: 14px;
+
+    background: oklch(0.25 0.025 252);
+
+    border-radius: 12px;
+
+    color: #ffffff;
+}
+
+.home-feature h3,
+.home-card h3 {
+    margin: 0 0 8px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+
+    color: oklch(0.22 0.03 252);
+}
+
+.home-feature p,
+.home-card p {
+    margin: 0;
+
+    font-size: 13.8px;
+    line-height: 1.6;
+
+    color: oklch(0.5 0.025 252);
+}
+
+/* ---------------------------------------------------------
+   THE THREE WAYS IN
+   --------------------------------------------------------- */
+
+.home-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+    gap: 16px;
+
+    text-align: left;
+}
+
+.home-card {
+    display: flex;
+    flex-direction: column;
+
+    padding: 24px 24px 22px;
+
+    background: oklch(1 0 0 / 0.78);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 18px;
+
+    text-decoration: none;
+
+    transition:
+        transform 0.16s ease,
+        box-shadow 0.16s ease,
+        border-color 0.16s ease;
+}
+
+a.home-card:hover {
+    transform: translateY(-3px);
+
+    border-color: oklch(0.69 0.19 44);
+
+    box-shadow: 0 14px 34px oklch(0.25 0.025 252 / 0.11);
+}
+
+/* Pushed to the bottom so the four links sit on one line regardless of
+   how long each card's paragraph runs. */
+.home-card-go {
+    margin-top: auto;
+    padding-top: 16px;
+
+    font-size: 13px;
+    font-weight: 700;
+
+    color: oklch(0.55 0.19 44);
+}
+
+.home-card-go.is-quiet {
+    color: oklch(0.6 0.02 252);
+    font-weight: 600;
+}
+
+/* ---------------------------------------------------------
+   CLOSING BAND
+   --------------------------------------------------------- */
+
+.home-closing {
+    margin-top: 72px;
+    padding: 58px 30px 62px;
+
+    background: oklch(0.96 0.02 242 / 0.68);
+
+    border: 1px solid oklch(0.88 0.03 240);
+    border-radius: 26px;
+
+    text-align: center;
+}
+
+.home-closing h2 {
+    margin: 0 0 10px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: clamp(25px, 3.4vw, 38px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+
+    color: oklch(0.22 0.03 252);
+}
+
+.home-closing p {
+    max-width: 52ch;
+
+    margin: 0 auto 26px;
+
+    font-size: 15px;
+
+    color: oklch(0.5 0.025 252);
+}
+
+/* ---------------------------------------------------------
+   FOOTER
+   --------------------------------------------------------- */
+
+.home-footer {
+    margin-top: 54px;
+    padding: 40px 0 56px;
+
+    border-top: 1px solid oklch(0.88 0.03 240);
+
+    text-align: center;
+}
+
+.home-footer-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+
+    margin-bottom: 14px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+
+    color: oklch(0.22 0.03 252);
+}
+
+.home-footer p {
+    margin: 0 0 4px;
+
+    font-size: 13.5px;
+
+    color: oklch(0.5 0.025 252);
+}
+
+.home-footer-fine {
+    font-size: 12.5px !important;
+
+    color: oklch(0.62 0.02 252) !important;
+}
+
+/* The eight wheel colours as a signature, in the order they are
+   assigned to languages. */
+.home-footer-wheel {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+
+    margin-top: 20px;
+}
+
+.home-footer-wheel span {
+    width: 26px;
+    height: 5px;
+
+    border-radius: 3px;
+}
+
+@media (max-width: 640px) {
+
+    .home-hero {
+        padding-top: 62px;
+    }
+
+    .home-hero-tokens {
+        gap: 5px;
+    }
+
+    .home-hero-token {
+        padding: 5px 10px;
+        font-size: 13px;
+    }
+}
+
+/* The placeholder a panel shows before anything has been tokenized. It used
+   to be a bare string returned from renderTokens, so it had no styling at
+   all and sat at full text weight next to real tokens. */
+.token-empty {
+    font-size: 13px;
+
+    color: oklch(0.62 0.02 252);
+}
+
+/* The share printed beside each doughnut slice. Same monospace as the
+   petal figures so the two charts read as one family. */
+.chart-share {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    font-weight: 500;
+
+    transition: opacity 0.18s ease;
+}
+
+.chart-share.is-dim {
+    opacity: 0.25;
+}
+
+/* =========================================================
+   LANGUAGE PILLS - Mukovhe Ranwashe (RNWMUK001)
+   From the Inspect mock. Used on Compare so the corpus
+   language is visible rather than hidden behind Customize.
+   ========================================================= */
+
+/* One setup card: the corpus language and the two tokenizers, which are
+   really one decision - what is being compared, and on what. They used to
+   be two separate blocks, with the language hidden behind a Customize
+   button that no longer exists. */
+.compare-setup {
+    width: calc(100% - 40px);
+    max-width: 1250px;
+
+    margin: 0 auto 18px;
+    padding: 20px 24px;
+
+    box-sizing: border-box;
+
+    background: oklch(0.99 0.008 242 / 0.8);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 18px;
+
+    backdrop-filter: blur(10px);
+}
+
+.compare-setup .compare-tokenizer-filter-heading {
+    margin-bottom: 12px;
+
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+
+    color: oklch(0.45 0.025 252);
+}
+
+/* White space does the separating, rather than a rule across the card. */
+.compare-setup .compare-tokenizer-filter-heading + * {
+    margin-top: 0;
+}
+
+.compare-setup .language-pills + .compare-tokenizer-filter-heading,
+.compare-setup .selection-status + .compare-tokenizer-filter-heading {
+    margin-top: 26px;
+}
+
+.language-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+
+    margin-top: 10px;
+}
+
+.language-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+
+    padding: 7px 13px;
+
+    background: oklch(1 0 0 / 0.72);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 999px;
+
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+
+    color: oklch(0.25 0.025 252);
+
+    cursor: pointer;
+
+    transition:
+        transform 0.15s ease,
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        background-color 0.15s ease;
+}
+
+.language-pill:hover:not(:disabled) {
+    transform: translateY(-2px);
+
+    border-color: oklch(0.69 0.19 44);
+
+    box-shadow: 0 5px 14px oklch(0.25 0.025 252 / 0.12);
+}
+
+.language-pill.is-selected {
+    background: oklch(0.25 0.025 252);
+    border-color: oklch(0.25 0.025 252);
+
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.language-pill:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+/* The dot carries the colour this language has in the charts. */
+.language-pill .pill-dot {
+    width: 9px;
+    height: 9px;
+
+    flex: none;
+
+    border-radius: 50%;
+
+    box-shadow: 0 0 0 1px oklch(1 0 0 / 0.5);
+}
+
+/* =========================================================
+   HOME - THE MAP AND THE FLAG PALETTE
+   Mukovhe Ranwashe (RNWMUK001), 17 September 2026
+
+   The flag has six colours, and all six are used here: green,
+   gold, red, blue, black and white. They sit at low opacity
+   behind the page, because at full strength three of them are
+   dark enough to make body text unreadable and would fight the
+   language palette in the charts, which is the one place colour
+   has to carry meaning.
+   ========================================================= */
+
+:root {
+    --za-green: #007749;
+    --za-gold: #ffb81c;
+    --za-red: #e03c31;
+    --za-blue: #001489;
+    --za-black: #000000;
+    --za-white: #ffffff;
+}
+
+/* Scoped to .home, so Inspect, Compare and Rank keep the surface
+   the charts were colour-checked against. */
+.home {
+    position: relative;
+}
+
+/* ---------------------------------------------------------
+   THE MAP AS THE BACKDROP
+   Fixed rather than scrolled, so it behaves like a watermark
+   on the page instead of a picture in it. Faded to roughly
+   where the hero token strip sits, which is the level at
+   which it still reads as the country without competing
+   with the text over it.
+   --------------------------------------------------------- */
+
+.home-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    opacity: 0.2;
+
+    pointer-events: none;
+    user-select: none;
+}
+
+.home-backdrop .za-map {
+    width: min(1180px, 132vw);
+    height: auto;
+
+    max-height: 128vh;
+}
+
+.za-map {
+    display: block;
+
+    width: 100%;
+    height: auto;
+
+    overflow: visible;
+}
+
+.za-outline {
+    fill: none;
+    stroke: oklch(1 0 0 / 0.85);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+}
+
+/* Lesotho is a country in its own right, so it is left as the page
+   surface rather than painted with South Africa's flag. */
+.za-lesotho {
+    fill: oklch(0.97 0.006 242);
+    stroke: oklch(1 0 0 / 0.85);
+    stroke-width: 2;
+    stroke-linejoin: round;
+}
+
+@media (max-width: 640px) {
+
+    /* A narrow screen crops the sides badly, so the map is scaled to the
+       width rather than left to overflow. */
+    .home-backdrop .za-map {
+        width: 178vw;
+    }
+}
+
+/* =========================================================
+   HOME - FLAG ACCENTS
+   The rest of the app uses an orange accent. Orange is not in
+   the flag, so on this page the accent is the flag's green:
+   dark enough to hold contrast on the pale backdrop, and the
+   only flag colour that does at text size. Gold fails it and
+   blue is too close to a link.
+   ========================================================= */
+
+.home .home-title-accent {
+    color: var(--za-green);
+}
+
+.home .home-stat-icon,
+.home .home-card-go {
+    color: var(--za-green);
+}
+
+.home .home-pill-dot {
+    background: var(--za-green);
+}
+
+.home a.home-card:hover {
+    border-color: var(--za-green);
+}
+
+.home .home-button:not(.is-primary):hover {
+    border-color: var(--za-green);
+}
+
+/* The closing band picked up the old blue rule; the flag's blue instead. */
+.home .compare-note,
+.home .home-closing {
+    border-color: oklch(0.88 0.03 240);
+}
+
+/* =========================================================
+   HOME - THE LAVA LAMP IN THE FLAG'S COLOURS
+   Mukovhe Ranwashe (RNWMUK001), 17 September 2026
+
+   Same three blobs and the same lava-a/b/c keyframes as every
+   other page - only the colours and the stacking change. The
+   motion was already right; it was just orange, pink and a
+   cool blue, none of which are in the flag.
+
+   Blob one carries red into gold, blob two the green, blob
+   three the blue with a little black in it. Six colours, one
+   of which is the white page they drift over.
+   ========================================================= */
+
+.app-shell.is-home .ambient-gradient {
+
+    /*
+        Back to the layer it was always on. A parent's background paints
+        before every child, so z-index 0 here puts the lava above the
+        shell's white and the page content above the lava - which is what
+        the pages that were never touched have always done.
+    */
+    z-index: 0;
+
+    /* Faded, so it reads as colour drifting behind the page rather than
+       a light show the text has to survive. */
+    opacity: 0.42;
+
+    background:
+        radial-gradient(
+            circle at 30% 32%,
+            color-mix(in oklab, var(--za-red) 86%, transparent) 0 17%,
+            transparent 40%
+        ),
+        radial-gradient(
+            circle at 70% 58%,
+            color-mix(in oklab, var(--za-gold) 82%, transparent) 0 22%,
+            transparent 50%
+        );
+}
+
+.app-shell.is-home .ambient-gradient::before {
+    background: radial-gradient(
+        circle at 46% 44%,
+        color-mix(in oklab, var(--za-green) 80%, transparent) 0 42%,
+        transparent 70%
+    );
+}
+
+.app-shell.is-home .ambient-gradient::after {
+    background:
+        radial-gradient(
+            circle at 50% 50%,
+            color-mix(in oklab, var(--za-blue) 62%, transparent) 0 40%,
+            transparent 70%
+        ),
+        radial-gradient(
+            circle at 38% 62%,
+            color-mix(in oklab, var(--za-black) 34%, transparent) 0 26%,
+            transparent 58%
+        );
+}
+
+/* The map sits between the moving colour and the page content. It is
+   inside <main>, which the shell puts on z-index 1, so a negative value
+   here is still above the lava. */
+.home-backdrop {
+    z-index: -2;
+
+    /* Slightly softer now that there is no blue veil muting it. */
+    opacity: 0.17;
+}
+
+/*
+    The blue was two layers, neither of them the lava: body is a pale
+    blue-grey, and .app-shell lays an opaque blue-to-warm gradient over
+    it. On this page both are replaced with plain white, so the only
+    colour on screen is the flag.
+*/
+.app-shell.is-home {
+    background: var(--za-white);
+}
+
+/* =========================================================
+   HOME - LEGIBILITY OVER THE BACKDROP
+   With the blue veil gone the page is white, so the greys
+   that were tuned against a tinted surface now read as too
+   light. Every one of these is a step darker, and the cards
+   are closer to opaque so the map does not show through the
+   numbers.
+   ========================================================= */
+
+.home .home-lede {
+    color: oklch(0.38 0.02 252);
+}
+
+.home .home-sub,
+.home .home-feature p,
+.home .home-card p,
+.home .home-closing p {
+    color: oklch(0.4 0.02 252);
+}
+
+.home .home-stat-label,
+.home .home-stat-note {
+    color: oklch(0.44 0.02 252);
+}
+
+/* Near enough to opaque that the numbers sit on white, not on a map. */
+.home .home-stat,
+.home .home-card,
+.home .home-feature {
+    background: oklch(1 0 0 / 0.93);
+}
+
+.home .home-pill {
+    background: oklch(1 0 0 / 0.92);
+}
+
+.home .home-closing {
+    background: oklch(1 0 0 / 0.78);
+}
+
+/* =========================================================
+   THE HEADER, WITHOUT THE BAR
+   Mukovhe Ranwashe (RNWMUK001), 17 September 2026
+
+   The white band across the top was the last thing covering
+   the background. It is gone: no fill, no blur, no bottom
+   rule, so the lava and the map run the full height of the
+   page. The nav still has to be readable over moving colour,
+   so each item carries its own small surface instead.
+   ========================================================= */
+
+.site-header {
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: 0;
+}
+
+.logo {
+    text-decoration: none;
+    color: inherit;
+}
+
+.brand-mark-svg {
+    display: block;
+
+    border-radius: 29%;
+
+    box-shadow: 0 3px 10px oklch(0.25 0.025 252 / 0.22);
+}
+
+/* The slot through the mark is the page showing through, so it has to
+   match whatever is behind the header. */
+.brand-cut {
+    fill: oklch(0.99 0.004 242);
+}
+
+/* Each nav item gets a small pill of its own, which is what lets the
+   bar disappear without the links becoming unreadable. */
+.main-nav a {
+    padding: 7px 14px;
+
+    background: oklch(1 0 0 / 0.66);
+
+    border-radius: 999px;
+
+    backdrop-filter: blur(8px);
+}
+
+.main-nav a:hover {
+    background: oklch(1 0 0 / 0.86);
+}
+
+/* ---------------------------------------------------------
+   THE FOOTER, NOW THAT IT CARRIES THE CAPSTONE LINE
+   --------------------------------------------------------- */
+
+.home-footer-tokens {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 7px;
+
+    margin-bottom: 14px;
+}
+
+.home-footer-tokens .home-hero-token {
+    position: static;
+}
+
+.home-footer-word {
+    max-width: 44ch;
+
+    margin: 0 auto 26px !important;
+
+    font-size: 13.5px !important;
+    line-height: 1.6;
+
+    color: oklch(0.46 0.02 252) !important;
+}
+
+.home-footer-brand {
+    gap: 12px;
 }

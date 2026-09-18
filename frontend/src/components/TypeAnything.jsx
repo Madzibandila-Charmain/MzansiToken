@@ -1,20 +1,26 @@
 /*
     Reusable Type Anything component
     Author: Madzibandila Charmain
+
+    Amended by Mukovhe Ranwashe (RNWMUK001), 17 September 2026: it used to
+    take a renderTokens FUNCTION as a prop, because each page kept its own
+    copy of that function. It renders the shared TokenStream instead, so the
+    caller no longer has to supply behaviour along with data.
 */
+
+import TokenStream from "./TokenStream";
 
 function TypeAnything({
     inputText,
     onInputChange,
-    results,
-    renderTokens
+    results
 }) {
     return (
         <section className="text-input-box">
 
             {/* Type Anything heading */}
             <div className="text-input-heading">
-                Mzansi Explorer • Type Anything
+                Type Anything
             </div>
 
             {/* Text input */}
@@ -58,7 +64,7 @@ function TypeAnything({
 
                             {/* Tokenized text */}
                             <div className="typed-result-text">
-                                {renderTokens(result.tokens)}
+                                <TokenStream tokens={result.tokens} />
                             </div>
 
                             {/* Metrics */}

@@ -1,7 +1,16 @@
 /*
     Reusable tokenization and metrics display
     Author: Madzibandila Charmain
+
+    Amended by Mukovhe Ranwashe (RNWMUK001), 17 September 2026: the
+    renderTokens prop is gone. Passing a render function in was only ever a
+    way of reaching the copy of it that lived in the calling page; the shared
+    TokenStream component is imported directly.
 */
+
+import TokenStream from "./TokenStream";
+
+import MetricCards from "./MetricCards";
 
 function TokenizationMetrics({
     title,
@@ -9,13 +18,31 @@ function TokenizationMetrics({
     metrics,
     mbi,
     showMbi,
-    renderTokens,
     tokenizerSelector,
-    tokenizerType
+    tokenizerType,
+    busy = false,
+    busyLabel = "Loading\u2026"
 }) {
 
     return (
-        <div className="tokenization-display-block">
+        <div
+            className={
+                "tokenization-display-block"
+                + (busy ? " is-busy" : "")
+            }
+        >
+
+            {/* Same treatment as the Inspect panels: the numbers stay in
+                place and go soft, so nobody reads the previous tokenizer's
+                figures as if they belonged to the new one. */}
+            {busy && (
+                <div className="block-overlay">
+                    <span className="spinner"></span>
+                    <span className="block-overlay-text">
+                        {busyLabel}
+                    </span>
+                </div>
+            )}
 
             {/* Tokenizer heading */}
             <div
@@ -39,7 +66,7 @@ function TokenizationMetrics({
 
                 <div className="tokenization-text">
 
-                    {renderTokens(tokens)}
+                    <TokenStream tokens={tokens} />
 
                 </div>
 
@@ -47,151 +74,11 @@ function TokenizationMetrics({
 
             {/* Tokenization metrics */}
 
-            <div className="tokenization-metrics">
-
-                {/* Row 1 - Corpus metrics */}
-
-                <div className="metric-row">
-
-                    <div className="metric-card">
-
-                        <span className="metric-name">
-                            Tokens
-                        </span>
-
-                        <span className="metric-value">
-                            {Number(
-                                metrics?.tokens ?? 0
-                            ).toLocaleString()}
-                        </span>
-
-                    </div>
-
-                    <div className="metric-card">
-
-                        <span className="metric-name">
-                            Fertility
-                        </span>
-
-                        <span className="metric-value">
-
-                            {Number(
-                                metrics?.fertility ?? 0
-                            ).toFixed(2)}
-
-                        </span>
-
-                    </div>
-
-                    <div className="metric-card">
-
-                        <span className="metric-name">
-                            Compression
-                        </span>
-
-                        <span className="metric-value">
-
-                            {Number(
-                                metrics?.compression ?? 0
-                            ).toFixed(2)}
-
-                        </span>
-
-                    </div>
-
-                    <div className="metric-card">
-
-                        <span className="metric-name">
-                            Token Premium
-                        </span>
-
-                        <span className="metric-value">
-
-                            {metrics?.token_premium === null ||
-                            metrics?.token_premium === undefined
-                                ? "N/A"
-                                : Number(
-                                    metrics.token_premium
-                                ).toFixed(2)
-                            }
-
-                        </span>
-
-                    </div>
-
-                </div>
-
-                {/* Row 2 - MBI metrics */}
-
-                {showMbi && (
-
-                    <div className="metric-row metric-row-centered">
-
-                        <div className="metric-card">
-
-                            <span className="metric-name">
-                                Precision
-                            </span>
-
-                            <span className="metric-value">
-
-                                {mbi === null ||
-                                mbi === undefined
-                                    ? "N/A"
-                                    : Number(
-                                        mbi.precision ?? 0
-                                    ).toFixed(2)
-                                }
-
-                            </span>
-
-                        </div>
-
-                        <div className="metric-card">
-
-                            <span className="metric-name">
-                                F1
-                            </span>
-
-                            <span className="metric-value">
-
-                                {mbi === null ||
-                                mbi === undefined
-                                    ? "N/A"
-                                    : Number(
-                                        mbi.f1 ?? 0
-                                    ).toFixed(2)
-                                }
-
-                            </span>
-
-                        </div>
-
-                        <div className="metric-card">
-
-                            <span className="metric-name">
-                                Recall
-                            </span>
-
-                            <span className="metric-value">
-
-                                {mbi === null ||
-                                mbi === undefined
-                                    ? "N/A"
-                                    : Number(
-                                        mbi.recall ?? 0
-                                    ).toFixed(2)
-                                }
-
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                )}
-
-            </div>
+            <MetricCards
+                metrics={metrics}
+                mbi={mbi}
+                showMbi={showMbi}
+            />
 
         </div>
     );
