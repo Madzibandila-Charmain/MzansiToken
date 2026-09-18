@@ -2,21 +2,6 @@
     Home Page
     Author: Mukovhe Ranwashe (RNWMUK001)
     Date: 17 September 2026
-
-    The landing page. It is the first thing a marker or a visitor sees, so
-    it has to say what MzansiToken is, show that it is alive, and get the
-    person into one of the three working pages in a single click.
-
-    The numbers are read from GET /status rather than typed in, so the page
-    cannot quietly go out of date, and a visitor can tell at a glance whether
-    the backend is actually running.
-
-    What the numbers mean, so nobody has to guess:
-      languages  - len(corpus) from flores.py, which loads English plus the
-                   seven South African languages in its LANGUAGES map.
-      sentences  - get_sentence_count(), the MINIMUM length across those
-                   files, so it is sentences PER LANGUAGE (997 for the
-                   FLORES dev set), not a total across the corpus.
 */
 
 import { useEffect, useState } from "react";
@@ -27,7 +12,7 @@ import { getBackendStatus, friendlyError } from "../api/client";
 
 import { WHEEL, LANGUAGE_ORDER } from "../components/languageColours";
 
-import SouthAfricaMap, { FLAG } from "../components/SouthAfricaMap";
+import { FLAG } from "../components/SouthAfricaMap";
 
 import BrandMark from "../components/BrandMark";
 
@@ -192,13 +177,9 @@ function Home() {
     return (
         <div className="home">
 
-            {/* The country with the flag inside it, faded back as the
-                page's backdrop - the same treatment as the token strip
-                in the hero. Real Natural Earth geometry, so it holds up
-                at this size. Decorative, so it is hidden from readers. */}
-            <div className="home-backdrop" aria-hidden="true">
-                <SouthAfricaMap decorative />
-            </div>
+            {/* The map backdrop used to be here. It moved to App.jsx
+                when Rank and the other pages wanted it too - one copy for
+                the whole app rather than one per page. */}
 
             {/* ---------------- HERO ---------------- */}
 
