@@ -1,3 +1,22 @@
+/* 
+   THE ACCENT TOKEN
+   Mukovhe Ranwashe
+   September 2026
+*/
+
+:root {
+    --accent: oklch(0.69 0.19 44);
+    --accent-lift: oklch(0.76 0.18 55);
+}
+
+/* On the shell, not :root, so only flag pages pick it up. */
+.app-shell.is-flag {
+    --accent: var(--za-green);
+
+    /* The hover lift, a step brighter than the base. */
+    --accent-lift: oklch(0.52 0.12 162);
+}
+
 /*
     Shared styling for the MzansiToken application
     Author: Madzibandila Charmain
@@ -253,11 +272,13 @@ body {
 
 }
 
-/* =========================================================
-   KEEP ALL PAGE CONTENT ABOVE THE BACKGROUND
-   ========================================================= */
+/* =====================
+    KEEP ALL PAGE CONTENT ABOVE THE BACKGROUND
+    Keep the :not(.app-backdrop) - without it the map lands in
+    the flow and pushes the whole page down.
+===================== */
 
-.app-shell > *:not(.ambient-gradient) {
+.app-shell > *:not(.ambient-gradient):not(.app-backdrop) {
 
     position: relative;
 
@@ -447,7 +468,7 @@ footer {
 
     height: 2px;
 
-    background: oklch(0.69 0.19 44);
+    background: var(--accent);
 
     border-radius: 10px;
 
@@ -511,7 +532,7 @@ footer {
 
     letter-spacing: 3px;
 
-    color: oklch(0.69 0.19 44);
+    color: var(--accent);
 
 }
 
@@ -739,7 +760,7 @@ footer {
 
     transform: translateY(-2px);
 
-    border-color: oklch(0.69 0.19 44);
+    border-color: var(--accent);
 
     box-shadow:
 
@@ -799,7 +820,7 @@ footer {
 
     border-radius: 8px;
 
-    background-color: oklch(0.69 0.19 44);
+    background-color: var(--accent);
 
     display: flex;
 
@@ -827,7 +848,7 @@ footer {
 
 .search-button:hover {
 
-    background-color: oklch(0.76 0.18 55);
+    background-color: var(--accent-lift);
 
     transform: translateY(-1px);
 
@@ -1203,7 +1224,7 @@ footer {
 
     letter-spacing: 0.3px;
 
-    color: oklch(0.69 0.19 44);
+    color: var(--accent);
 
     white-space: nowrap;
 
@@ -1303,7 +1324,7 @@ footer {
 
     background: oklch(0.97 0.025 70);
 
-    border-color: oklch(0.69 0.19 44);
+    border-color: var(--accent);
 
     color: #111111;
 
@@ -1379,7 +1400,7 @@ footer {
 
     background: oklch(0.99 0.008 242 / 0.82);
 
-    border-color: oklch(0.69 0.19 44);
+    border-color: var(--accent);
 
     color: oklch(0.25 0.025 252);
 
@@ -1395,7 +1416,7 @@ footer {
 
 .upload-container input[type="file"]:focus-visible + .upload-button {
 
-    outline: 2px solid oklch(0.69 0.19 44);
+    outline: 2px solid var(--accent);
 
     outline-offset: 3px;
 
@@ -1637,7 +1658,7 @@ footer {
 
 .metric-card:hover {
 
-    border-color: oklch(0.69 0.19 44);
+    border-color: var(--accent);
 
     background: oklch(0.99 0.008 242 / 0.82);
 
@@ -1691,7 +1712,7 @@ footer {
 
     letter-spacing: 0.3px;
 
-    color: oklch(0.69 0.19 44);
+    color: var(--accent);
 
     white-space: nowrap;
 
@@ -1745,7 +1766,7 @@ footer {
 
 .text-input-area:focus {
 
-    border-color: oklch(0.69 0.19 44);
+    border-color: var(--accent);
 
     background: oklch(0.99 0.008 242 / 0.82);
 
@@ -1929,7 +1950,7 @@ footer {
 
     background-color: oklch(0.99 0.008 242 / 0.82);
 
-    border-color: oklch(0.69 0.19 44);
+    border-color: var(--accent);
 
     transform: translateY(-2px);
 
@@ -2528,9 +2549,8 @@ body {
 
 
 /* ---------------------------------------------------------
-   3. BRIGHTER TOKEN PILLS
-   Same eight slots, same cycling, more colour in each. The
-   hover lift makes it obvious the pill is a single unit.
+   TOKEN PILLS
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
    --------------------------------------------------------- */
 
 .token-pill {
@@ -2987,9 +3007,9 @@ body {
 }
 
 
-/* =========================================================
+/* 
    READING PANELS
-   ========================================================= */
+*/
 
 .language-tokenization-grid {
 
@@ -3168,13 +3188,10 @@ body {
     .chart-skeleton { animation: none; }
 
 }
-/* =========================================================
-   STATUS LINE - Mukovhe Ranwashe (RNWMUK001)
-   The status line used to be one short word like "ready", so
-   it was set to never wrap. It now carries whatever the
-   backend says, which can be a full sentence, so it has to be
-   allowed to wrap or it runs off the side of the page.
-   ========================================================= */
+/* 
+   STATUS LINE
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
+*/
 
 .selection-status {
     align-items: flex-start;
@@ -3215,9 +3232,10 @@ body {
     text-decoration-thickness: 2px;
 }
 
-/* =========================================================
-   COMPARE CHARTS - Mukovhe Ranwashe (RNWMUK001)
-   ========================================================= */
+/* 
+   COMPARE CHARTS
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
+*/
 
 .compare-charts {
     position: relative;
@@ -3505,11 +3523,10 @@ body {
 }
 
 
-/* =========================================================
-   NEW - Mukovhe Ranwashe (RNWMUK001), 17 September 2026
-   What "better" means, the stat tiles, and the spinning
-   wheel that covers a block while it is being refilled.
-   ========================================================= */
+/* 
+   SPINNER
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
+*/
 
 /* The line that says which direction is good, before any
    number below it claims a winner. */
@@ -3541,7 +3558,7 @@ body {
 
 /* ---------------------------------------------------------
    SPINNING WHEEL
-   Used over the compare charts and over each Inspect block.
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
    --------------------------------------------------------- */
 
 .spinner {
@@ -3553,7 +3570,7 @@ body {
     box-sizing: border-box;
 
     border: 2.5px solid oklch(0.86 0.03 240);
-    border-top-color: oklch(0.69 0.19 44);
+    border-top-color: var(--accent);
     border-radius: 50%;
 
     animation: spin 0.85s linear infinite;
@@ -3586,9 +3603,8 @@ body {
 }
 
 /* ---------------------------------------------------------
-   BUSY OVERLAYS
-   The content behind stays in place and is blurred, so the
-   panel does not collapse and jump when new data arrives.
+   BUSY OVERLAYS AND BLURS
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
    --------------------------------------------------------- */
 
 .charts-overlay,
@@ -3647,19 +3663,14 @@ body {
 
 
 /* ---------------------------------------------------------
-   PIE CHARTS - busy state
-   Same treatment as the reading blocks: the charts stay put
-   and go soft, so nobody reads the previous tokenizer's
-   slices as if they belonged to the new one.
+   PIE CHARTS, BUSY STATE
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
    --------------------------------------------------------- */
 
 .charts-box {
     position: relative;
 }
 
-/* The hover card is a child of the box and is normally held at
-   opacity 0. Dimming "everything" would drag it UP to 0.5 and make
-   an empty dark pill appear in the corner, so it is excluded. */
 .charts-box.is-busy > *:not(.charts-overlay):not(.chart-tip) {
     filter: blur(6px);
     opacity: 0.5;
@@ -3692,9 +3703,10 @@ body {
     min-height: 210px;
 }
 
-/* =========================================================
-   HOME PAGE - Mukovhe Ranwashe (RNWMUK001), 17 September 2026
-   ========================================================= */
+/* 
+   HOME PAGE
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
+*/
 
 .home {
     width: calc(100% - 40px);
@@ -4110,7 +4122,7 @@ body {
 a.home-card:hover {
     transform: translateY(-3px);
 
-    border-color: oklch(0.69 0.19 44);
+    border-color: var(--accent);
 
     box-shadow: 0 14px 34px oklch(0.25 0.025 252 / 0.11);
 }
@@ -4266,16 +4278,11 @@ a.home-card:hover {
     opacity: 0.25;
 }
 
-/* =========================================================
-   LANGUAGE PILLS - Mukovhe Ranwashe (RNWMUK001)
-   From the Inspect mock. Used on Compare so the corpus
-   language is visible rather than hidden behind Customize.
-   ========================================================= */
+/* 
+   LANGUAGE PILLS
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
+*/
 
-/* One setup card: the corpus language and the two tokenizers, which are
-   really one decision - what is being compared, and on what. They used to
-   be two separate blocks, with the language hidden behind a Customize
-   button that no longer exists. */
 .compare-setup {
     width: calc(100% - 40px);
     max-width: 1250px;
@@ -4352,7 +4359,7 @@ a.home-card:hover {
 .language-pill:hover:not(:disabled) {
     transform: translateY(-2px);
 
-    border-color: oklch(0.69 0.19 44);
+    border-color: var(--accent);
 
     box-shadow: 0 5px 14px oklch(0.25 0.025 252 / 0.12);
 }
@@ -4382,17 +4389,10 @@ a.home-card:hover {
     box-shadow: 0 0 0 1px oklch(1 0 0 / 0.5);
 }
 
-/* =========================================================
-   HOME - THE MAP AND THE FLAG PALETTE
-   Mukovhe Ranwashe (RNWMUK001), 17 September 2026
-
-   The flag has six colours, and all six are used here: green,
-   gold, red, blue, black and white. They sit at low opacity
-   behind the page, because at full strength three of them are
-   dark enough to make body text unreadable and would fight the
-   language palette in the charts, which is the one place colour
-   has to carry meaning.
-   ========================================================= */
+/* 
+   THE FLAG PALETTE
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
+*/
 
 :root {
     --za-green: #007749;
@@ -4411,14 +4411,10 @@ a.home-card:hover {
 
 /* ---------------------------------------------------------
    THE MAP AS THE BACKDROP
-   Fixed rather than scrolled, so it behaves like a watermark
-   on the page instead of a picture in it. Faded to roughly
-   where the hero token strip sits, which is the level at
-   which it still reads as the country without competing
-   with the text over it.
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
    --------------------------------------------------------- */
 
-.home-backdrop {
+.app-backdrop {
     position: fixed;
     inset: 0;
     z-index: -1;
@@ -4433,7 +4429,7 @@ a.home-card:hover {
     user-select: none;
 }
 
-.home-backdrop .za-map {
+.app-backdrop .za-map {
     width: min(1180px, 132vw);
     height: auto;
 
@@ -4469,19 +4465,15 @@ a.home-card:hover {
 
     /* A narrow screen crops the sides badly, so the map is scaled to the
        width rather than left to overflow. */
-    .home-backdrop .za-map {
+    .app-backdrop .za-map {
         width: 178vw;
     }
 }
 
-/* =========================================================
-   HOME - FLAG ACCENTS
-   The rest of the app uses an orange accent. Orange is not in
-   the flag, so on this page the accent is the flag's green:
-   dark enough to hold contrast on the pale backdrop, and the
-   only flag colour that does at text size. Gold fails it and
-   blue is too close to a link.
-   ========================================================= */
+/* 
+   FLAG ACCENTS
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
+*/
 
 .home .home-title-accent {
     color: var(--za-green);
@@ -4510,29 +4502,14 @@ a.home-card:hover {
     border-color: oklch(0.88 0.03 240);
 }
 
-/* =========================================================
-   HOME - THE LAVA LAMP IN THE FLAG'S COLOURS
-   Mukovhe Ranwashe (RNWMUK001), 17 September 2026
+/* 
+   THE LAVA LAMP, IN FLAG COLOURS
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
+*/
 
-   Same three blobs and the same lava-a/b/c keyframes as every
-   other page - only the colours and the stacking change. The
-   motion was already right; it was just orange, pink and a
-   cool blue, none of which are in the flag.
+.app-shell.is-flag .ambient-gradient {
 
-   Blob one carries red into gold, blob two the green, blob
-   three the blue with a little black in it. Six colours, one
-   of which is the white page they drift over.
-   ========================================================= */
-
-.app-shell.is-home .ambient-gradient {
-
-    /*
-        Back to the layer it was always on. A parent's background paints
-        before every child, so z-index 0 here puts the lava above the
-        shell's white and the page content above the lava - which is what
-        the pages that were never touched have always done.
-    */
-    z-index: 0;
+        z-index: 0;
 
     /* Faded, so it reads as colour drifting behind the page rather than
        a light show the text has to survive. */
@@ -4551,7 +4528,7 @@ a.home-card:hover {
         );
 }
 
-.app-shell.is-home .ambient-gradient::before {
+.app-shell.is-flag .ambient-gradient::before {
     background: radial-gradient(
         circle at 46% 44%,
         color-mix(in oklab, var(--za-green) 80%, transparent) 0 42%,
@@ -4559,7 +4536,7 @@ a.home-card:hover {
     );
 }
 
-.app-shell.is-home .ambient-gradient::after {
+.app-shell.is-flag .ambient-gradient::after {
     background:
         radial-gradient(
             circle at 50% 50%,
@@ -4573,34 +4550,23 @@ a.home-card:hover {
         );
 }
 
-/* The map sits between the moving colour and the page content. It is
-   inside <main>, which the shell puts on z-index 1, so a negative value
-   here is still above the lava. */
-.home-backdrop {
-    z-index: -2;
+/* Sibling of the lava: z-index 0 plus DOM order puts it on top of the
+   colour, and <main> is z-index 1 so content stays above both. */
+.app-backdrop {
+    z-index: 0;
 
     /* Slightly softer now that there is no blue veil muting it. */
     opacity: 0.17;
 }
 
-/*
-    The blue was two layers, neither of them the lava: body is a pale
-    blue-grey, and .app-shell lays an opaque blue-to-warm gradient over
-    it. On this page both are replaced with plain white, so the only
-    colour on screen is the flag.
-*/
-.app-shell.is-home {
+.app-shell.is-flag {
     background: var(--za-white);
 }
 
-/* =========================================================
-   HOME - LEGIBILITY OVER THE BACKDROP
-   With the blue veil gone the page is white, so the greys
-   that were tuned against a tinted surface now read as too
-   light. Every one of these is a step darker, and the cards
-   are closer to opaque so the map does not show through the
-   numbers.
-   ========================================================= */
+/* 
+   LEGIBILITY OVER THE BACKDROP
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
+*/
 
 .home .home-lede {
     color: oklch(0.38 0.02 252);
@@ -4633,16 +4599,10 @@ a.home-card:hover {
     background: oklch(1 0 0 / 0.78);
 }
 
-/* =========================================================
+/* 
    THE HEADER, WITHOUT THE BAR
-   Mukovhe Ranwashe (RNWMUK001), 17 September 2026
-
-   The white band across the top was the last thing covering
-   the background. It is gone: no fill, no blur, no bottom
-   rule, so the lava and the map run the full height of the
-   page. The nav still has to be readable over moving colour,
-   so each item carries its own small surface instead.
-   ========================================================= */
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
+*/
 
 .site-header {
     background: none;
@@ -4687,7 +4647,8 @@ a.home-card:hover {
 }
 
 /* ---------------------------------------------------------
-   THE FOOTER, NOW THAT IT CARRIES THE CAPSTONE LINE
+   THE FOOTER
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
    --------------------------------------------------------- */
 
 .home-footer-tokens {
@@ -4716,4 +4677,1476 @@ a.home-card:hover {
 
 .home-footer-brand {
     gap: 12px;
+}
+
+/* 
+   RANK
+   Mukovhe Ranwashe (RNWMUK001) ·  Sep 2026
+   Hero, controls, add panel, leaderboard table, explainers.
+*/
+
+.rank {
+    position: relative;
+
+    width: calc(100% - 40px);
+    max-width: 1180px;
+
+    margin: 0 auto;
+    padding-bottom: 60px;
+}
+
+/* ---------------------------------------------------------
+   HERO
+   --------------------------------------------------------- */
+
+.rank-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.85fr);
+    align-items: center;
+    gap: 46px;
+
+    padding: 54px 0 34px;
+}
+
+.rank-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    margin: 0 0 18px;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+
+    color: var(--za-red);
+}
+
+.rank-eyebrow-rule {
+    display: inline-block;
+    width: 22px;
+    height: 2px;
+
+    background: var(--za-red);
+    border-radius: 2px;
+}
+
+.rank-title {
+    max-width: 15ch;
+
+    margin: 0 0 20px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: clamp(38px, 5.2vw, 58px);
+    font-weight: 700;
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+
+    color: oklch(0.2 0.03 252);
+}
+
+.rank-title-accent {
+    color: var(--za-green);
+}
+
+.rank-lede {
+    max-width: 52ch;
+
+    margin: 0;
+
+    font-size: 15px;
+    line-height: 1.68;
+
+    color: oklch(0.38 0.02 252);
+}
+
+.rank-lede strong {
+    font-weight: 600;
+
+    color: oklch(0.24 0.03 252);
+}
+
+/* Eight bars: English short, the rest two to three times taller. */
+
+.rank-run {
+    padding: 20px 22px 16px;
+
+    background: oklch(1 0 0 / 0.86);
+
+    border: 1px solid oklch(0.9 0.02 240);
+    border-radius: 18px;
+
+    backdrop-filter: blur(10px);
+
+    box-shadow: 0 14px 34px oklch(0.25 0.03 252 / 0.07);
+}
+
+.rank-run-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.rank-run-label {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+
+    color: oklch(0.52 0.02 252);
+}
+
+.rank-run-value {
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 27px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+
+    color: oklch(0.2 0.03 252);
+}
+
+.rank-run-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+
+    height: 58px;
+
+    margin: 16px 0 12px;
+}
+
+.rank-run-bar {
+    flex: 1;
+
+    min-height: 6px;
+
+    background: color-mix(in oklab, var(--za-green) 62%, white);
+
+    border-radius: 4px 4px 2px 2px;
+}
+
+/* English is the baseline, so it is marked rather than left to look
+   like the shortest bar by accident. */
+.rank-run-bar.is-baseline {
+    background: color-mix(in oklab, var(--za-gold) 78%, white);
+}
+
+.rank-run-foot {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+
+    color: oklch(0.55 0.02 252);
+}
+
+.rank-run-note {
+    color: var(--za-green);
+}
+
+/* ---------------------------------------------------------
+   CONTROLS
+   --------------------------------------------------------- */
+
+.rank-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+
+    margin-bottom: 20px;
+}
+
+.rank-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 0 6px 0 14px;
+
+    background: oklch(1 0 0 / 0.84);
+
+    border: 1px solid oklch(0.89 0.02 240);
+    border-radius: 11px;
+
+    backdrop-filter: blur(8px);
+}
+
+.rank-control-label {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+
+    color: oklch(0.55 0.02 252);
+}
+
+.rank-control select {
+    height: 40px;
+
+    padding: 0 8px;
+
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+
+    color: oklch(0.24 0.03 252);
+
+    background: transparent;
+
+    border: 0;
+
+    cursor: pointer;
+}
+
+.rank-control select:focus-visible {
+    outline: 2px solid var(--za-green);
+    outline-offset: 2px;
+    border-radius: 7px;
+}
+
+.rank-controls-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    margin-left: auto;
+}
+
+.rank-find {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 0 14px;
+
+    background: oklch(1 0 0 / 0.84);
+
+    border: 1px solid oklch(0.89 0.02 240);
+    border-radius: 11px;
+
+    backdrop-filter: blur(8px);
+}
+
+.rank-find-icon {
+    width: 15px;
+    height: 15px;
+
+    fill: none;
+    stroke: oklch(0.58 0.02 252);
+    stroke-width: 2.2;
+    stroke-linecap: round;
+}
+
+.rank-find input {
+    width: 168px;
+    height: 40px;
+
+    font-family: inherit;
+    font-size: 13px;
+
+    color: oklch(0.24 0.03 252);
+
+    background: transparent;
+
+    border: 0;
+    outline: none;
+}
+
+.rank-add-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    height: 42px;
+
+    padding: 0 18px;
+
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+
+    color: var(--za-white);
+
+    background: oklch(0.2 0.03 252);
+
+    border: 0;
+    border-radius: 11px;
+
+    cursor: pointer;
+
+    transition: background-color 0.18s ease;
+}
+
+.rank-add-cta:hover {
+    background: var(--za-green);
+}
+
+/* ---------------------------------------------------------
+   THE ADD PANEL
+   --------------------------------------------------------- */
+
+.rank-setup {
+    margin-bottom: 20px;
+    padding: 20px 24px;
+
+    background: oklch(1 0 0 / 0.86);
+
+    border: 1px solid oklch(0.89 0.02 240);
+    border-radius: 18px;
+
+    backdrop-filter: blur(10px);
+}
+
+.rank-setup-heading {
+    margin-bottom: 12px;
+
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+
+    color: oklch(0.45 0.025 252);
+}
+
+.rank-setup .tokenizer-search {
+    max-width: 560px;
+}
+
+.rank-setup-note {
+    max-width: 62ch;
+
+    margin: 14px 0 0;
+
+    font-size: 12.5px;
+    line-height: 1.6;
+
+    color: oklch(0.52 0.022 252);
+}
+
+.rank-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+
+    margin-top: 14px;
+}
+
+.rank-suggestion {
+    padding: 6px 12px;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+
+    color: oklch(0.36 0.03 252);
+
+    background: oklch(1 0 0 / 0.72);
+
+    border: 1px solid oklch(0.88 0.025 240);
+    border-radius: 999px;
+
+    cursor: pointer;
+
+    transition:
+        border-color 0.18s ease,
+        background-color 0.18s ease,
+        color 0.18s ease;
+}
+
+.rank-suggestion:hover:not(:disabled) {
+    border-color: var(--za-green);
+    color: var(--za-green);
+    background: oklch(1 0 0 / 0.95);
+}
+
+.rank-suggestion.is-on-board {
+    color: oklch(0.55 0.02 252);
+    border-style: dashed;
+}
+
+.rank-suggestion:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/*
+   THE SAMPLE-BOARD BANNER
+   Mukovhe Ranwashe
+   September 2026
+ */
+
+.rank-sample-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+
+    margin: 0 0 20px;
+    padding: 14px 18px;
+
+    font-size: 13px;
+    line-height: 1.6;
+
+    color: oklch(0.36 0.06 70);
+
+    background: color-mix(in oklab, var(--za-gold) 16%, white);
+
+    border: 1px solid color-mix(in oklab, var(--za-gold) 55%, white);
+    border-radius: 14px;
+}
+
+.rank-sample-banner .status-dot {
+    flex: none;
+
+    margin-top: 6px;
+
+    background: var(--za-gold);
+}
+
+.rank-sample-banner strong {
+    color: oklch(0.3 0.08 70);
+}
+
+/*
+   SPOTLIGHT: LEADER AND CHASERS
+   Mukovhe Ranwashe
+   September 2026
+*/
+
+.rank-spotlight {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px;
+
+    margin-bottom: 20px;
+}
+
+.rank-leader {
+    position: relative;
+
+    padding: 22px 26px 26px;
+
+    overflow: hidden;
+
+    color: var(--za-white);
+
+    background:
+        radial-gradient(
+            circle at 82% 18%,
+            oklch(1 0 0 / 0.14) 0 38%,
+            transparent 64%
+        ),
+        linear-gradient(
+            145deg,
+            color-mix(in oklab, var(--za-blue) 88%, black) 0%,
+            color-mix(in oklab, var(--za-blue) 62%, oklch(0.4 0.09 268)) 100%
+        );
+
+    border-radius: 20px;
+
+    box-shadow: 0 18px 40px oklch(0.2 0.08 268 / 0.28);
+}
+
+.rank-leader-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+
+    margin-bottom: 26px;
+}
+
+.rank-leader-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 6px 13px 6px 9px;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+
+    color: color-mix(in oklab, var(--za-gold) 88%, white);
+
+    background: oklch(1 0 0 / 0.12);
+
+    border-radius: 999px;
+}
+
+.rank-leader-badge-icon svg {
+    display: block;
+    width: 15px;
+    height: 15px;
+
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.rank-leader-meta {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+
+    color: oklch(1 0 0 / 0.55);
+}
+
+.rank-leader-name {
+    margin: 0 0 4px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: clamp(26px, 3.1vw, 34px);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    word-break: break-word;
+
+    color: var(--za-white);
+}
+
+.rank-leader-vendor {
+    margin: 0 0 24px;
+
+    font-size: 12.5px;
+
+    color: oklch(1 0 0 / 0.58);
+}
+
+.rank-leader-figures {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 22px;
+}
+
+.rank-leader-score-value {
+    display: block;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: clamp(48px, 6.4vw, 66px);
+    font-weight: 700;
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+}
+
+.rank-leader-score-note {
+    display: block;
+
+    margin-top: 8px;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+
+    color: oklch(1 0 0 / 0.5);
+}
+
+.rank-leader-stats {
+    display: flex;
+    gap: 26px;
+
+    margin: 0;
+
+    padding-left: 22px;
+
+    border-left: 1px solid oklch(1 0 0 / 0.16);
+}
+
+.rank-leader-stats div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 4px;
+}
+
+.rank-leader-stats dt {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+
+    color: oklch(1 0 0 / 0.5);
+}
+
+.rank-leader-stats dd {
+    margin: 0;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+
+    color: var(--za-white);
+}
+
+/* Who is chasing. One bar each, all running 0 to 100. */
+
+.rank-close {
+    display: flex;
+    flex-direction: column;
+
+    padding: 22px 26px 20px;
+
+    background: oklch(1 0 0 / 0.86);
+
+    border: 1px solid oklch(0.9 0.02 240);
+    border-radius: 20px;
+
+    backdrop-filter: blur(10px);
+}
+
+.rank-close-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.rank-close-head h2 {
+    margin: 0;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+
+    color: oklch(0.2 0.03 252);
+}
+
+.rank-close-icon svg {
+    display: block;
+    width: 17px;
+    height: 17px;
+
+    fill: none;
+    stroke: var(--za-red);
+    stroke-width: 2;
+    stroke-linecap: round;
+}
+
+.rank-close-sub {
+    margin: 6px 0 18px;
+
+    font-size: 12.5px;
+
+    color: oklch(0.5 0.022 252);
+}
+
+.rank-close-list {
+    flex: 1;
+
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+
+    margin: 0 0 14px;
+    padding: 0;
+
+    list-style: none;
+}
+
+.rank-close-list li {
+    display: grid;
+    grid-template-columns: minmax(0, 96px) minmax(0, 1fr) 42px;
+    align-items: center;
+    gap: 12px;
+}
+
+.rank-close-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+
+    color: oklch(0.34 0.025 252);
+}
+
+.rank-close-track {
+    height: 7px;
+
+    background: oklch(0.92 0.012 240);
+    border-radius: 999px;
+
+    overflow: hidden;
+}
+
+.rank-close-fill {
+    display: block;
+    height: 100%;
+
+    border-radius: 999px;
+}
+
+.rank-close-value {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+
+    color: oklch(0.24 0.03 252);
+}
+
+.rank-close-foot {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+
+    margin: 0;
+    padding-top: 13px;
+
+    font-size: 11.5px;
+
+    color: oklch(0.54 0.022 252);
+
+    border-top: 1px solid oklch(0.93 0.012 240);
+}
+
+.rank-close-foot .status-dot {
+    flex: none;
+
+    background: var(--za-green);
+}
+
+/* ---------------------------------------------------------
+   THE BOARD
+   --------------------------------------------------------- */
+
+.rank-board {
+    margin-bottom: 20px;
+    padding: 22px 8px 10px;
+
+    background: oklch(1 0 0 / 0.86);
+
+    border: 1px solid oklch(0.9 0.02 240);
+    border-radius: 20px;
+
+    backdrop-filter: blur(10px);
+}
+
+.rank-board-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px;
+
+    padding: 0 16px 16px;
+}
+
+.rank-board-head h2 {
+    margin: 0 0 5px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+
+    color: oklch(0.2 0.03 252);
+}
+
+.rank-board-head p {
+    margin: 0;
+
+    font-size: 12.5px;
+
+    color: oklch(0.5 0.022 252);
+}
+
+.rank-board-count {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+
+    color: oklch(0.55 0.02 252);
+}
+
+.rank-board-count strong {
+    color: oklch(0.24 0.03 252);
+}
+
+.rank-table-scroll {
+    overflow-x: auto;
+}
+
+.rank-table {
+    width: 100%;
+
+    border-collapse: collapse;
+
+    font-size: 13.5px;
+}
+
+.rank-table th {
+    padding: 12px;
+
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    text-align: right;
+    white-space: nowrap;
+
+    color: oklch(0.55 0.022 252);
+
+    border-top: 1px solid oklch(0.91 0.018 240);
+    border-bottom: 1px solid oklch(0.91 0.018 240);
+
+    cursor: pointer;
+
+    user-select: none;
+}
+
+.rank-table th.is-left,
+.rank-table td.is-left {
+    text-align: left;
+}
+
+/* The name column absorbs the slack so the numeric columns stay
+   tight together and can be read down rather than hunted across. */
+.rank-table th.is-left,
+.rank-table td.is-left {
+    width: 99%;
+}
+
+.rank-table th:hover {
+    color: oklch(0.3 0.03 252);
+}
+
+.rank-table th.is-sorted {
+    color: var(--za-green);
+}
+
+/* Reserved whether or not this column is the sorted one, so the
+   header row does not shift sideways when the sort changes. */
+.rank-sort-arrow {
+    display: inline-block;
+    width: 12px;
+
+    margin-left: 5px;
+
+    text-align: left;
+}
+
+.rank-position-head,
+.rank-remove-head {
+    cursor: default;
+}
+
+.rank-table td {
+    padding: 13px 12px;
+
+    text-align: right;
+    white-space: nowrap;
+
+    font-variant-numeric: tabular-nums;
+
+    color: oklch(0.32 0.025 252);
+
+    border-bottom: 1px solid oklch(0.94 0.01 240);
+}
+
+.rank-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.rank-table-row {
+    transition: background-color 0.16s ease;
+}
+
+.rank-table-row:hover {
+    background: oklch(0.985 0.008 242);
+}
+
+.rank-table-row.is-removing {
+    opacity: 0.45;
+}
+
+.rank-position {
+    width: 52px;
+
+    padding-left: 16px !important;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+
+    color: oklch(0.64 0.02 252);
+}
+
+/* Colour comes from the NAME, never the rank, so a re-sort does not
+   repaint every row. */
+
+.rank-identity {
+    display: inline-flex;
+    align-items: center;
+    gap: 11px;
+}
+
+.rank-chip {
+    flex: none;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 27px;
+    height: 27px;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+
+    color: var(--za-white);
+
+    border-radius: 9px;
+}
+
+.rank-identity-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    min-width: 0;
+}
+
+.rank-name {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13px;
+    font-weight: 600;
+
+    color: oklch(0.22 0.03 252);
+}
+
+.rank-vendor {
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    font-size: 11px;
+
+    color: oklch(0.6 0.02 252);
+}
+
+/* Always drawn against 100, never against the leader. */
+
+.rank-score-cell {
+    width: 124px;
+    min-width: 124px;
+}
+
+.rank-score {
+    display: block;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+
+    color: oklch(0.2 0.03 252);
+}
+
+.rank-score-track {
+    display: block;
+
+    width: 100%;
+    height: 4px;
+
+    margin-top: 5px;
+
+    background: oklch(0.92 0.012 240);
+    border-radius: 999px;
+
+    overflow: hidden;
+}
+
+.rank-score-fill {
+    display: block;
+    height: 100%;
+
+    border-radius: 999px;
+
+    transition: width 0.4s ease;
+}
+
+/* Removing is a button, because the row used to delete itself on
+   any click with nothing on screen saying that it would. */
+
+.rank-remove-cell {
+    width: 48px;
+
+    padding-right: 16px !important;
+}
+
+.rank-remove {
+    width: 26px;
+    height: 26px;
+
+    padding: 0;
+
+    font-size: 15px;
+    line-height: 1;
+
+    color: oklch(0.65 0.02 252);
+
+    background: transparent;
+
+    border: 1px solid transparent;
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    transition:
+        color 0.16s ease,
+        border-color 0.16s ease,
+        background-color 0.16s ease;
+}
+
+.rank-remove:hover:not(:disabled) {
+    color: var(--za-red);
+    border-color: color-mix(in oklab, var(--za-red) 45%, transparent);
+    background: oklch(1 0 0 / 0.9);
+}
+
+.rank-remove:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* The states before there is a table. */
+
+.rank-state {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    margin: 0 8px 12px;
+    padding: 30px 24px;
+
+    font-size: 14px;
+
+    color: oklch(0.42 0.025 252);
+
+    border-radius: 14px;
+}
+
+.rank-state.is-loading .status-dot {
+    background: var(--za-gold);
+
+    animation: status-pulse 1.1s ease-in-out infinite;
+}
+
+.rank-state.is-error {
+    color: oklch(0.45 0.16 25);
+
+    background: color-mix(in oklab, var(--za-red) 8%, white);
+}
+
+.rank-state.is-error .status-dot {
+    background: var(--za-red);
+}
+
+.rank-state.is-empty {
+    display: block;
+
+    text-align: center;
+}
+
+.rank-empty-title {
+    margin: 0 0 8px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+
+    color: oklch(0.24 0.03 252);
+}
+
+.rank-state.is-empty p {
+    max-width: 46ch;
+
+    margin: 0 auto;
+
+    line-height: 1.6;
+}
+
+/* 
+   THE TWO EXPLAINERS
+   Mukovhe Ranwashe
+   September 2026
+*/
+
+.rank-explainers {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px;
+
+    margin-bottom: 34px;
+}
+
+.rank-how {
+    padding: 26px 28px 24px;
+
+    color: var(--za-white);
+
+    background: linear-gradient(
+        150deg,
+        color-mix(in oklab, var(--za-red) 88%, white) 0%,
+        color-mix(in oklab, var(--za-gold) 58%, var(--za-red)) 100%
+    );
+
+    border-radius: 20px;
+
+    box-shadow: 0 16px 36px oklch(0.55 0.16 30 / 0.2);
+}
+
+.rank-how-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    margin: 0 0 14px;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+
+    color: oklch(1 0 0 / 0.82);
+}
+
+.rank-how-label .rank-eyebrow-rule {
+    background: oklch(1 0 0 / 0.8);
+}
+
+.rank-how h2 {
+    max-width: 22ch;
+
+    margin: 0 0 14px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 23px;
+    font-weight: 700;
+    line-height: 1.22;
+
+    color: var(--za-white);
+}
+
+.rank-how p {
+    max-width: 48ch;
+
+    margin: 0;
+
+    font-size: 13px;
+    line-height: 1.68;
+
+    color: oklch(1 0 0 / 0.9);
+}
+
+.rank-how-figures {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+
+    margin-top: 22px;
+}
+
+.rank-how-figures div {
+    padding: 13px 14px;
+
+    background: oklch(1 0 0 / 0.15);
+
+    border-radius: 12px;
+}
+
+.rank-how-figures strong {
+    display: block;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+
+    color: var(--za-white);
+}
+
+.rank-how-figures span {
+    display: block;
+
+    margin-top: 3px;
+
+    font-size: 11px;
+
+    color: oklch(1 0 0 / 0.78);
+}
+
+.rank-what {
+    padding: 26px 28px;
+
+    background: oklch(1 0 0 / 0.86);
+
+    border: 1px solid oklch(0.9 0.02 240);
+    border-radius: 20px;
+
+    backdrop-filter: blur(10px);
+}
+
+.rank-what h2 {
+    margin: 0 0 6px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+
+    color: oklch(0.2 0.03 252);
+}
+
+.rank-what ul {
+    margin: 0;
+    padding: 0;
+
+    list-style: none;
+}
+
+.rank-what li {
+    display: flex;
+    gap: 13px;
+
+    padding: 16px 0;
+
+    border-bottom: 1px solid oklch(0.94 0.01 240);
+}
+
+.rank-what li:last-child {
+    padding-bottom: 0;
+
+    border-bottom: 0;
+}
+
+.rank-what-icon {
+    flex: none;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 30px;
+    height: 30px;
+
+    background: color-mix(in oklab, var(--za-green) 12%, white);
+
+    border-radius: 10px;
+}
+
+.rank-what-icon svg {
+    width: 16px;
+    height: 16px;
+
+    fill: none;
+    stroke: var(--za-green);
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.rank-what strong {
+    display: block;
+
+    margin-bottom: 4px;
+
+    font-size: 13.5px;
+    font-weight: 600;
+
+    color: oklch(0.22 0.03 252);
+}
+
+.rank-what p {
+    margin: 0;
+
+    font-size: 12.5px;
+    line-height: 1.62;
+
+    color: oklch(0.48 0.022 252);
+}
+
+.rank-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    padding-top: 20px;
+
+    font-size: 11.5px;
+
+    color: oklch(0.55 0.022 252);
+
+    border-top: 1px solid oklch(0.91 0.018 240);
+}
+
+.rank-footer-note {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    text-align: right;
+}
+
+.visually-hidden {
+    position: absolute;
+
+    width: 1px;
+    height: 1px;
+
+    margin: -1px;
+    padding: 0;
+
+    overflow: hidden;
+
+    clip-path: inset(50%);
+
+    white-space: nowrap;
+}
+
+/* ---------------------------------------------------------
+   NARROW
+   --------------------------------------------------------- */
+
+@media (max-width: 1020px) {
+
+    .rank-hero {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 28px;
+
+        padding-top: 38px;
+    }
+
+    .rank-spotlight,
+    .rank-explainers {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 720px) {
+
+    .rank {
+        width: calc(100% - 24px);
+    }
+
+    .rank-controls-right {
+        width: 100%;
+
+        margin-left: 0;
+    }
+
+    .rank-find {
+        flex: 1;
+    }
+
+    .rank-find input {
+        width: 100%;
+    }
+
+    .rank-leader-stats {
+        padding-left: 0;
+
+        border-left: 0;
+    }
+
+    .rank-how-figures {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .rank-table th,
+    .rank-table td {
+        padding: 11px 8px;
+    }
+
+    .rank-score-cell {
+        width: 96px;
+        min-width: 96px;
+    }
+}
+
+/* Fainter everywhere except Home, which has fewer numbers on it. */
+.app-shell.is-flag:not(.is-home) .app-backdrop {
+    opacity: 0.11;
+}
+
+/* All nine columns sort; three are folded away by default. */
+.rank-board-tools {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.rank-metrics-toggle {
+    padding: 6px 13px;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+
+    color: oklch(0.42 0.025 252);
+
+    background: oklch(1 0 0 / 0.8);
+
+    border: 1px solid oklch(0.88 0.025 240);
+    border-radius: 999px;
+
+    cursor: pointer;
+
+    transition:
+        border-color 0.18s ease,
+        color 0.18s ease;
+}
+
+.rank-metrics-toggle:hover {
+    border-color: var(--za-green);
+    color: var(--za-green);
+}
+
+.rank-metrics-toggle[aria-pressed="true"] {
+    color: var(--za-green);
+    border-color: var(--za-green);
+
+    background: color-mix(in oklab, var(--za-green) 8%, white);
+}
+
+/* Partial result: a real score built on less than the full set. */
+.selection-status.is-partial {
+    color: oklch(0.42 0.09 68);
+}
+
+.selection-status.is-partial .status-dot {
+    background: var(--za-gold);
+}
+
+/* Nine columns need the room six did not. */
+.rank-table.is-wide th,
+.rank-table.is-wide td {
+    padding: 12px 9px;
+}
+
+.rank-table.is-wide th.is-left,
+.rank-table.is-wide td.is-left {
+    width: auto;
+    max-width: 230px;
+}
+
+.rank-table.is-wide .rank-vendor {
+    display: block;
+    max-width: 200px;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rank-table.is-wide .rank-score-cell {
+    width: 104px;
+    min-width: 104px;
 }
