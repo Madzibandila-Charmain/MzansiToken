@@ -98,7 +98,9 @@ function Compare() {
             tokens: 0,
             fertility: 0,
             compression: 0,
-            token_premium: 0
+            token_premium: 0,
+            total_gold_boundaries: 0,
+            words_evaluated: 0
         });
 
     const [typedTokenizerTwoMetrics, setTypedTokenizerTwoMetrics] =
@@ -106,7 +108,9 @@ function Compare() {
             tokens: 0,
             fertility: 0,
             compression: 0,
-            token_premium: 0
+            token_premium: 0,
+            total_gold_boundaries: 0,
+            words_evaluated: 0
         });
 
     const [mbiLoading, setMbiLoading] = useState(false);
@@ -334,6 +338,10 @@ function Compare() {
                             result.tokenizer_a.metrics.recall ?? 0,
                         f1:
                             result.tokenizer_a.metrics.f1 ?? 0,
+                        aligned_boundaries:
+                            result.tokenizer_a.metrics.aligned_boundaries ?? 0,
+                        total_gold_boundaries:
+                            result.tokenizer_a.metrics.total_gold_boundaries ?? 0,
                         words_evaluated:
                             result.tokenizer_a.words_evaluated ?? 0
                     },
@@ -345,6 +353,10 @@ function Compare() {
                             result.tokenizer_b.metrics.recall ?? 0,
                         f1:
                             result.tokenizer_b.metrics.f1 ?? 0,
+                        aligned_boundaries:
+                            result.tokenizer_a.metrics.aligned_boundaries ?? 0,
+                        total_gold_boundaries:
+                            result.tokenizer_a.metrics.total_gold_boundaries ?? 0,
                         words_evaluated:
                             result.tokenizer_b.words_evaluated ?? 0
                     }
@@ -365,6 +377,8 @@ function Compare() {
                                 precision: 0,
                                 recall: 0,
                                 f1: 0,
+                                aligned_boundaries: 0,
+                                total_gold_boundaries: 0,
                                 words_evaluated: 0
                             },
 
@@ -372,6 +386,8 @@ function Compare() {
                                 precision: 0,
                                 recall: 0,
                                 f1: 0,
+                                aligned_boundaries: 0,
+                                total_gold_boundaries: 0,
                                 words_evaluated: 0
                             }
                         });
