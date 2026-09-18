@@ -8,6 +8,14 @@ Routes:
 
     GET /compare_mbi
         MBI metrics for two tokenizers at once
+
+Amended by Mukovhe Ranwashe
+18 September 2026 
+
+    /morphology-languages is new. RANK needs to know which languages can
+    be scored, and that set is read from the dataset rather than assumed -
+    it has changed once already.
+
 """
 
 from pathlib import Path
@@ -21,21 +29,11 @@ from app.schemas.mbi_schemas import (
     MBIMetrics,
 )
 
-from app.services.NCHLT_dataset_service import load_nchlt_data
+from app.services.nchlt_state import available_languages, get_or_compute_mbi
 
-from app.services.morphology_service import (
-    BoundaryVector,
-    aggregate_results,
-    compare_boundaries,
-    to_boundary_vector,
-)
+from app.services.tokenizer_state import (get_or_load_tokenizer, validate_tokenizer,)
 
-from app.services.tokenizer import get_NCHLT_boundary_vector
-
-from app.services.tokenizer_state import (
-    get_or_load_tokenizer,
-    validate_tokenizer,
-)
+from app.services.tokenizer_state import (get_or_load_tokenizer, validate_tokenizer,)
 
 
 router = APIRouter(tags=["mbi"])
@@ -69,68 +67,60 @@ def _compute_mbi_for_language(model_name: str, language: str) -> MBIResult:
         )
 
     try:
-        dataset = load_nchlt_data(str(NCHLT_DIR))
+        result = get_or_compute_mbi(model_name, language, tokenizer)
+
     except FileNotFoundError as e:
         raise HTTPException(
             status_code=500,
             detail=str(e),
         )
 
-    if language not in dataset:
+    except KeyError:
+        # Wording preserved exactly: Compare.jsx and Rank.jsx both test for
+        # "Unsupported language" to tell a language with no NCHLT data apart from a real failure.
         raise HTTPException(
             status_code=400,
             detail=f"Unsupported language: {language}",
         )
 
-    word_results = []
-
-    for surface_word, gold_segmentation in dataset[language]:
-
-        # Get tokenizer boundaries using character offset mapping.
-        #
-        # This avoids relying on tokenizer-specific markers such as:
-        # ## for WordPiece
-        # ▁ for SentencePiece
-        # Ġ for GPT-style BPE
-        predicted_boundaries = get_NCHLT_boundary_vector(
-            tokenizer,
-            surface_word,
+    except ValueError as e:
+        # A slow tokenizer, or one whose offsets do not cover the word. Nothing the server can fix, and not a server fault either.
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
         )
-
-        predicted_vector = BoundaryVector(
-            word=surface_word,
-            boundaries=predicted_boundaries,
-        )
-
-        # Convert the NCHLT gold morpheme segmentation
-        # into the same binary boundary-vector format.
-        gold_vector = to_boundary_vector(
-            surface_word,
-            gold_segmentation,
-        )
-
-        # Compare tokenizer boundaries against the
-        # NCHLT gold-standard boundaries.
-        word_results.append(
-            compare_boundaries(
-                predicted_vector,
-                gold_vector,
-            )
-        )
-
-    # Micro-average TP, FP and FN across all words.
-    metrics = aggregate_results(word_results)
 
     return MBIResult(
         model_name=model_name,
         language=language,
-        words_evaluated=len(word_results),
+        words_evaluated=result["words_evaluated"],
         metrics=MBIMetrics(
-            precision=metrics.precision,
-            recall=metrics.recall,
-            f1=metrics.f1,
+            precision=result["metrics"]["precision"],
+            recall=result["metrics"]["recall"],
+            f1=result["metrics"]["f1"],
         ),
     )
+
+@router.get("/morphology-languages")
+def list_morphology_languages():
+    """
+    The languages NCHLT has gold segmentations for.
+
+    RANK calls this so it only asks for morphology where there is any to get, 
+    rather than firing a request per FLORES language and letting the English one fail every time.
+
+    Example response:
+        {"languages": ["Sepedi", "Sesotho", "Setswana", ...]}
+    """
+    try:
+        return {"languages": available_languages()}
+
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e),
+        )
+
 
 
 @router.get("/mbi/{model_name:path}", response_model=MBIResult)
