@@ -70,19 +70,25 @@ function Inspect() {
     const [languages, setLanguages] = useState([]);
 
     const [selectedLanguages, setSelectedLanguages] = useState(() => {
-        const savedLanguages =
-            localStorage.getItem("inspectSelectedLanguages");
 
-        if (savedLanguages) {
-            try {
-                return JSON.parse(savedLanguages);
-            }
-            catch (err) {
-                return [];
-            }
+        try {
+
+            const savedLanguages =
+                localStorage.getItem("inspectSelectedLanguages");
+
+            const parsed = savedLanguages
+                ? JSON.parse(savedLanguages)
+                : null;
+
+            /* JSON.parse succeeds on "null", "7" and "{}" as well as on an
+               array, and any of those reaches .length and .filter later.
+               Anything that is not an array is thrown away. */
+            return Array.isArray(parsed) ? parsed : [];
+
         }
-
-        return [];
+        catch (err) {
+            return [];
+        }
     });
 
     const [languageData, setLanguageData] = useState(() => {
@@ -91,7 +97,14 @@ function Inspect() {
 
         if (savedLanguageData) {
             try {
-                return JSON.parse(savedLanguageData);
+                const parsed = JSON.parse(savedLanguageData);
+
+                /* Same reason: an array or a number parses fine and then
+                   breaks every lookup that follows. */
+                return parsed && typeof parsed === "object" &&
+                    !Array.isArray(parsed)
+                    ? parsed
+                    : {};
             }
             catch (err) {
                 return {};
@@ -197,8 +210,16 @@ function Inspect() {
 
                 const result = await getOptions();
 
-                setLanguages(result.languages);
-                setTokenizers(result.tokenizers);
+                /* A reply missing either key used to put `undefined`
+                   into state, and the first `tokenizers.length` after
+                   that crashed the page. */
+                setLanguages(
+                    Array.isArray(result?.languages) ? result.languages : []
+                );
+
+                setTokenizers(
+                    Array.isArray(result?.tokenizers) ? result.tokenizers : []
+                );
 
                 if (!inspectInitialised) {
 
