@@ -148,33 +148,96 @@ def get_tokenizer_info(tokenizer) -> dict:
 
 def tokenize_NCHLT(tokenizer, nchlt_data, delimeter="_") -> list[tuple[str, str]]:
     """
-        Run tokenizer through the NCHLT dataset to get its predicted segmentations for analysis
+    Run tokenizer through the NCHLT dataset to get its predicted
+    segmentations for analysis.
 
-        Args: 
-            tokenizer: loaded tokenizer from huggingface
-            nchlt_data: list of tuples for a specific language that have the word before segmentation and after
-
-        Returns:
-            A list of words from the data, before tokenization and after tokenization
+    This function is kept for the existing NCHLT tokenization tests
+    and normal tokenization behaviour.
     """
 
     results = []
-
-    # Iterate through the data to tokenize
     for surf, gold in nchlt_data:
-        tokens = tokenizer.tokenize(surf) #tokenize
-
-        # convert list of tokens to tokenized string
+        tokens = tokenizer.tokenize(surf)
         cleaned = []
+
         for token in tokens:
-            token = token.replace("##", "")   # WordPiece (BERT)
-            token = token.replace("▁", "")    # SentencePiece (T5, Llama)
-            token = token.replace("Ġ", "")    # BPE byte-level (GPT-2)
+            token = token.replace("##", "")
+            token = token.replace("▁", "")
+            token = token.replace("Ġ", "")
+
             if token:
                 cleaned.append(token)
-        tokenized_str = delimeter.join(cleaned)
 
-        # Add to list
+        tokenized_str = delimeter.join(cleaned)
         results.append((surf, tokenized_str))
 
     return results
+
+def get_NCHLT_boundary_vector(tokenizer, surface_word: str) -> list[int]:
+    """
+    Get the tokenizer's predicted boundaries for one NCHLT word.
+
+    Uses Hugging Face character offset mapping instead of relying
+    on tokenizer-specific markers such as ##, ▁, or Ġ.
+    """
+
+    if not surface_word:
+        return []
+
+    if not getattr(tokenizer, "is_fast", False):
+        raise ValueError(
+            f"Tokenizer '{tokenizer.__class__.__name__}' does not support "
+            "character offset mapping required for MBI."
+        )
+
+    try:
+        encoded = tokenizer(
+            surface_word,
+            add_special_tokens=False,
+            return_offsets_mapping=True,
+        )
+    except (NotImplementedError, TypeError, ValueError) as e:
+        raise ValueError(
+            f"Tokenizer '{tokenizer.__class__.__name__}' does not provide "
+            f"usable character offsets for MBI: {e}"
+        )
+
+    offsets = encoded.get("offset_mapping")
+
+    if not offsets:
+        raise ValueError(
+            f"Tokenizer '{tokenizer.__class__.__name__}' returned no "
+            "character offsets for MBI."
+        )
+
+    boundaries = [0] * (len(surface_word) - 1)
+
+    previous_end = 0
+
+    for start, end in offsets:
+
+        # Ignore empty offsets.
+        if start == end:
+            continue
+
+        # Make sure offsets move through the original word.
+        if start < previous_end:
+            raise ValueError(
+                f"Tokenizer '{tokenizer.__class__.__name__}' returned "
+                "overlapping character offsets for '{surface_word}'."
+            )
+
+        # A token starting after character 0 creates a boundary.
+        if start > 0:
+            boundaries[start - 1] = 1
+
+        previous_end = end
+
+    # The final token should reach the end of the original word.
+    if previous_end != len(surface_word):
+        raise ValueError(
+            f"Tokenizer '{tokenizer.__class__.__name__}' could not "
+            f"align the complete word '{surface_word}' using character offsets."
+        )
+
+    return boundaries
