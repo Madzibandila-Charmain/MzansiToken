@@ -1,0 +1,19 @@
+services:
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: mzansitoken-backend
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mzansitoken-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
