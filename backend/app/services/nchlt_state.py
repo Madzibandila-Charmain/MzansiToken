@@ -9,7 +9,7 @@ from pathlib import Path
 
 from app.services.NCHLT_dataset_service import load_nchlt_data
 from app.services.morphology_service import (BoundaryVector, aggregate_results, compare_boundaries, to_boundary_vector,)
-from app.services.tokenizer import get_NCHLT_boundary_vector
+from app.services.tokenizer import get_NCHLT_boundary_vectors
 
 # Figure out where the NCHLT dataset lives in the project folder
 BASE_DIR = Path(__file__).resolve().parents[3]
@@ -51,7 +51,11 @@ def available_languages():
 def get_or_compute_mbi(model_name: str, language: str, tokenizer):
     """
     Get morphology metrics for one tokenizer + one language.
-    If we’ve already computed them, grab from cache. Otherwise, compute and store them.
+
+    If we have already computed them, return the cached result.
+    Otherwise, tokenize all NCHLT words in a batch, compare the
+    predicted boundaries with the gold boundaries, and cache
+    the final metrics.
     """
 
     key = (model_name, language)
@@ -62,26 +66,51 @@ def get_or_compute_mbi(model_name: str, language: str, tokenizer):
 
     corpus = get_corpus()
 
-    # If the language isn’t in the dataset, stop here
+    # If the language isn't in the dataset, stop here
     if language not in corpus:
         raise KeyError(language)
 
+    words = corpus[language]
+
+    # Get all surface words from the NCHLT dataset
+    surface_words = [
+        surface_word
+        for surface_word, _ in words
+    ]
+
+    # Tokenize all words as a batch
+    predicted_boundary_vectors = get_NCHLT_boundary_vectors(
+        tokenizer,
+        surface_words,
+    )
+
     word_results = []
 
-    # Go through each word and its gold segmentation
-    for surface_word, gold_segmentation in corpus[language]:
+    # Compare every predicted boundary vector with its
+    # corresponding NCHLT gold segmentation
+    for (
+        surface_word,
+        gold_segmentation,
+    ), predicted_boundaries in zip(
+        words,
+        predicted_boundary_vectors,
+    ):
+        predicted_vector = BoundaryVector(
+            word=surface_word,
+            boundaries=predicted_boundaries,
+        )
 
-        # Get predicted boundaries from the tokenizer
-        predicted_boundaries = get_NCHLT_boundary_vector(tokenizer, surface_word,)
+        gold_vector = to_boundary_vector(
+            surface_word,
+            gold_segmentation,
+        )
 
-        # Wrap predictions in a BoundaryVector object
-        predicted_vector = BoundaryVector(word=surface_word, boundaries=predicted_boundaries,)
-
-        # Convert gold segmentation into a BoundaryVector
-        gold_vector = to_boundary_vector(surface_word, gold_segmentation,)
-
-        # Compare predicted vs gold and save the result
-        word_results.append(compare_boundaries( predicted_vector, gold_vector,))
+        word_results.append(
+            compare_boundaries(
+                predicted_vector,
+                gold_vector,
+            )
+        )
 
     # Combine all word results into overall precision/recall/F1
     metrics = aggregate_results(word_results)

@@ -33,9 +33,6 @@ from app.services.nchlt_state import available_languages, get_or_compute_mbi
 
 from app.services.tokenizer_state import (get_or_load_tokenizer, validate_tokenizer,)
 
-from app.services.tokenizer_state import (get_or_load_tokenizer, validate_tokenizer,)
-
-
 router = APIRouter(tags=["mbi"])
 
 
