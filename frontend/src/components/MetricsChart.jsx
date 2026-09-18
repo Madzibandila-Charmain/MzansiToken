@@ -202,21 +202,30 @@ function MetricsChart({ tokenizer }) {
         and English last. That keeps neighbouring slices the pairs that
         were checked for colour-blind separation.
     */
-    const names = Object.keys(data).sort((a, b) => {
+    /*
+        Drop any language the backend sent as null or as something that is
+        not an object before anything reads a field off it. Guarding each
+        read one at a time was whack-a-mole: the sorts, the tooltip and the
+        legend all reach into `data` and each one crashed the page in turn.
+        One filter here covers all of them.
+    */
+    const names = Object.keys(data)
+        .filter((name) => data[name] && typeof data[name] === "object")
+        .sort((a, b) => {
 
-        if (a === "English") {
-            return 1;
-        }
+            if (a === "English") {
+                return 1;
+            }
 
-        if (b === "English") {
-            return -1;
-        }
+            if (b === "English") {
+                return -1;
+            }
 
-        const left = LANGUAGE_ORDER.indexOf(a);
-        const right = LANGUAGE_ORDER.indexOf(b);
+            const left = LANGUAGE_ORDER.indexOf(a);
+            const right = LANGUAGE_ORDER.indexOf(b);
 
-        return (left === -1 ? 99 : left) - (right === -1 ? 99 : right);
-    });
+            return (left === -1 ? 99 : left) - (right === -1 ? 99 : right);
+        });
 
     const colours = {};
 
@@ -224,17 +233,24 @@ function MetricsChart({ tokenizer }) {
         colours[name] = languageColour(name);
     });
 
+    /* A language key can arrive as null - the backend returns one entry
+       per language and a failed language comes back empty rather than
+       missing. Reading .token_count straight off it crashed the page. */
     const total = names.reduce(
-        (sum, name) => sum + data[name].token_count,
+        (sum, name) => sum + (Number(data[name]?.token_count) || 0),
         0
     );
+
+    /* Every share divides by this. A corpus that reports no tokens at all
+       would otherwise turn every slice into NaN and every path into "NaN". */
+    const shareBase = total || 1;
 
     const current = MEASURES.find((m) => m.key === measure);
 
     /* token_premium is null for English - it is the baseline, so 1.00. */
     const valueOf = (name) => {
 
-        const value = data[name][measure];
+        const value = data[name]?.[measure];
 
         if (value === null || value === undefined) {
             return measure === "token_premium" ? 1 : 0;
@@ -262,11 +278,11 @@ function MetricsChart({ tokenizer }) {
 
     const donutSlices = names.map((name, index) => {
 
-        const span = data[name].token_count / total * TAU;
+        const span = (Number(data[name]?.token_count) || 0) / shareBase * TAU;
         const pad = Math.min(0.016, span / 8);
         const mid = angle + span / 2;
 
-        const share = data[name].token_count / total * 100;
+        const share = (Number(data[name]?.token_count) || 0) / shareBase * 100;
 
         /*
             The percentage sits just outside its own slice. It used to live
@@ -536,7 +552,7 @@ function MetricsChart({ tokenizer }) {
                         {name}
                         {" "}
                         <b>
-                            {(data[name].token_count / total * 100).toFixed(1)}%
+                            {((Number(data[name]?.token_count) || 0) / shareBase * 100).toFixed(1)}%
                         </b>
                         {" "}
                         <span className="family">{FAMILY[name] || ""}</span>
@@ -569,25 +585,25 @@ function MetricsChart({ tokenizer }) {
                         <span className="key">tokens</span>
                         {" "}
                         <span className="val">
-                            {data[hot].token_count.toLocaleString()}
+                            {(Number(data[hot]?.token_count) || 0).toLocaleString()}
                         </span>
                         <br />
                         <span className="key">per word</span>
                         {" "}
                         <span className="val">
-                            {data[hot].fertility.toFixed(2)}
+                            {(Number(data[hot]?.fertility) || 0).toFixed(2)}
                         </span>
                         <br />
                         <span className="key">bytes/token</span>
                         {" "}
                         <span className="val">
-                            {data[hot].compression.toFixed(2)}
+                            {(Number(data[hot]?.compression) || 0).toFixed(2)}
                         </span>
                         <br />
                         <span className="key">vs English</span>
                         {" "}
                         <span className="val">
-                            {data[hot].token_premium === null
+                            {data[hot]?.token_premium == null
                                 ? "—"
                                 : data[hot].token_premium.toFixed(2) + "×"}
                         </span>
