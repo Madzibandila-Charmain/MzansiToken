@@ -344,6 +344,32 @@ export async function getMBI(
 }
 
 
+/*
+    Which languages NCHLT can score for morphology.
+
+    Not the same list as /options, which is FLORES: NCHLT has isiNdebele and
+    Tshivenda but no English, so seven of the eight overlap. RANK asks rather
+    than hard-coding the overlap, so adding or removing a dataset file does
+    not silently leave a wrong list in the JavaScript.
+*/
+export async function getMorphologyLanguages(
+    signal
+) {
+
+    const response = await fetch(
+        `${API_BASE_URL}/morphology-languages`,
+        {
+            signal,
+        }
+    );
+
+    return handleResponse(
+        response,
+        "Could not load the morphology languages."
+    );
+}
+
+
 export async function compareMBI(
     tokenizerA,
     tokenizerB,
@@ -490,6 +516,32 @@ export async function getLeaderboard(
         "Failed to load leaderboard data."
     );
 }
+
+/*
+    The formula behind overall_score: which metrics count and how much.
+
+    Read from the backend rather than written out again here, so the page
+    explains the score the server actually computed. A second copy of the
+    weights in JavaScript would be right on the day it was typed and wrong
+    the first time anybody tuned them.
+*/
+export async function getScoring(
+    signal
+) {
+
+    const response = await fetch(
+        `${API_BASE_URL}/leaderboard/scoring`,
+        {
+            signal,
+        }
+    );
+
+    return handleResponse(
+        response,
+        "Could not load the scoring formula."
+    );
+}
+
 
 export async function createOrUpdateLeaderboardEntry(
     name,
