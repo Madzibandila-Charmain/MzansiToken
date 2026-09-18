@@ -173,15 +173,21 @@ def tokenize_NCHLT(tokenizer, nchlt_data, delimeter="_") -> list[tuple[str, str]
 
     return results
 
-def get_NCHLT_boundary_vector(tokenizer, surface_word: str) -> list[int]:
+def get_NCHLT_boundary_vectors(
+    tokenizer,
+    surface_words: list[str],
+) -> list[list[int]]:
     """
-    Get the tokenizer's predicted boundaries for one NCHLT word.
+    Get predicted tokenizer boundaries for multiple NCHLT words.
 
-    Uses Hugging Face character offset mapping instead of relying
-    on tokenizer-specific markers such as ##, ▁, or Ġ.
+    Uses one batched Hugging Face tokenizer call instead of
+    tokenizing every word individually.
+
+    A boundary is created when a tokenizer token starts at a new
+    character position inside the word.
     """
 
-    if not surface_word:
+    if not surface_words:
         return []
 
     if not getattr(tokenizer, "is_fast", False):
@@ -192,7 +198,7 @@ def get_NCHLT_boundary_vector(tokenizer, surface_word: str) -> list[int]:
 
     try:
         encoded = tokenizer(
-            surface_word,
+            surface_words,
             add_special_tokens=False,
             return_offsets_mapping=True,
         )
@@ -202,42 +208,54 @@ def get_NCHLT_boundary_vector(tokenizer, surface_word: str) -> list[int]:
             f"usable character offsets for MBI: {e}"
         )
 
-    offsets = encoded.get("offset_mapping")
+    offsets_batch = encoded.get("offset_mapping")
 
-    if not offsets:
+    if offsets_batch is None:
         raise ValueError(
             f"Tokenizer '{tokenizer.__class__.__name__}' returned no "
             "character offsets for MBI."
         )
 
-    boundaries = [0] * (len(surface_word) - 1)
+    results = []
 
-    previous_end = 0
+    for surface_word, offsets in zip(surface_words, offsets_batch):
 
-    for start, end in offsets:
-
-        # Ignore empty offsets.
-        if start == end:
+        if not surface_word:
+            results.append([])
             continue
 
-        # Make sure offsets move through the original word.
-        if start < previous_end:
-            raise ValueError(
-                f"Tokenizer '{tokenizer.__class__.__name__}' returned "
-                "overlapping character offsets for '{surface_word}'."
-            )
+        boundaries = [0] * (len(surface_word) - 1)
 
-        # A token starting after character 0 creates a boundary.
-        if start > 0:
-            boundaries[start - 1] = 1
+        for start, end in offsets:
 
-        previous_end = end
+            # Ignore empty offsets.
+            if start == end:
+                continue
 
-    # The final token should reach the end of the original word.
-    if previous_end != len(surface_word):
-        raise ValueError(
-            f"Tokenizer '{tokenizer.__class__.__name__}' could not "
-            f"align the complete word '{surface_word}' using character offsets."
-        )
+            # Ignore offsets outside the original word.
+            if start < 0 or end > len(surface_word):
+                continue
 
-    return boundaries
+            # A token starting after character 0 creates a boundary.
+            if start > 0:
+                boundaries[start - 1] = 1
+
+        results.append(boundaries)
+
+    return results
+
+
+def get_NCHLT_boundary_vector(tokenizer, surface_word: str) -> list[int]:
+    """
+    Get the tokenizer's predicted boundaries for one NCHLT word.
+
+    This wrapper keeps the original single-word function available
+    for existing code and tests.
+    """
+
+    results = get_NCHLT_boundary_vectors(
+        tokenizer,
+        [surface_word],
+    )
+
+    return results[0] if results else []
