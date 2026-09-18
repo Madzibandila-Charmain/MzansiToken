@@ -15,13 +15,11 @@ import os
 
 
 LANGUAGES = {
-    "nbl": "isiNdebele",
     "nso": "Sepedi",
     "sot": "Sesotho",
     "ssw": "siSwati",
     "tsn": "Setswana",
     "tso": "Xitsonga",
-    "ven": "Tshivenda",
     "xho": "isiXhosa",
     "zul": "isiZulu"
 }
