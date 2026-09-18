@@ -95,6 +95,8 @@ def _compute_mbi_for_language(model_name: str, language: str) -> MBIResult:
             precision=result["metrics"]["precision"],
             recall=result["metrics"]["recall"],
             f1=result["metrics"]["f1"],
+            aligned_boundaries=result["metrics"]["aligned_boundaries"],
+            total_gold_boundaries=result["metrics"]["total_gold_boundaries"],
         ),
     )
 

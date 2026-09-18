@@ -121,6 +121,8 @@ def get_or_compute_mbi(model_name: str, language: str, tokenizer):
             "precision": metrics.precision,
             "recall": metrics.recall,
             "f1": metrics.f1,
+            "aligned_boundaries": metrics.aligned_boundaries,
+            "total_gold_boundaries": metrics.total_gold_boundaries,
         },
     }
 

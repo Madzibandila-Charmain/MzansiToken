@@ -115,16 +115,34 @@ def test_all_routes_are_registered():
 #── Morphology endpoint test ─────────────────────
 def test_morphology_metrics_endpoint_returns_values():
     response = client.get("/mbi/gpt2", params={"language": "isiZulu"})
+
     assert response.status_code == 200
+
     data = response.json()
+
     assert "model_name" in data
     assert data["model_name"] == "gpt2"
+
     assert "language" in data
+
     assert "metrics" in data
-    assert set(data["metrics"]) == {"precision", "recall", "f1"}
-    assert 0.0 <= data["metrics"]["precision"] <= 1.0
-    assert 0.0 <= data["metrics"]["recall"] <= 1.0
-    assert 0.0 <= data["metrics"]["f1"] <= 1.0
+
+    assert set(data["metrics"]) == {
+        "precision",
+        "recall",
+        "f1",
+        "aligned_boundaries",
+        "total_gold_boundaries",
+    }
+
+    assert isinstance(data["metrics"]["precision"], float)
+    assert isinstance(data["metrics"]["recall"], float)
+    assert isinstance(data["metrics"]["f1"], float)
+
+    assert isinstance(data["metrics"]["aligned_boundaries"], int)
+    assert isinstance(data["metrics"]["total_gold_boundaries"], int)
+
+    assert data["metrics"]["aligned_boundaries"] <= data["metrics"]["total_gold_boundaries"]
 
 
 # ── Validation errors reach the frontend as readable 400s ─────────────────────

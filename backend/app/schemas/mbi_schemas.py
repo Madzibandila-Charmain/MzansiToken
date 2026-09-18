@@ -7,6 +7,8 @@ class MBIMetrics(BaseModel):
     precision: float
     recall: float
     f1: float
+    aligned_boundaries: int
+    total_gold_boundaries: int
 
 
 class MBIResult(BaseModel):

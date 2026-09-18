@@ -29,12 +29,12 @@ class WordResult:
 
 @dataclass
 class MBIResult:
-    """Aggregated metric results"""
+    """Aggregated metric results."""
     precision: float
     recall: float
     f1: float
-
-
+    aligned_boundaries: int
+    total_gold_boundaries: int
 
 def to_boundary_vector(surf_word: str, split_word: str, delimeter="_") -> BoundaryVector:
     """
@@ -143,5 +143,18 @@ def aggregate_results(word_results: list[WordResult]) -> MBIResult:
         if (precision + recall) > 0
         else 0.0)
 
-    return MBIResult(precision=precision, f1=f1, recall=recall)
+    # Boundary alignment across the entire dataset.
+    #
+    # TP = gold boundaries correctly predicted by the tokenizer.
+    # TP + FN = all gold boundaries in the dataset.
+    aligned_boundaries = tot_tp
+    total_gold_boundaries = tot_tp + tot_fn
+
+    return MBIResult(
+        precision=precision,
+        recall=recall,
+        f1=f1,
+        aligned_boundaries=aligned_boundaries,
+        total_gold_boundaries=total_gold_boundaries,
+    )
    
