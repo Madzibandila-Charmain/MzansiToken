@@ -781,8 +781,6 @@ function Compare() {
                 friendlyError(err) ||
                 "Could not process the uploaded corpus.";
 
-            setError(detail);
-
             setSelectionFailed(true);
 
             setSelectionStatus(detail);
@@ -842,7 +840,7 @@ function Compare() {
         setSelectionFailed(false);
 
         setSelectionType("language");
-        setSelectionStatus("Loading language...");
+        setSelectionStatus(`Loading ${newLanguage}...`);
 
         try {
 
@@ -883,8 +881,6 @@ function Compare() {
             const detail =
                 friendlyError(err) ||
                 "Could not load the language corpus.";
-
-            setError(detail);
 
             setSelectionFailed(true);
 
@@ -934,7 +930,7 @@ function Compare() {
         setTokenizerOneFailed(false);
 
         setTokenizerOneStatus(
-            "Loading tokenizer 1..."
+            `Loading ${newTokenizer}...`
         );
 
         setError("");
@@ -1031,8 +1027,10 @@ function Compare() {
                 friendlyError(err) ||
                 "Could not load tokenizer 1.";
 
-            setError(detail);
-
+            /* Status line only. It used to also go to `error`, which
+               renders a second copy below the card - same sentence twice,
+               and the second one loses the link. Inspect never had that
+               block. */
             setTokenizerOneFailed(true);
 
             setTokenizerOneStatus(detail);
@@ -1081,7 +1079,7 @@ function Compare() {
         setTokenizerTwoFailed(false);
 
         setTokenizerTwoStatus(
-            "Loading tokenizer 2..."
+            `Loading ${newTokenizer}...`
         );
 
         setError("");
@@ -1173,8 +1171,10 @@ function Compare() {
                 friendlyError(err) ||
                 "Could not load tokenizer 2.";
 
-            setError(detail);
-
+            /* Status line only. It used to also go to `error`, which
+               renders a second copy below the card - same sentence twice,
+               and the second one loses the link. Inspect never had that
+               block. */
             setTokenizerTwoFailed(true);
 
             setTokenizerTwoStatus(detail);
@@ -1196,7 +1196,7 @@ function Compare() {
         setSelectionLoading(true);
         setSelectionType("default");
         setSelectionStatus(
-            "Loading default corpus..."
+            "Loading the built-in corpus..."
         );
 
         setError("");
@@ -1233,8 +1233,6 @@ function Compare() {
             const detail =
                 friendlyError(err) ||
                 "Could not load the built-in corpus.";
-
-            setError(detail);
 
             setSelectionFailed(true);
 
@@ -1575,12 +1573,15 @@ function Compare() {
 
             </section>
 
-            {/* Error */}
+            {/* Only failures that have no status line of their own get
+                here - the options load and the typed-text tokenize. Field
+                failures live under the field they belong to. */}
 
             {error && (
 
                 <div className="compare-error">
-                    {error}
+                    <span className="status-dot"></span>
+                    <StatusMessage text={error} failed={true} />
                 </div>
 
             )}
