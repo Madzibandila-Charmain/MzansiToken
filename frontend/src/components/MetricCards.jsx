@@ -9,8 +9,8 @@
     no premium, and a language with no NCHLT entry has no MBI - both should
     read "N/A" rather than "0.00", which would be a claim we cannot make.
 */
-function figure(value, decimals = 2) {
 
+function figure(value, decimals = 2) {
     if (value === null || value === undefined) {
         return "N/A";
     }
@@ -25,10 +25,8 @@ function figure(value, decimals = 2) {
 }
 
 function Card({ name, value }) {
-
     return (
         <div className="metric-card">
-
             <span className="metric-name">
                 {name}
             </span>
@@ -36,24 +34,46 @@ function Card({ name, value }) {
             <span className="metric-value">
                 {value}
             </span>
-
         </div>
     );
 }
 
 /*
-    metrics  - { tokens, fertility, compression, token_premium }
-    mbi      - { precision, recall, f1 } or null when there is none
-    showMbi  - whether this language has NCHLT segmentations at all.
-               English does not, so its row is left off entirely rather
-               than shown as three N/As.
+    metrics - { tokens, fertility, compression, token_premium }
+
+    mbi - {
+        precision,
+        recall,
+        f1,
+        aligned_boundaries,
+        total_gold_boundaries
+    }
+
+    showMbi - whether this language has NCHLT segmentations at all.
+              English does not, so its row is left off entirely rather
+              than shown as three N/As.
 */
+
 function MetricCards({ metrics, mbi, showMbi = false }) {
+
+    let alignmentValue = "N/A";
+
+    if (
+        mbi?.aligned_boundaries !== null &&
+        mbi?.aligned_boundaries !== undefined &&
+        mbi?.total_gold_boundaries !== null &&
+        mbi?.total_gold_boundaries !== undefined
+    ) {
+        alignmentValue =
+            `${Number(mbi.aligned_boundaries).toLocaleString()} / ` +
+            `${Number(mbi.total_gold_boundaries).toLocaleString()}`;
+    }
 
     return (
         <div className="tokenization-metrics">
 
             {/* Efficiency, from the FLORES corpus */}
+
             <div className="metric-row">
 
                 <Card
@@ -81,8 +101,8 @@ function MetricCards({ metrics, mbi, showMbi = false }) {
             </div>
 
             {/* Morphology, from the NCHLT gold segmentations */}
-            {showMbi && (
 
+            {showMbi && (
                 <div className="metric-row metric-row-centered">
 
                     <Card
@@ -100,8 +120,12 @@ function MetricCards({ metrics, mbi, showMbi = false }) {
                         value={figure(mbi?.recall)}
                     />
 
-                </div>
+                    <Card
+                        name="Morpheme Boundary Alignment"
+                        value={alignmentValue}
+                    />
 
+                </div>
             )}
 
         </div>

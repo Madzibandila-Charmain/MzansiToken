@@ -153,7 +153,9 @@ function Inspect() {
     const [mbiMetrics, setMbiMetrics] = useState({
         precision: 0,
         recall: 0,
-        f1: 0
+        f1: 0,
+        aligned_boundaries: 0,
+        total_gold_boundaries: 0
     });
 
     /* Reference to the actual file input. */
@@ -329,7 +331,17 @@ function Inspect() {
                                             f1:
                                                 defaultMbiResult
                                                     .metrics
-                                                    .f1 ?? 0
+                                                    .f1 ?? 0,
+
+                                            aligned_boundaries:
+                                                defaultMbiResult
+                                                    .metrics
+                                                    .aligned_boundaries ?? 0,
+
+                                            total_gold_boundaries:
+                                                defaultMbiResult
+                                                    .metrics
+                                                    .total_gold_boundaries ?? 0
                                         }
                                     }
                                 })
@@ -426,7 +438,9 @@ function Inspect() {
             setMbiMetrics({
                 precision: 0,
                 recall: 0,
-                f1: 0
+                f1: 0,
+                aligned_boundaries: 0,
+                total_gold_boundaries: 0
             });
 
             setMbiError("");
@@ -457,7 +471,13 @@ function Inspect() {
                     result.metrics.recall ?? 0,
 
                 f1:
-                    result.metrics.f1 ?? 0
+                    result.metrics.f1 ?? 0,
+
+                aligned_boundaries:
+                    result.metrics.aligned_boundaries ?? 0,
+
+                total_gold_boundaries:
+                    result.metrics.total_gold_boundaries ?? 0
             });
 
         }
@@ -472,7 +492,9 @@ function Inspect() {
                 setMbiMetrics({
                     precision: 0,
                     recall: 0,
-                    f1: 0
+                    f1: 0,
+                    aligned_boundaries: 0,
+                    total_gold_boundaries: 0
                 });
 
                 setMbiUnavailable(
@@ -761,7 +783,13 @@ function Inspect() {
                             mbiResult.metrics.recall ?? 0,
 
                         f1:
-                            mbiResult.metrics.f1 ?? 0
+                            mbiResult.metrics.f1 ?? 0,
+
+                        aligned_boundaries:
+                            mbiResult.metrics.aligned_boundaries ?? 0,
+
+                        total_gold_boundaries:
+                            mbiResult.metrics.total_gold_boundaries ?? 0
                     }
                     : null;
 
@@ -810,7 +838,13 @@ function Inspect() {
                         mbiResult.metrics.recall ?? 0,
 
                     f1:
-                        mbiResult.metrics.f1 ?? 0
+                        mbiResult.metrics.f1 ?? 0,
+
+                    aligned_boundaries:
+                        mbiResult.metrics.aligned_boundaries ?? 0,
+
+                    total_gold_boundaries:
+                        mbiResult.metrics.total_gold_boundaries ?? 0
                 });
 
                 setMbiError("");
@@ -823,7 +857,9 @@ function Inspect() {
                 setMbiMetrics({
                     precision: 0,
                     recall: 0,
-                    f1: 0
+                    f1: 0,
+                    aligned_boundaries: 0,
+                    total_gold_boundaries: 0
                 });
 
                 if (
@@ -981,7 +1017,9 @@ function Inspect() {
                             setMbiMetrics({
                                 precision: 0,
                                 recall: 0,
-                                f1: 0
+                                f1: 0,
+                                aligned_boundaries: 0,
+                                total_gold_boundaries: 0
                             });
 
                         }
@@ -1154,7 +1192,9 @@ function Inspect() {
             setMbiMetrics({
                 precision: 0,
                 recall: 0,
-                f1: 0
+                f1: 0,
+                aligned_boundaries: 0,
+                total_gold_boundaries: 0
             });
 
             setMbiError("");
@@ -1316,7 +1356,9 @@ function Inspect() {
                 setMbiMetrics({
                     precision: 0,
                     recall: 0,
-                    f1: 0
+                    f1: 0,
+                    aligned_boundaries: 0,
+                    total_gold_boundaries: 0
                 });
 
                 setMbiError("");
@@ -1435,7 +1477,15 @@ function Inspect() {
 
                                     f1:
                                         mbiResult.metrics
-                                            ?.f1 ?? 0
+                                            ?.f1 ?? 0,
+
+                                    aligned_boundaries:
+                                        mbiResult.metrics
+                                            ?.aligned_boundaries ?? 0,
+
+                                    total_gold_boundaries:
+                                        mbiResult.metrics
+                                            ?.total_gold_boundaries ?? 0
 
                                 }
                                 : null
@@ -1507,7 +1557,9 @@ function Inspect() {
                             setMbiMetrics({
                                 precision: 0,
                                 recall: 0,
-                                f1: 0
+                                f1: 0,
+                                aligned_boundaries: 0,
+                                total_gold_boundaries: 0
                             });
 
                             setMbiUnavailable(
@@ -1522,7 +1574,9 @@ function Inspect() {
                         setMbiMetrics({
                             precision: 0,
                             recall: 0,
-                            f1: 0
+                            f1: 0,
+                            aligned_boundaries: 0,
+                            total_gold_boundaries: 0
                         });
 
                         setMbiError("");
@@ -1652,7 +1706,13 @@ function Inspect() {
                         
                         recall: defaultMbiResult.metrics.recall ?? 0, 
                         
-                        f1: defaultMbiResult.metrics.f1 ?? 0 
+                        f1: defaultMbiResult.metrics.f1 ?? 0,
+
+                        aligned_boundaries:
+                            defaultMbiResult.metrics.aligned_boundaries ?? 0,
+
+                        total_gold_boundaries:
+                            defaultMbiResult.metrics.total_gold_boundaries ?? 0
                     }; 
                 } 
                 catch (err) { 
@@ -1722,7 +1782,9 @@ function Inspect() {
                 setMbiMetrics({ 
                     precision: 0, 
                     recall: 0, 
-                    f1: 0 
+                    f1: 0,
+                    aligned_boundaries: 0,
+                    total_gold_boundaries: 0
                 }); 
                 
                 if ( hasMbiMetrics( language ) ) { 
