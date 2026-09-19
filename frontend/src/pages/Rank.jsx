@@ -976,11 +976,15 @@ function Rank() {
                     <button
                         type="button"
                         className="rank-add-cta"
-                        onClick={() => setAddOpen((open) => !open)}
-                        aria-expanded={addOpen}
+                        onClick={() => handleAdd()}
+                        disabled={
+                            busy ||
+                            isLoading ||
+                            !tokenizerInput.trim()
+                        }
                     >
                         <span aria-hidden="true">+</span>
-                        Add tokenizer
+                        {adding ? "Adding..." : "Add tokenizer"}
                     </button>
 
                 </div>
