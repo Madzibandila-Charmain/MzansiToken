@@ -26,7 +26,6 @@ import StatusMessage from "../components/StatusMessage";
 import {
     PLACEHOLDER_BREAKDOWN,
     PLACEHOLDER_ROWS,
-    PLACEHOLDER_RUN,
 } from "./rankPlaceholders";
 
 /*
@@ -208,7 +207,6 @@ function Rank() {
     const [suggestions, setSuggestions] = useState([]);
     const [scoredLanguages, setScoredLanguages] = useState([]);
     const [weights, setWeights] = useState(null);
-    const [runBars, setRunBars] = useState(null);
 
     const [sortKey, setSortKey] = useState("overall_score");
     const [bestFirst, setBestFirst] = useState(true);
@@ -519,8 +517,6 @@ function Rank() {
 
             await loadLeaderboard(controller.signal);
 
-            setRunBars(measured.bars);
-
             const morphologyNote = measured.morphologyMeasured
                 ? `, morphology on ${measured.morphologyMeasured}`
                 : ", no morphology data";
@@ -782,14 +778,6 @@ function Rank() {
 
     }, [leaderName, showingSample]);
 
-    const bars = runBars || (showingSample ? PLACEHOLDER_RUN : null);
-
-    const barMax = bars
-        ? Math.max(...bars.map((bar) => bar.token_count || 0), 1)
-        : 1;
-
-    const totalTokens = sum(board.map((row) => row.token_count));
-
     const weightSentence = weights
         ? Object.entries(weights)
             .sort((a, b) => b[1] - a[1])
@@ -833,72 +821,7 @@ function Rank() {
                         segmentations, then scored out of 100 - so the rows
                         can be read against each other.
                     </p>
-
                 </div>
-
-                <aside
-                    className="rank-run"
-                    aria-label="The corpus behind the scores"
-                >
-
-                    <div className="rank-run-head">
-
-                        <span className="rank-run-label">
-                            {runBars ? "latest corpus run" : "corpus per run"}
-                        </span>
-
-                        <strong className="rank-run-value">
-                            {compact(
-                                bars
-                                    ? sum(
-                                        bars.map((bar) => bar.token_count)
-                                    )
-                                    : totalTokens
-                            )}
-                        </strong>
-
-                    </div>
-
-                    <div className="rank-run-bars" aria-hidden="true">
-
-                        {(bars || []).map((bar) => (
-
-                            <span
-                                key={bar.language}
-                                className={
-                                    bar.language === BASELINE_LANGUAGE
-                                        ? "rank-run-bar is-baseline"
-                                        : "rank-run-bar"
-                                }
-                                title={
-                                    `${bar.language}: ` +
-                                    `${(bar.token_count || 0)
-                                        .toLocaleString()} tokens`
-                                }
-                                style={{
-                                    height: `${Math.max(
-                                        8,
-                                        ((bar.token_count || 0) / barMax) * 100
-                                    )}%`
-                                }}
-                            ></span>
-
-                        ))}
-
-                    </div>
-
-                    <div className="rank-run-foot">
-
-                        <span>tokens per tokenizer</span>
-
-                        <span className="rank-run-note">
-                            997 sentences &times; 8 languages
-                        </span>
-
-                    </div>
-
-                </aside>
-
             </section>
 
             {/* ---------------- CONTROLS ---------------- */}
