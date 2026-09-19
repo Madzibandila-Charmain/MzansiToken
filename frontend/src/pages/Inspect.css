@@ -1,0 +1,601 @@
+/*
+    Inspect.css - the INSPECT page only.
+    Author: Mukovhe Ranwashe (RNWMUK001)
+*/
+
+/* ===============
+    INSPECT INTRO
+================== */
+
+.inspect-intro {
+
+    max-width: 900px;
+
+    margin: 0 auto;
+
+    padding: 95px 20px 65px;
+
+    text-align: center;
+
+}
+/* Small label */
+
+.inspect-label {
+
+    margin: 0 0 18px;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    letter-spacing: 3px;
+
+    color: var(--accent);
+
+}
+/* Main Heading */
+
+.inspect-intro h1 {
+
+    margin: 0;
+
+    font-size: 45px;
+
+    font-weight: 550;
+
+    letter-spacing: -1.5px;
+
+    line-height: 1.1;
+
+    color: oklch(0.25 0.025 252);
+
+}
+/* Desription */
+
+.inspect-description {
+
+    max-width: 540px;
+
+    margin: 22px auto 0;
+
+    font-size: 17px;
+
+    line-height: 1.7;
+
+    color: #6f6f6f;
+
+}
+/* ==================
+    INSPECT CONTROLS
+===================== */
+
+/* Main box */
+
+.inspect-controls {
+
+    width: calc(100% - 40px);
+
+    max-width: 1250px;
+
+    margin: 0 auto 80px;
+
+    padding: 36px;
+
+    box-sizing: border-box;
+
+    background: #f8f8f8da;
+
+    border: 1px solid #e2e2e2;
+
+    border-radius: 16px;
+
+    box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.06),
+        0 1px 3px rgba(0, 0, 0, 0.04);
+
+    display: flex;
+
+    align-items: flex-end;
+
+    gap: 28px;
+
+}
+.inspect-filters {
+
+    width: 100%;
+
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    column-gap: 80px;
+
+}
+.filter-group {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 9px;
+
+    min-width: 0;
+
+}
+.filter-group label{
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.5px;
+
+    color: #555555;
+
+}
+.filter-group select,
+
+.filter-group input {
+
+    width: 100%;
+
+    height: 44px;
+
+    box-sizing: border-box;
+
+    padding: 0 14px;
+
+    border: 1px solid #d9d9d9;
+
+    border-radius: 8px;
+
+    background-color: #ffffff;
+
+    font-size: 14px;
+
+    color: #333333;
+
+    outline: none;
+
+}
+.filter-group select {
+
+    cursor: pointer;
+
+}
+.filter-group input {
+
+    cursor: text;
+
+}
+.filter-group select:focus,
+
+.filter-group input:focus {
+
+    border-color: #aaaaaa;
+
+}
+.filter-group select:disabled,
+
+.filter-group input:disabled {
+
+    background-color: #f5f5f5;
+
+    color: #888888;
+
+    cursor: not-allowed;
+
+    opacity: 0.8;
+
+}
+/* =========================
+   TOKENIZER PILLS
+========================= */
+
+.tokenizer-pills {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 6px;
+
+    margin-top: 10px;
+
+}
+.tokenizer-pill {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    padding: 7px 13px;
+
+    background: oklch(1 0 0 / 0.72);
+
+    border: 1px solid oklch(0.86 0.03 240);
+
+    border-radius: 999px;
+
+    font: inherit;
+
+    font-size: 12.5px;
+
+    font-weight: 500;
+
+    color: oklch(0.25 0.025 252);
+
+    cursor: pointer;
+
+    transition:
+
+        transform 0.15s ease,
+
+        border-color 0.15s ease,
+
+        box-shadow 0.15s ease,
+
+        background-color 0.15s ease;
+
+}
+.tokenizer-pill:hover:not(:disabled) {
+
+    transform: translateY(-2px);
+
+    border-color: var(--accent);
+
+    box-shadow:
+
+        0 5px 14px oklch(0.25 0.025 252 / 0.12);
+
+}
+.tokenizer-pill:disabled {
+
+    opacity: 0.45;
+
+    cursor: default;
+
+}
+/* =========================
+   LANGUAGE MINI SELECTOR
+========================= */
+
+.language-filter {
+
+    position: relative;
+
+}
+.language-selector {
+
+    position: relative;
+
+    width: 100%;
+
+}
+.language-button {
+
+    width: 100%;
+
+    height: 44px;
+
+    box-sizing: border-box;
+
+    padding: 0 14px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    border: 1px solid #d9d9d9;
+
+    border-radius: 8px;
+
+    background-color: #ffffff;
+
+    font-size: 14px;
+
+    color: #333333;
+
+    cursor: pointer;
+
+    outline: none;
+
+}
+.language-button:hover {
+
+    border-color: #aaaaaa;
+
+}
+.language-button:disabled {
+
+    background-color: #f5f5f5;
+
+    color: #888888;
+
+    cursor: not-allowed;
+
+    opacity: 0.8;
+
+}
+.language-arrow {
+
+    font-size: 13px;
+
+    color: #777777;
+
+}
+/* Floating language menu */
+
+.language-menu {
+
+    position: absolute;
+
+    top: calc(100% + 8px);
+
+    right: 0;
+
+    width: 280px;
+
+    padding: 14px;
+
+    box-sizing: border-box;
+
+    background: #ffffff;
+
+    border: 1px solid #d9d9d9;
+
+    border-radius: 10px;
+
+    box-shadow:
+
+        0 8px 20px rgba(0, 0, 0, 0.10),
+
+        0 2px 6px rgba(0, 0, 0, 0.06);
+
+    z-index: 1000;
+
+}
+/* Menu heading */
+
+.language-menu-title {
+
+    margin-bottom: 5px;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    letter-spacing: 2px;
+
+    color: #777777;
+
+}
+.language-menu-subtitle {
+
+    margin-bottom: 12px;
+
+    font-size: 11px;
+
+    color: #999999;
+
+}
+/* Language pills */
+
+.language-options {
+
+    display: grid;
+
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    gap: 7px;
+
+    width: 100%;
+
+}
+.language-option {
+
+    width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 7px 8px;
+
+    border: 1px solid #d5d5d5;
+
+    border-radius: 18px;
+
+    background: #ffffff;
+
+    font-size: 12px;
+
+    color: #555555;
+
+    cursor: pointer;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 7px;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+}
+.language-option:hover {
+
+    border-color: #1976d2;
+
+    color: #1976d2;
+
+}
+.language-option:disabled {
+
+    cursor: not-allowed;
+
+    opacity: 0.6;
+
+}
+/* Done button */
+
+.language-done-button {
+
+    width: 100%;
+
+    height: 30px;
+
+    margin-top: 12px;
+
+    border: none;
+
+    border-radius: 6px;
+
+    background-color: oklch(63.988% 0.12907 252.853);
+
+    color: #ffffff;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+
+        background-color 0.2s ease,
+
+        transform 0.2s ease;
+
+}
+.language-done-button:hover {
+
+    background-color: oklch(68.78% 0.08613 252.846);
+
+}
+@media (max-width: 700px) {
+
+    .inspect-controls {
+
+        padding: 24px;
+
+    }
+
+    .inspect-filters {
+
+        width: 100%;
+
+        grid-template-columns: 1fr;
+
+        gap: 18px;
+
+    }
+
+}
+.language-tokenization-grid {
+
+    grid-column: 1 / -1;
+
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 28px;
+
+    margin-top: 28px;
+
+}
+.language-tokenization-single {
+
+    grid-column: 1 / -1;
+
+    display: block;
+
+    margin-top: 28px;
+
+}
+.language-tokenization-block {
+
+    margin-top: 0;
+
+}
+.tokenization-language {
+
+    font-size: 18px;
+
+    font-weight: 600;
+
+    margin-bottom: 14px;
+
+}
+/* 
+   READING PANELS
+*/
+
+.language-tokenization-grid {
+
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+
+    gap: 18px;
+
+}
+.language-tokenization-block {
+
+    display: flex;
+
+    flex-direction: column;
+
+    min-width: 0;
+
+}
+.tokenization-language {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+    margin-bottom: 10px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+
+    font-size: 15px;
+
+    font-weight: 700;
+
+}
+
+/* ---------------------------------------------------------
+   THE DISPLAY TYPEFACE, FOR THIS PAGE'S HEADING
+   Mukovhe Ranwashe (RNWMUK001)
+
+   This lived in a grouped selector beside .corpus-heading, .metric-value and
+   .chart-title - component classes - so the group straddled two files once
+   the stylesheet was split. The cascade flipped: the page rule above started
+   winning and the heading's letter-spacing silently changed.
+
+   Kept separate here, after that rule, so the resolved value is exactly what
+   it was before the split.
+
+   NOTE: that means -0.015em still overrides the -1.5px set above. That is
+   almost certainly an accident predating the split - a deliberate -1.5px
+   swept away by a broad typography rule written later. At 45px the heading
+   renders at -0.675px. Worth deciding on, separately.
+   --------------------------------------------------------- */
+
+.inspect-intro h1 {
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+
+    letter-spacing: -0.015em;
+
+}

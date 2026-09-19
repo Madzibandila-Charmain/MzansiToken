@@ -1,0 +1,43 @@
+/*
+    tokens.css - the design tokens, and nothing else.
+    Author: Mukovhe Ranwashe (RNWMUK001)
+
+    Loaded first: everything downstream reads these variables. The accent is
+    declared on :root and redeclared on .app-shell.is-flag, so flag pages get
+    green and everything else keeps the orange accent. Those two declarations
+    are the whole reason this file has to come before the rest.
+*/
+
+/* 
+   THE ACCENT TOKEN
+   Mukovhe Ranwashe
+   September 2026
+*/
+
+:root {
+    --accent: oklch(0.69 0.19 44);
+    --accent-lift: oklch(0.76 0.18 55);
+}
+/* On the shell, not :root, so only flag pages pick it up. */
+.app-shell.is-flag {
+    --accent: var(--za-green);
+
+    /* The hover lift, a step brighter than the base. */
+    --accent-lift: oklch(0.52 0.12 162);
+}
+/* 
+   THE FLAG PALETTE
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
+*/
+
+:root {
+    --za-green: #007749;
+    --za-gold: #ffb81c;
+    --za-red: #e03c31;
+    --za-blue: #001489;
+    --za-black: #000000;
+    --za-white: #ffffff;
+}
+.app-shell.is-flag {
+    background: var(--za-white);
+}

@@ -1,0 +1,797 @@
+/*
+    layout.css - the chrome every page sits inside.
+    Author: Mukovhe Ranwashe (RNWMUK001)
+
+    The shell, the ambient gradient, header and nav, footer, the map backdrop.
+    Owned by App.jsx and Header.jsx, so it belongs to no single page.
+*/
+
+.app-shell {
+
+    position: relative;
+
+    min-height: 100vh;
+
+    /* Only hide horizontal overflow.
+       This allows the Inspect page to scroll normally. */
+
+    overflow-x: hidden;
+
+    background:
+
+        linear-gradient(
+
+            145deg,
+
+            oklch(0.975 0.015 226),
+
+            oklch(0.965 0.012 242) 46%,
+
+            oklch(0.975 0.025 70)
+
+        );
+
+}
+/* Main moving luminous orange shape */
+
+.ambient-gradient {
+
+    position: fixed;
+
+    z-index: 0;
+
+    top: 6%;
+
+    left: -12%;
+
+    width: min(72vw, 920px);
+
+    aspect-ratio: 1.35;
+
+    pointer-events: none;
+
+    opacity: 0.9;
+
+    filter: blur(26px);
+
+    background:
+
+        radial-gradient(
+
+            circle at 30% 32%,
+
+            oklch(0.84 0.16 61 / 0.92) 0 16%,
+
+            transparent 38%
+
+        ),
+
+        radial-gradient(
+
+            circle at 70% 56%,
+
+            oklch(0.72 0.2 43 / 0.72) 0 21%,
+
+            transparent 49%
+
+        ),
+
+        conic-gradient(
+
+            from 205deg at 48% 48%,
+
+            oklch(0.89 0.12 74 / 0.74),
+
+            oklch(0.72 0.2 43 / 0.58),
+
+            oklch(0.92 0.09 88 / 0.68),
+
+            oklch(0.89 0.12 74 / 0.74)
+
+        );
+
+    animation:
+
+        ambient-shift 16s ease-in-out infinite;
+
+}
+/* Orange ring inside the moving shape */
+
+.ambient-gradient::before {
+
+    content: "";
+
+    position: absolute;
+
+    inset: 13% 12% 18% 18%;
+
+    border:
+
+        clamp(18px, 3vw, 42px)
+
+        solid
+
+        oklch(0.72 0.2 43 / 0.42);
+
+    border-radius:
+
+        64% 36% 70% 30% /
+
+        38% 58% 42% 62%;
+
+    transform: rotate(15deg);
+
+}
+/* Soft blue glow */
+
+.ambient-gradient::after {
+
+    content: "";
+
+    position: absolute;
+
+    width: 58%;
+
+    aspect-ratio: 1;
+
+    right: -48%;
+
+    bottom: -34%;
+
+    border-radius:
+
+        34% 66% 56% 44% /
+
+        58% 34% 66% 42%;
+
+    background:
+
+        radial-gradient(
+
+            circle at 42% 40%,
+
+            oklch(0.78 0.14 220 / 0.5),
+
+            transparent 66%
+
+        );
+
+}
+/* Soft overlay across the whole background */
+
+.app-shell::after {
+
+    content: "";
+
+    position: fixed;
+
+    z-index: 0;
+
+    inset: 0;
+
+    pointer-events: none;
+
+    background:
+
+        linear-gradient(
+
+            180deg,
+
+            oklch(1 0 0 / 0.06),
+
+            oklch(0.96 0.015 242 / 0.34) 76%
+
+        );
+
+}
+/* =====================
+    KEEP ALL PAGE CONTENT ABOVE THE BACKGROUND
+    Keep the :not(.app-backdrop) - without it the map lands in
+    the flow and pushes the whole page down.
+===================== */
+
+.app-shell > *:not(.ambient-gradient):not(.app-backdrop) {
+
+    position: relative;
+
+    z-index: 1;
+
+}
+.site-header,
+
+main,
+
+footer {
+
+    position: relative;
+
+    z-index: 1;
+
+}
+@media (prefers-reduced-motion: reduce) {
+
+    .ambient-gradient {
+
+        animation: none;
+
+    }
+
+}
+/* MzansiToken header */
+
+.site-header {
+
+    width: 100%;
+
+    height: 88px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 0 55px;
+
+    background: rgba(255, 255, 255, 0.72);
+
+    backdrop-filter: blur(14px);
+
+    -webkit-backdrop-filter: blur(14px);
+
+    border-bottom: 1px solid rgba(120, 150, 180, 0.20);
+
+    border-bottom: 1px solid #eeeeee;
+
+    box-sizing: border-box;
+
+}
+/* LOGO*/
+
+.logo {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 13px;
+
+}
+.brand-mark {
+
+    width: 38px;
+
+    height: 38px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background-color: #111111;
+
+    color: #ffffff;
+
+    font-size: 15px;
+
+    font-weight: 700;
+
+    letter-spacing: -0.5px;
+
+}
+/* LOGO Text */
+
+.brand-text {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 3px;
+
+}
+.logo-name {
+
+    font-size: 21px;
+
+    font-weight: 800;
+
+    letter-spacing: 2.5px;
+
+    color: #111111;
+
+}
+/* Navigation */
+
+.main-nav {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 38px;
+
+}
+.main-nav a {
+
+    position: relative;
+
+    text-decoration: none;
+
+    font-size: 14px;
+
+    font-weight: 500;
+
+    color: #777777;
+
+    transition:
+
+        color 0.25s ease,
+
+        transform 0.25s ease;
+
+}
+/* Navigation Hover */
+
+.main-nav a:hover {
+
+    color: #111111;
+
+    transform: translateY(-1px);
+
+}
+/* Active page */
+
+.main-nav a.active {
+
+    color: #111111;
+
+    font-weight: 700;
+
+}
+/*Small line underneath active page*/
+
+.main-nav a.active::after {
+
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+
+    right: 0;
+
+    bottom: -9px;
+
+    height: 2px;
+
+    background: var(--accent);
+
+    border-radius: 10px;
+
+}
+/* Responsive */
+
+@media (max-width: 700px) {
+
+    .site-header {
+
+        height: auto;
+
+        padding: 22px 25px;
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 20px;
+
+    }
+
+    .main-nav {
+
+        width: 100%;
+
+        justify-content: space-between;
+
+        gap: 15px;
+
+    }
+
+}
+.ambient-gradient {
+
+    filter: blur(44px);
+
+    opacity: 0.72;
+
+    animation: lava-a 19s ease-in-out infinite;
+
+    will-change: transform, border-radius;
+
+}
+/* Blob two - cool blue, drifts the other way */
+
+.ambient-gradient::before {
+
+    content: "";
+
+    position: absolute;
+
+    inset: auto -34% -30% auto;
+
+    width: 78%;
+
+    aspect-ratio: 1;
+
+    border: 0;                                   /* was the orange ring */
+
+    background: radial-gradient(
+
+        circle at 46% 44%,
+
+        oklch(0.78 0.15 220 / 0.82) 0 42%,
+
+        transparent 70%
+
+    );
+
+    filter: blur(22px);
+
+    animation: lava-b 27s ease-in-out infinite;
+
+    will-change: transform, border-radius;
+
+}
+/* Blob three - a slow pink one behind the other two */
+
+.ambient-gradient::after {
+
+    content: "";
+
+    position: absolute;
+
+    width: 62%;
+
+    aspect-ratio: 1.1;
+
+    right: -20%;
+
+    top: 26%;
+
+    background: radial-gradient(
+
+        circle at 50% 50%,
+
+        oklch(0.80 0.16 330 / 0.6) 0 44%,
+
+        transparent 72%
+
+    );
+
+    filter: blur(26px);
+
+    animation: lava-c 34s ease-in-out infinite;
+
+    will-change: transform, border-radius;
+
+}
+/* If the user has asked their operating system to stop animation,
+   every moving thing on the page freezes. */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .ambient-gradient,
+
+    .ambient-gradient::before,
+
+    .ambient-gradient::after {
+
+        animation: none;
+
+    }
+
+    .chart-pop,
+
+    .chart-grow,
+
+    .chart-label {
+
+        transition: none;
+
+    }
+
+}
+.chart-tip .val {
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+
+}
+.tokenization-language .count {
+
+    margin-left: auto;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+
+    font-size: 11.5px;
+
+    font-weight: 400;
+
+    color: oklch(0.45 0.025 252);
+
+}
+.compare-verdict .stat {
+    display: flex;
+    flex-direction: column;
+
+    padding: 13px 15px;
+
+    background: oklch(1 0 0 / 0.66);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 13px;
+}
+.compare-verdict .k {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+
+    color: oklch(0.62 0.02 252);
+}
+.compare-verdict .v {
+    margin-top: 5px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 23px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+
+    font-variant-numeric: tabular-nums;
+}
+.compare-verdict .v.up   { color: #2f7d4f; }
+.compare-verdict .v.down { color: #b23b3b; }
+.compare-verdict .n {
+    margin-top: 2px;
+
+    font-size: 11.5px;
+
+    color: oklch(0.62 0.02 252);
+}
+/* A tokenizer id is long, so the tile that holds one uses a
+   smaller size than the tiles that hold a percentage. */
+.compare-verdict .v.v-name {
+    font-size: 16px;
+
+    overflow-wrap: anywhere;
+}
+/* 
+   HOME PAGE
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
+*/
+
+.home {
+    width: calc(100% - 40px);
+    max-width: 1180px;
+
+    margin: 0 auto;
+
+    box-sizing: border-box;
+}
+/* Scoped to .home, so Inspect, Compare and Rank keep the surface
+   the charts were colour-checked against. */
+.home {
+    position: relative;
+}
+/* ---------------------------------------------------------
+   THE MAP AS THE BACKDROP
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
+   --------------------------------------------------------- */
+
+.app-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    opacity: 0.2;
+
+    pointer-events: none;
+    user-select: none;
+}
+.app-backdrop .za-map {
+    width: min(1180px, 132vw);
+    height: auto;
+
+    max-height: 128vh;
+}
+.za-map {
+    display: block;
+
+    width: 100%;
+    height: auto;
+
+    overflow: visible;
+}
+.za-outline {
+    fill: none;
+    stroke: oklch(1 0 0 / 0.85);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+}
+/* Lesotho is a country in its own right, so it is left as the page
+   surface rather than painted with South Africa's flag. */
+.za-lesotho {
+    fill: oklch(0.97 0.006 242);
+    stroke: oklch(1 0 0 / 0.85);
+    stroke-width: 2;
+    stroke-linejoin: round;
+}
+@media (max-width: 640px) {
+
+    /* A narrow screen crops the sides badly, so the map is scaled to the
+       width rather than left to overflow. */
+    .app-backdrop .za-map {
+        width: 178vw;
+    }
+}
+/* 
+   FLAG ACCENTS
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
+*/
+
+.home .home-title-accent {
+    color: var(--za-green);
+}
+.home .home-stat-icon,
+.home .home-card-go {
+    color: var(--za-green);
+}
+.home .home-pill-dot {
+    background: var(--za-green);
+}
+.home a.home-card:hover {
+    border-color: var(--za-green);
+}
+.home .home-button:not(.is-primary):hover {
+    border-color: var(--za-green);
+}
+/* The closing band picked up the old blue rule; the flag's blue instead. */
+.home .compare-note,
+.home .home-closing {
+    border-color: oklch(0.88 0.03 240);
+}
+/* 
+   THE LAVA LAMP, IN FLAG COLOURS
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
+*/
+
+.app-shell.is-flag .ambient-gradient {
+
+        z-index: 0;
+
+    /* Faded, so it reads as colour drifting behind the page rather than
+       a light show the text has to survive. */
+    opacity: 0.42;
+
+    background:
+        radial-gradient(
+            circle at 30% 32%,
+            color-mix(in oklab, var(--za-red) 86%, transparent) 0 17%,
+            transparent 40%
+        ),
+        radial-gradient(
+            circle at 70% 58%,
+            color-mix(in oklab, var(--za-gold) 82%, transparent) 0 22%,
+            transparent 50%
+        );
+}
+.app-shell.is-flag .ambient-gradient::before {
+    background: radial-gradient(
+        circle at 46% 44%,
+        color-mix(in oklab, var(--za-green) 80%, transparent) 0 42%,
+        transparent 70%
+    );
+}
+.app-shell.is-flag .ambient-gradient::after {
+    background:
+        radial-gradient(
+            circle at 50% 50%,
+            color-mix(in oklab, var(--za-blue) 62%, transparent) 0 40%,
+            transparent 70%
+        ),
+        radial-gradient(
+            circle at 38% 62%,
+            color-mix(in oklab, var(--za-black) 34%, transparent) 0 26%,
+            transparent 58%
+        );
+}
+/* Sibling of the lava: z-index 0 plus DOM order puts it on top of the
+   colour, and <main> is z-index 1 so content stays above both. */
+.app-backdrop {
+    z-index: 0;
+
+    /* Slightly softer now that there is no blue veil muting it. */
+    opacity: 0.17;
+}
+/* 
+   LEGIBILITY OVER THE BACKDROP
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
+*/
+
+.home .home-lede {
+    color: oklch(0.38 0.02 252);
+}
+.home .home-sub,
+.home .home-feature p,
+.home .home-card p,
+.home .home-closing p {
+    color: oklch(0.4 0.02 252);
+}
+.home .home-stat-label,
+.home .home-stat-note {
+    color: oklch(0.44 0.02 252);
+}
+/* Near enough to opaque that the numbers sit on white, not on a map. */
+.home .home-stat,
+.home .home-card,
+.home .home-feature {
+    background: oklch(1 0 0 / 0.93);
+}
+.home .home-pill {
+    background: oklch(1 0 0 / 0.92);
+}
+.home .home-closing {
+    background: oklch(1 0 0 / 0.78);
+}
+/* 
+   THE HEADER, WITHOUT THE BAR
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
+*/
+
+.site-header {
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: 0;
+}
+.logo {
+    text-decoration: none;
+    color: inherit;
+}
+.brand-mark-svg {
+    display: block;
+
+    border-radius: 29%;
+
+    box-shadow: 0 3px 10px oklch(0.25 0.025 252 / 0.22);
+}
+/* The slot through the mark is the page showing through, so it has to
+   match whatever is behind the header. */
+.brand-cut {
+    fill: oklch(0.99 0.004 242);
+}
+/* Each nav item gets a small pill of its own, which is what lets the
+   bar disappear without the links becoming unreadable. */
+.main-nav a {
+    padding: 7px 14px;
+
+    background: oklch(1 0 0 / 0.66);
+
+    border-radius: 999px;
+
+    backdrop-filter: blur(8px);
+}
+.main-nav a:hover {
+    background: oklch(1 0 0 / 0.86);
+}
+/* Fainter everywhere except Home, which has fewer numbers on it. */
+.app-shell.is-flag:not(.is-home) .app-backdrop {
+    opacity: 0.11;
+}

@@ -1,3 +1,87 @@
+/* Moved out of index.css - Compare-only rules that were living in the
+   global stylesheet. Kept at the top because that is where they sat in
+   the cascade before the split. */
+
+/* 
+   LANGUAGE PILLS
+   Mukovhe Ranwashe (RNWMUK001) · 17 Sep 2026
+*/
+
+.compare-setup {
+    width: calc(100% - 40px);
+    max-width: 1250px;
+
+    margin: 0 auto 18px;
+    padding: 20px 24px;
+
+    box-sizing: border-box;
+
+    background: oklch(0.99 0.008 242 / 0.8);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 18px;
+
+    backdrop-filter: blur(10px);
+}
+.compare-setup .compare-tokenizer-filter-heading {
+    margin-bottom: 12px;
+
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+
+    color: oklch(0.45 0.025 252);
+}
+/* White space does the separating, rather than a rule across the card. */
+.compare-setup .compare-tokenizer-filter-heading + * {
+    margin-top: 0;
+}
+.language-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+
+    margin-top: 10px;
+}
+.language-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+
+    padding: 7px 13px;
+
+    background: oklch(1 0 0 / 0.72);
+
+    border: 1px solid oklch(0.86 0.03 240);
+    border-radius: 999px;
+
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+
+    color: oklch(0.25 0.025 252);
+
+    cursor: pointer;
+
+    transition:
+        transform 0.15s ease,
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        background-color 0.15s ease;
+}
+.language-pill:hover:not(:disabled) {
+    transform: translateY(-2px);
+
+    border-color: var(--accent);
+
+    box-shadow: 0 5px 14px oklch(0.25 0.025 252 / 0.12);
+}
+.language-pill:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
 /*
     Compare Page
     Author: Madzibandila Charmain

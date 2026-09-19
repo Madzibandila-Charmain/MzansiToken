@@ -4,6 +4,8 @@
     Date: 21 August 2026
 */
 
+import "./Inspect.css";
+
 import { useEffect, useRef, useState } from "react";
 
 import {

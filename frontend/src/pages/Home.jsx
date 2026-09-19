@@ -4,6 +4,8 @@
     Date: 17 September 2026
 */
 
+import "./Home.css";
+
 import { useEffect, useState } from "react";
 
 import { Link } from "react-router-dom";
