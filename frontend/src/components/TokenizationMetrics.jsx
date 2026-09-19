@@ -18,6 +18,9 @@ function TokenizationMetrics({
     metrics,
     mbi,
     showMbi,
+    alignmentLabel,
+    alignmentAsPercentage,
+    headingInsideResult = false,
     tokenizerSelector,
     tokenizerType,
     busy = false,
@@ -45,16 +48,18 @@ function TokenizationMetrics({
             )}
 
             {/* Tokenizer heading */}
-            <div
-                className={`tokenization-display-heading ${
-                    tokenizerType === "1"
-                        ? "tokenizer-one-heading"
-                        : "tokenizer-two-heading"
-                }`}
-            >
-                <span className="tokenizer-colour-dot"></span>
-                <span>{title}</span>
-            </div>
+            {!headingInsideResult && (
+                <div
+                    className={`tokenization-display-heading ${
+                        tokenizerType === "1"
+                            ? "tokenizer-one-heading"
+                            : "tokenizer-two-heading"
+                    }`}
+                >
+                    <span className="tokenizer-colour-dot"></span>
+                    <span>{title}</span>
+                </div>
+            )}
 
             {/* Optional tokenizer selector */}
 
@@ -63,6 +68,19 @@ function TokenizationMetrics({
             {/* Tokenization result */}
 
             <div className="tokenization-result">
+
+                {headingInsideResult && (
+                    <div
+                        className={`tokenization-display-heading ${
+                            tokenizerType === "1"
+                                ? "tokenizer-one-heading"
+                                : "tokenizer-two-heading"
+                        }`}
+                    >
+                        <span className="tokenizer-colour-dot"></span>
+                        <span>{title}</span>
+                    </div>
+                )}
 
                 <div className="tokenization-text">
 
@@ -78,6 +96,8 @@ function TokenizationMetrics({
                 metrics={metrics}
                 mbi={mbi}
                 showMbi={showMbi}
+                alignmentLabel={alignmentLabel}
+                alignmentAsPercentage={alignmentAsPercentage}
             />
 
         </div>

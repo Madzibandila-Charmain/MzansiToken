@@ -28,8 +28,8 @@ import { FAMILY } from "./languageColours";
 /* One colour each. Checked for colour-blind separation - these two stay
    apart under every simulation, which matters when the whole page is a
    comparison of exactly two things. */
-const COLOUR_A = "#2f6fd0";
-const COLOUR_B = "#d2601a";
+const COLOUR_A = "#d2601a";
+const COLOUR_B = "#2f6fd0";
 
 const BETTER = "#2f7d4f";
 const WORSE = "#b23b3b";

@@ -54,7 +54,13 @@ function Card({ name, value }) {
               than shown as three N/As.
 */
 
-function MetricCards({ metrics, mbi, showMbi = false }) {
+function MetricCards({
+    metrics,
+    mbi,
+    showMbi = false,
+    alignmentLabel = "Morpheme Boundary Alignment",
+    alignmentAsPercentage = false
+}) {
 
     let alignmentValue = "N/A";
 
@@ -64,9 +70,18 @@ function MetricCards({ metrics, mbi, showMbi = false }) {
         mbi?.total_gold_boundaries !== null &&
         mbi?.total_gold_boundaries !== undefined
     ) {
-        alignmentValue =
-            `${Number(mbi.aligned_boundaries).toLocaleString()} / ` +
-            `${Number(mbi.total_gold_boundaries).toLocaleString()}`;
+        if (alignmentAsPercentage) {
+            const totalBoundaries = Number(mbi.total_gold_boundaries);
+            const alignedBoundaries = Number(mbi.aligned_boundaries);
+
+            alignmentValue = totalBoundaries > 0
+                ? `${((alignedBoundaries / totalBoundaries) * 100).toFixed(1)}%`
+                : "N/A";
+        } else {
+            alignmentValue =
+                `${Number(mbi.aligned_boundaries).toLocaleString()} / ` +
+                `${Number(mbi.total_gold_boundaries).toLocaleString()}`;
+        }
     }
 
     return (
@@ -121,7 +136,7 @@ function MetricCards({ metrics, mbi, showMbi = false }) {
                     />
 
                     <Card
-                        name="Morpheme Boundary Alignment"
+                        name={alignmentLabel}
                         value={alignmentValue}
                     />
 

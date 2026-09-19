@@ -23,6 +23,10 @@ import MetricsChart from "../components/MetricsChart";
 import { languageColour } from "../components/languageColours";
 
 import CorpusUpload from "../components/CorpusUpload";
+import {
+    isAcceptedCorpusFile,
+    UNSUPPORTED_CORPUS_MESSAGE
+} from "../lib/corpusFormats";
 
 import TypeAnything from "../components/TypeAnything";
 
@@ -142,6 +146,7 @@ function Inspect() {
     */
     const [busyLanguages, setBusyLanguages] = useState([]);
     const [busyUpload, setBusyUpload] = useState(false);
+    const [corpusLoadingLabel, setCorpusLoadingLabel] = useState("");
 
     /* Stores an error returned by the backend. */
     const [error, setError] = useState("");
@@ -1093,17 +1098,15 @@ function Inspect() {
         }
 
         /*
-            Make sure the selected file is a text file.
+            Catch an unsupported file before the upload, so the user is not
+            waiting on a round trip to be told. The server checks this again,
+            and checks the bytes as well.
         */
 
-        if (
-            !file.name
-                .toLowerCase()
-                .endsWith(".txt")
-        ) {
+        if (!isAcceptedCorpusFile(file.name)) {
 
             setError(
-                "Please select a .txt file."
+                UNSUPPORTED_CORPUS_MESSAGE
             );
 
             return;
@@ -1116,7 +1119,11 @@ function Inspect() {
 
             setLoading(true);
 
+            setBusyUpload(true);
+
             setError("");
+
+            setCorpusLoadingLabel(file.name);
 
             /*
                 The uploaded file is processed using the
@@ -1149,14 +1156,10 @@ function Inspect() {
             setFileName(file.name);
 
             /*
-                Uploaded corpora are not associated with any selected language.
-                Clear the selected languages and their
-                stored language-specific results.
+                Keep the selected languages and their cached results while an
+                upload is active, so returning to the default corpus can restore
+                the same multi-language view.
             */
-
-            setSelectedLanguages([]);
-
-            setLanguageData({});
 
             /*
                 Display the uploaded file's tokenized text.
@@ -1213,6 +1216,7 @@ function Inspect() {
                 false
             );
 
+
         }
         catch (err) {
 
@@ -1258,6 +1262,10 @@ function Inspect() {
         }
 
         setSelectionLoading(true);
+
+        setBusyUpload(true);
+
+        setCorpusLoadingLabel(newTokenizer);
 
         /*
             A tokenizer change really does reload every panel on screen, so
@@ -1659,7 +1667,11 @@ function Inspect() {
 
         setSelectionLoading(true);
 
+        setBusyUpload(true);
+
         setError("");
+
+        setCorpusLoadingLabel("built-in corpus");
 
         try {
 
@@ -1732,20 +1744,21 @@ function Inspect() {
                 "default"
             );
 
-            /*
-                Restore the current language as the
-                only selected language.
-            */
-
-            setSelectedLanguages([
-                language
-            ]);
+            /* Keep every language selected before the upload. */
+            setSelectedLanguages((previousLanguages) =>
+                previousLanguages.includes(language)
+                    ? previousLanguages
+                    : [...previousLanguages, language].slice(
+                        -MAX_INSPECT_LANGUAGES
+                    )
+            );
 
             /*
                 Store the default language result.
             */
 
-            setLanguageData({
+            setLanguageData((previousData) => ({
+                ...previousData,
                 [language]: {
                     tokenizedText:
                         formattedTokens,
@@ -1755,7 +1768,7 @@ function Inspect() {
 
                     mbi: defaultMbi
                 }
-            });
+            }));
 
             /*
                 Update the main corpus display.
@@ -1812,6 +1825,7 @@ function Inspect() {
             setLanguageMenuOpen(
                 false
             );
+
 
         }
         catch (err) {
@@ -2120,41 +2134,6 @@ function Inspect() {
 
                         </div>
 
-                        {source === "upload" && (
-                            <div className="selection-status">
-
-                                <span className="status-dot"></span>
-
-                                <span>
-                                    Language is off while an uploaded corpus is active.
-                                </span>
-
-                            </div>
-                        )}
-
-                        {/* Language status */}
-
-                        {languageStatus && (
-                            <div
-                                className={`selection-status ${
-                                    languageFailed
-                                        ? "is-error"
-                                        : selectionLoading
-                                                ? "is-loading"
-                                                : "is-ready"
-                                }`}
-                            >
-
-                                <span className="status-dot"></span>
-
-                                <StatusMessage
-                                    text={languageStatus}
-                                    failed={languageFailed}
-                                />
-
-                            </div>
-                        )}
-
                     </div>
 
                 </div>
@@ -2163,7 +2142,21 @@ function Inspect() {
 
             {/* Corpus tokenization box */}
 
-            <section className="corpus-box">
+            <section
+                className={
+                    "corpus-box"
+                    + (busyUpload ? " is-busy" : "")
+                }
+            >
+
+                {busyUpload && (
+                    <div className="block-overlay">
+                        <span className="spinner"></span>
+                        <span className="block-overlay-text">
+                            Loading {corpusLoadingLabel}&hellip;
+                        </span>
+                    </div>
+                )}
 
                 <div className="corpus-heading">
                     Corpus Tokenization
@@ -2183,6 +2176,7 @@ function Inspect() {
                     onFileChange={handleFileChange}
                     onDefault={handleDefault}
                     showDefault={fileName !== "default"}
+                    loading={selectionLoading}
                     disabled={selectionLoading}
                 />
 
@@ -2205,18 +2199,6 @@ function Inspect() {
                             }
                         >
 
-                            {/* A spinning wheel over a blurred block, so it is
-                                obvious the panel is being refilled rather than
-                                showing stale numbers. */}
-                            {busyUpload && (
-                                <div className="block-overlay">
-                                    <span className="spinner"></span>
-                                    <span className="block-overlay-text">
-                                        Loading uploaded corpus&hellip;
-                                    </span>
-                                </div>
-                            )}
-
                             {/* Tokenization Result */}
 
                             <div className="tokenization-result">
@@ -2229,12 +2211,6 @@ function Inspect() {
                                     ></span>
 
                                     Uploaded Corpus
-
-                                    <span className="count">
-                                        {Number(
-                                            corpusMetrics.tokens
-                                        ).toLocaleString()} tokens
-                                    </span>
 
                                 </div>
 
@@ -2361,12 +2337,6 @@ function Inspect() {
 
                                                 {selectedLanguage}
 
-                                                <span className="count">
-                                                    {Number(
-                                                        data.metrics.tokens
-                                                    ).toLocaleString()} tokens
-                                                </span>
-
                                             </div>
 
                                             <div className="tokenization-text">
@@ -2385,6 +2355,8 @@ function Inspect() {
                                             showMbi={hasMbiMetrics(
                                                 selectedLanguage
                                             )}
+                                            alignmentLabel="MBI"
+                                            alignmentAsPercentage={true}
                                         />
 
                                     </div>

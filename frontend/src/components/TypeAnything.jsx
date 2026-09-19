@@ -53,14 +53,24 @@ function TypeAnything({
                         key={result.id || index}
                     >
 
-                        {/* Tokenizer name - Compare only */}
-                        {result.title && (
-                            <div className="compare-typed-result-heading">
-                                {result.title}
-                            </div>
-                        )}
-
                         <div className="typed-tokenization-result">
+
+                            {/* Tokenizer name - Compare only */}
+                            {result.title && (
+                                <div
+                                    className={
+                                        "compare-typed-panel-heading "
+                                        + (
+                                            index === 0
+                                                ? "tokenizer-one-heading"
+                                                : "tokenizer-two-heading"
+                                        )
+                                    }
+                                >
+                                    <span className="tokenizer-colour-dot"></span>
+                                    {result.title}
+                                </div>
+                            )}
 
                             {/* Tokenized text */}
                             <div className="typed-result-text">

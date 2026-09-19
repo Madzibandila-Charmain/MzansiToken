@@ -31,7 +31,7 @@
 
     letter-spacing: 3px;
 
-    color: oklch(0.69 0.19 44);
+    color: var(--za-green);
 }
 
 .compare-intro h1 {
@@ -289,7 +289,7 @@
 
 .compare-tokenizer-filter-select:hover {
 
-    border-color: oklch(0.69 0.19 44);
+    border-color: var(--za-green);
 
     background: oklch(0.99 0.012 242);
 
@@ -297,7 +297,7 @@
 
 .compare-tokenizer-filter-select:focus {
 
-    border-color: oklch(0.69 0.19 44);
+    border-color: var(--za-green);
 
     box-shadow:
 
@@ -435,7 +435,7 @@
 
     letter-spacing: 0.3px;
 
-    color: oklch(0.69 0.19 44);
+    color: var(--accent);
 
     white-space: nowrap;
 
@@ -697,7 +697,7 @@
 
 + .compare-upload-button {
 
-    outline: 2px solid oklch(0.69 0.19 44);
+    outline: 2px solid var(--za-green);
 
     outline-offset: 3px;
 
@@ -1337,6 +1337,12 @@
 
 .compare-typed-panel-heading {
 
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+
     margin-bottom: 9px;
 
     font-size: 14px;
@@ -1352,6 +1358,30 @@
     text-overflow: ellipsis;
 
     white-space: nowrap;
+
+}
+
+.compare-typed-panel-heading .tokenizer-colour-dot {
+
+    width: 9px;
+
+    height: 9px;
+
+    border-radius: 50%;
+
+    flex-shrink: 0;
+
+}
+
+.compare-typed-panel-heading.tokenizer-one-heading .tokenizer-colour-dot {
+
+    background: oklch(0.69 0.19 44);
+
+}
+
+.compare-typed-panel-heading.tokenizer-two-heading .tokenizer-colour-dot {
+
+    background: oklch(0.58 0.14 250);
 
 }
 

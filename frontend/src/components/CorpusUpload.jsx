@@ -1,7 +1,14 @@
 /*
     Reusable corpus upload component
     Author: Madzibandila Charmain
+
+    Amended by Mukovhe Ranwashe (RNWMUK001): the accepted formats moved to
+    lib/corpusFormats.js, so both pages read the same list instead of each
+    keeping its own copy of the rule. Compare had no check at all and leaned
+    entirely on the backend for it.
 */
+
+import { ACCEPT_ATTRIBUTE } from "../lib/corpusFormats";
 
 function CorpusUpload({
     inputId,
@@ -9,7 +16,8 @@ function CorpusUpload({
     onFileChange,
     onDefault,
     showDefault,
-    disabled
+    disabled,
+    loading = false
 }) {
     return (
         <div className="upload-container">
@@ -17,7 +25,7 @@ function CorpusUpload({
                 type="file"
                 id={inputId}
                 ref={fileInputRef}
-                accept=".txt,text/plain"
+                accept={ACCEPT_ATTRIBUTE}
                 onChange={onFileChange}
                 disabled={disabled}
             />
@@ -66,7 +74,8 @@ function CorpusUpload({
                     onClick={onDefault}
                     disabled={disabled}
                 >
-                    Default
+                    {loading && <span className="spinner upload-spinner"></span>}
+                    <span>{loading ? "Loading..." : "Default"}</span>
                 </button>
             )}
         </div>
