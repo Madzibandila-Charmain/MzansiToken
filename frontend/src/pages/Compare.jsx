@@ -205,6 +205,7 @@ function Compare() {
         File input reference.
     */
     const fileInputRef = useRef(null);
+    const initialCorpusLoadRef = useRef(false);
 
     /*
         The label read "default", which is the internal name for the
@@ -412,26 +413,39 @@ function Compare() {
         if (
             !compareTokenizerOne ||
             !compareTokenizerTwo ||
-            !compareLanguage
+            !compareLanguage ||
+            compareSource !== "default" ||
+            initialCorpusLoadRef.current
         ) {
             return;
         }
+
+        initialCorpusLoadRef.current = true;
 
         /*
             loadDefaultCorpus re-throws now, and an effect cannot catch for
             us. The message is already in `error` by the time it rejects,
             so this only stops it surfacing as an unhandled rejection.
         */
+        setSelectionType("default");
+        setCorpusLoadingLabel("built-in corpus");
+        setSelectionLoading(true);
+
         loadDefaultCorpus(
             compareLanguage,
             compareTokenizerOne,
             compareTokenizerTwo
-        ).catch(() => {});
+        )
+            .catch(() => {})
+            .finally(() => {
+                setSelectionLoading(false);
+            });
 
     }, [
         compareLanguage,
         compareTokenizerOne,
-        compareTokenizerTwo
+        compareTokenizerTwo,
+        compareSource
     ]);
 
     /*
@@ -1361,15 +1375,6 @@ function Compare() {
                     ))}
 
                 </div>
-
-                {compareSource === "upload" && (
-                    <div className="selection-status">
-                        <span className="status-dot"></span>
-                        <span>
-                            Language is off while an uploaded corpus is active.
-                        </span>
-                    </div>
-                )}
 
                 {/* Tokenizer Selection - same card, because picking a
                     language and picking two tokenizers is one decision:

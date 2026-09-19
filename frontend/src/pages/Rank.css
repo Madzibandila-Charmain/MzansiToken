@@ -1095,12 +1095,15 @@
     font-size: 13px;
     font-weight: 600;
 
+    overflow-wrap: anywhere;
+    word-break: break-word;
+
     color: oklch(0.22 0.03 252);
 }
 
 .rank-vendor {
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 
     font-size: 11px;
 

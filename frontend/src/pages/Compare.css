@@ -539,7 +539,8 @@
 
     color: oklch(0.45 0.025 252);
 
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    line-height: 1.45;
 
     align-self: center;
 
@@ -919,6 +920,14 @@
 
     box-sizing: border-box;
 
+    padding: 18px;
+
+    background: oklch(0.97 0.018 242 / 0.94);
+
+    border: 1px solid oklch(0.86 0.03 240);
+
+    border-radius: 16px;
+
 }
 
 
@@ -934,6 +943,17 @@
     align-items: center;
 
     gap: 9px;
+
+    min-width: 0;
+
+    overflow-wrap: anywhere;
+
+    line-height: 1.35;
+
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.35;
 
 }
 
@@ -1437,11 +1457,11 @@
 
     color: #222222;
 
-    overflow: hidden;
+    min-width: 0;
 
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
 
-    white-space: nowrap;
+    line-height: 1.35;
 
 }
 
