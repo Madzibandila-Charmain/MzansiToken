@@ -6,6 +6,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import "./Rank.css";
+
 import {
     createOrUpdateLeaderboardEntry,
     deleteLeaderboardEntry,
