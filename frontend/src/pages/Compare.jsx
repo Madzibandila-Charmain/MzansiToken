@@ -23,6 +23,10 @@ import {
 import { useAppState } from "../context/AppStateContext";
 
 import CorpusUpload from "../components/CorpusUpload";
+import {
+    isAcceptedCorpusFile,
+    UNSUPPORTED_CORPUS_MESSAGE
+} from "../lib/corpusFormats";
 
 import TokenizationMetrics from "../components/TokenizationMetrics";
 
@@ -796,6 +800,23 @@ function Compare() {
 
         if (!file) {
             return;
+        }
+
+        /*
+            Compare had no check here and relied on the backend for it, so a
+            .pdf dragged past the picker went all the way to the server before
+            anything said no. Inspect has always checked; this matches it.
+        */
+        if (!isAcceptedCorpusFile(file.name)) {
+
+            setSelectionFailed(true);
+
+            setSelectionStatus(
+                UNSUPPORTED_CORPUS_MESSAGE
+            );
+
+            return;
+
         }
 
         /* Same reason: the handler owns the message, not the browser. */
