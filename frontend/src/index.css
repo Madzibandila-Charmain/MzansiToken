@@ -1382,6 +1382,8 @@ footer {
 
     cursor: pointer;
 
+    gap: 8px;
+
     transition:
 
         background-color 0.2s ease,
@@ -3645,13 +3647,15 @@ body {
 /* Both pages use the same busy treatment, so both panel classes are
    listed here rather than the rule being written out twice. */
 .language-tokenization-block,
-.tokenization-display-block {
+.tokenization-display-block,
+.corpus-box {
     position: relative;
 }
 
 /* Blur everything in the block except the overlay itself. */
 .language-tokenization-block.is-busy > *:not(.block-overlay),
-.tokenization-display-block.is-busy > *:not(.block-overlay) {
+.tokenization-display-block.is-busy > *:not(.block-overlay),
+.corpus-box.is-busy > *:not(.block-overlay) {
     filter: blur(5px);
     opacity: 0.55;
 
@@ -6268,4 +6272,13 @@ a.home-card:hover {
 .rank-table.is-wide .rank-score-cell {
     width: 104px;
     min-width: 104px;
+}
+
+.upload-spinner {
+
+    width: 16px;
+    height: 16px;
+
+    border-width: 2px;
+
 }

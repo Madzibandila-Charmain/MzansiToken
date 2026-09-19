@@ -9,7 +9,8 @@ function CorpusUpload({
     onFileChange,
     onDefault,
     showDefault,
-    disabled
+    disabled,
+    loading = false
 }) {
     return (
         <div className="upload-container">
@@ -66,7 +67,8 @@ function CorpusUpload({
                     onClick={onDefault}
                     disabled={disabled}
                 >
-                    Default
+                    {loading && <span className="spinner upload-spinner"></span>}
+                    <span>{loading ? "Loading..." : "Default"}</span>
                 </button>
             )}
         </div>
