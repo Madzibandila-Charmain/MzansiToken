@@ -37,6 +37,9 @@ import { languageColour } from "../components/languageColours";
 
 import { formatTokenizedText } from "../lib/tokenText";
 
+const DEFAULT_COMPARE_TOKENIZER_ONE = "gpt2";
+const DEFAULT_COMPARE_TOKENIZER_TWO = "google/gemma-4-12B-it";
+
 
 
 /*
@@ -171,6 +174,7 @@ function Compare() {
     const [selectionLoading, setSelectionLoading] = useState(false);
     const [selectionStatus, setSelectionStatus] = useState("");
     const [selectionType, setSelectionType] = useState("");
+    const [corpusLoadingLabel, setCorpusLoadingLabel] = useState("");
 
     /*
         Each tokenizer has its own loading and status state.
@@ -232,9 +236,7 @@ function Compare() {
                     result.defaults?.language || "isiZulu";
 
                 const defaultTokenizer =
-                    result.defaults?.tokenizer ||
-                    result.tokenizers?.[0] ||
-                    "";
+                    DEFAULT_COMPARE_TOKENIZER_ONE;
 
                 /*
                     Initialise Compare selections only once.
@@ -247,10 +249,7 @@ function Compare() {
                     }
 
                     const secondTokenizer =
-                        result.tokenizers?.find(
-                            (item) =>
-                                item !== defaultTokenizer
-                            ) || defaultTokenizer;
+                        DEFAULT_COMPARE_TOKENIZER_TWO;
 
                     const initialTokenizerOne =
                         compareTokenizerOne ||
@@ -802,12 +801,20 @@ function Compare() {
         /* Same reason: the handler owns the message, not the browser. */
         try {
 
+            setSelectionLoading(true);
+            setSelectionType("upload");
+            setSelectionFailed(false);
+            setCorpusLoadingLabel(file.name);
+            setSelectionStatus(`Loading ${file.name}...`);
+
             await processUploadedCorpus(
                 file,
                 compareLanguage,
                 compareTokenizerOne,
                 compareTokenizerTwo
             );
+
+            setSelectionStatus(`${file.name} ready.`);
 
         }
         catch {
@@ -1186,8 +1193,9 @@ function Compare() {
 
         setSelectionLoading(true);
         setSelectionType("default");
+        setCorpusLoadingLabel("built-in corpus");
         setSelectionStatus(
-            "Loading the built-in corpus..."
+            "Loading built-in corpus..."
         );
 
         setError("");
@@ -1603,6 +1611,7 @@ function Compare() {
                     showDefault={
                         compareFileName !== "default"
                     }
+                    loading={selectionLoading}
                     disabled={
                         selectionLoading ||
                         loading ||
@@ -1613,7 +1622,7 @@ function Compare() {
 
                 {/* Status */}
 
-                {selectionStatus && (
+                {selectionStatus && selectionFailed && (
 
                     <div
                         className={`compare-selection-status ${
@@ -1653,6 +1662,9 @@ function Compare() {
                             mbiComparison.tokenizerA
                         }
                         showMbi={hasMbiMetrics()}
+                        alignmentLabel="MBI"
+                        alignmentAsPercentage={true}
+                        headingInsideResult={true}
                         tokenizerType="1"
                         busy={
                             tokenizerOneLoading ||
@@ -1662,6 +1674,10 @@ function Compare() {
                             tokenizerOneLoading
                                 ? `Loading ${tokenizerOneInput
                                     || "tokenizer 1"}\u2026`
+                                : selectionType === "upload"
+                                    ? `Loading ${corpusLoadingLabel}\u2026`
+                                : selectionType === "default"
+                                    ? "Loading built-in corpus\u2026"
                                 : `Loading ${compareLanguage}\u2026`
                         }
                     />
@@ -1679,6 +1695,9 @@ function Compare() {
                             mbiComparison.tokenizerB
                         }
                         showMbi={hasMbiMetrics()}
+                        alignmentLabel="MBI"
+                        alignmentAsPercentage={true}
+                        headingInsideResult={true}
                         tokenizerType="2"
                         busy={
                             tokenizerTwoLoading ||
@@ -1688,6 +1707,10 @@ function Compare() {
                             tokenizerTwoLoading
                                 ? `Loading ${tokenizerTwoInput
                                     || "tokenizer 2"}\u2026`
+                                : selectionType === "upload"
+                                    ? `Loading ${corpusLoadingLabel}\u2026`
+                                : selectionType === "default"
+                                    ? "Loading built-in corpus\u2026"
                                 : `Loading ${compareLanguage}\u2026`
                         }
                     />
