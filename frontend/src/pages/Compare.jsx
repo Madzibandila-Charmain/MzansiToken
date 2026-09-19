@@ -568,8 +568,16 @@ function Compare() {
             compression:
                 result?.metrics?.compression ?? 0,
 
+            /*
+                Not `?? 0`. A missing premium is not a premium of zero, and
+                coercing it here would defeat the N/A the backend is
+                deliberately sending for uploaded files.
+            */
             token_premium:
-                result?.metrics?.token_premium ?? 0
+                result?.metrics?.token_premium ?? null,
+
+            token_premium_basis:
+                result?.metrics?.token_premium_basis ?? null
         };
     }
 
@@ -626,6 +634,18 @@ function Compare() {
         English corpus won't display Precision/F1/Recall.
     */
     function hasMbiMetrics() {
+
+        /*
+            This used to check the language dropdown alone, which meant an
+            uploaded corpus still showed NCHLT morphology numbers for
+            whatever language happened to be selected - gold segmentations
+            for one text sitting beside tokens counted from another. The
+            dropdown says nothing about a file the user supplied, so an
+            upload has no MBI at all.
+        */
+        if (compareSource === "upload") {
+            return false;
+        }
 
         return compareLanguage !== "English";
     }

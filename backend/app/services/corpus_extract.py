@@ -32,6 +32,10 @@ import io
 import unicodedata
 import zipfile
 
+# Re-exported: the upload cap and this one are shown to the user by /options,
+# so they have a single definition that both the UI and the guards read.
+from app.services.limits import MAX_EXTRACTED_CHARS
+
 
 class CorpusExtractionError(Exception):
     """
@@ -54,11 +58,6 @@ PLAIN_TEXT_SUFFIXES = (".txt", ".text", ".md", ".csv", ".tsv")
 DOCX_SUFFIX = ".docx"
 
 SUPPORTED_SUFFIXES = PLAIN_TEXT_SUFFIXES + (DOCX_SUFFIX,)
-
-# The upload cap is on bytes ARRIVING. This one is on characters COMING OUT,
-# because a small compressed file can still expand into a corpus large enough
-# to tie the tokenizer up for minutes.
-MAX_EXTRACTED_CHARS = 2_000_000
 
 # A .docx is a ZIP, so the 5 MB upload cap says nothing about what it expands
 # to. These three numbers are the decompression-bomb guard.

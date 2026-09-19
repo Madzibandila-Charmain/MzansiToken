@@ -19,7 +19,7 @@ import {
     SENTENCEPIECE_SPACE,
     WORDPIECE_PREFIX,
     MAX_VISIBLE_SENTENCES
-} from "../tokenText";
+} from "./tokenText";
 
 describe("readable", () => {
 

@@ -23,9 +23,11 @@ from app.services.metrics import calculate_efficiency_metrics_one_language
 from app.services.tokenizer import tokenize_corpus, tokenize_text
 from app.services.tokenizer_state import get_or_load_tokenizer, validate_tokenizer
 
-MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB
-UPLOAD_CHUNK_BYTES = 64 * 1024      # Reads 64KB at a time
-MAX_TEXT_CHARS = 20_000             # Cap on text typed into the INSPECT box. 
+from app.services.limits import (
+    MAX_TEXT_CHARS,
+    MAX_UPLOAD_BYTES,
+    UPLOAD_CHUNK_BYTES,
+)
 
 
 async def read_capped(file: UploadFile, limit: int) -> bytes:
@@ -134,6 +136,10 @@ async def inspect_upload(
 
     tokenized = await run_in_threadpool(tokenize_corpus, tokenizer_model, sentences)
 
+    # "standalone": measured against itself and nothing else. An uploaded file
+    # is not a translation of FLORES English, so dividing by that baseline
+    # would fold a domain difference into a number labelled as a language one.
+    # None is passed where the corpus went, to make that plain at the call.
     metrics = await run_in_threadpool(
         calculate_efficiency_metrics_one_language,
         tokenized,
@@ -141,8 +147,8 @@ async def inspect_upload(
         tokenizer,
         None,
         tokenizer_model,
-        corpus,
-        basis="per_word",
+        None,
+        basis="standalone",
     )
 
     return {
