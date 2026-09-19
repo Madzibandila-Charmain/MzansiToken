@@ -957,7 +957,7 @@ function Rank() {
 
                         <input
                             type="text"
-                            value={tokenizerInput}
+                            value={filter}
                             onChange={(event) =>
                                 setFilter(event.target.value)
                             }
@@ -967,8 +967,8 @@ function Rank() {
                                 }
                             }}
                             placeholder="Find a tokenizer..."
-                            aria-label="Find a tokenizer on the board"
-                            disabled={busy || isLoading}
+                            aria-label="Find a tokenizer"
+                            disabled={adding}
                         />
 
                     </div>
