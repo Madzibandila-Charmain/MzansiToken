@@ -551,10 +551,8 @@ function Rank() {
             await getTokenizerInfo(name, signal);
 
             setAddStatus(
-                `Measuring ${name} for the default leaderboard...`
+                `Saving ${name} for the default leaderboard...`
             );
-
-            const measured = await measure(name, signal, scored);
 
             await createOrUpdateLeaderboardEntry(
                 name,
@@ -623,7 +621,7 @@ function Rank() {
                 }
             }
 
-            if (saved) {
+            if (hasCompleteLeaderboardMetrics(saved)) {
                 setAddStatus(`Restoring saved results for ${name}...`);
 
                 await createOrUpdateLeaderboardEntry(
@@ -647,18 +645,20 @@ function Rank() {
             */
             setAddStatus(`Saving ${name}...`);
 
-            await createOrUpdateLeaderboardEntry(
+            const savedResult = await createOrUpdateLeaderboardEntry(
                 name,
                 controller.signal
             );
 
+            const measured = savedResult.metrics;
+
             await loadLeaderboard(controller.signal);
 
-            const morphologyNote = measured.morphologyMeasured
-                ? `, morphology on ${measured.morphologyMeasured}`
+            const morphologyNote = measured.morphology_measured
+                ? `, morphology on ${measured.morphology_measured}`
                 : ", no morphology data";
 
-            const failures = measured.failedLanguages || [];
+            const failures = measured.failed_languages || [];
 
             /*
                 A partial result says so. Reporting "scored on 7 languages"
@@ -671,7 +671,7 @@ function Rank() {
                 setAddPartial(true);
 
                 setAddStatus(
-                    `${name} scored on ${measured.languagesMeasured} ` +
+                    `${name} scored on ${measured.languages_measured} ` +
                     `languages${morphologyNote}. Morphology failed on ` +
                     `${failures.map((item) => item.language).join(", ")}: ` +
                     `${failures[0].detail}`
@@ -679,7 +679,7 @@ function Rank() {
             }
             else {
                 setAddStatus(
-                    `${name} scored on ${measured.languagesMeasured} ` +
+                    `${name} scored on ${measured.languages_measured} ` +
                     `languages${morphologyNote}.`
                 );
             }
