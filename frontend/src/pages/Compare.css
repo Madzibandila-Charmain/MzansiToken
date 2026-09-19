@@ -477,9 +477,6 @@
 
     display: grid;
 
-    /* The middle column is the label, and it has to be the one that shrinks.
-       With `1fr auto auto` a long filename grew it and shoved the buttons
-       off the card. */
     grid-template-columns: auto minmax(0, 1fr) auto;
 
     align-items: center;
