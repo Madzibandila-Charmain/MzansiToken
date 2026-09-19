@@ -951,14 +951,6 @@ function Rank() {
 
                 <div className="rank-hero-copy">
 
-                    <p className="rank-eyebrow">
-                        <span
-                            className="rank-eyebrow-rule"
-                            aria-hidden="true"
-                        ></span>
-                        Public benchmark / 08 languages
-                    </p>
-
                     <h1 className="rank-title">
                         Which tokenizer{" "}
                         <span className="rank-title-accent">
