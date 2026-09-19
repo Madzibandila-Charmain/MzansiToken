@@ -920,14 +920,6 @@
 
     box-sizing: border-box;
 
-    padding: 18px;
-
-    background: oklch(0.97 0.018 242 / 0.94);
-
-    border: 1px solid oklch(0.86 0.03 240);
-
-    border-radius: 16px;
-
 }
 
 
