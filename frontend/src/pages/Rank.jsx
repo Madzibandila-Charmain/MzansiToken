@@ -24,10 +24,7 @@ import LeaderboardTable from "../components/LeaderboardTable";
 
 import StatusMessage from "../components/StatusMessage";
 
-import {
-    PLACEHOLDER_BREAKDOWN,
-    PLACEHOLDER_ROWS,
-} from "./rankPlaceholders";
+import { INITIAL_TOKENIZERS } from "./rankPlaceholders";
 
 /*
     English is the baseline the token premium is measured against, so it is
@@ -271,6 +268,7 @@ function Rank() {
                 setSuggestions(options.tokenizers || []);
 
                 const floresLanguages = options.languages || [];
+                let scored = [];
 
                 /*
                     The languages a tokenizer can be scored on for both
@@ -286,13 +284,13 @@ function Rank() {
 
                     const nchlt = new Set(morphology.languages || []);
 
-                    setScoredLanguages(
-                        floresLanguages.filter(
-                            (name) =>
-                                name !== BASELINE_LANGUAGE &&
-                                nchlt.has(name)
-                        )
+                    scored = floresLanguages.filter(
+                        (name) =>
+                            name !== BASELINE_LANGUAGE &&
+                            nchlt.has(name)
                     );
+
+                    setScoredLanguages(scored);
 
                 }
                 catch (error) {
@@ -330,7 +328,7 @@ function Rank() {
                     }
                 }
 
-                await loadLeaderboard(controller.signal);
+                await initialiseDefaultLeaderboard(controller.signal, scored);
 
             }
             catch (error) {
@@ -365,7 +363,7 @@ function Rank() {
         NCHLT covers, averaged into the one set of numbers the leaderboard
         stores. The backend turns these into the score.
     */
-    async function measure(name, signal) {
+    async function measure(name, signal, languagesToMeasure=scoredLanguages) {
 
         setAddStatus(`Reading ${name} across the corpus...`);
 
@@ -394,13 +392,13 @@ function Rank() {
             progress count meaningless. Sequential, so the user is told
             where it has got to.
         */
-        for (let index = 0; index < scoredLanguages.length; index += 1) {
+        for (let index = 0; index < languagesToMeasure.length; index += 1) {
 
-            const language = scoredLanguages[index];
+            const language = languagesToMeasure[index];
 
             setAddStatus(
                 `Checking morpheme boundaries - ${language} ` +
-                `(${index + 1} of ${scoredLanguages.length})...`
+                `(${index + 1} of ${languagesToMeasure.length})...`
             );
 
             try {
@@ -442,7 +440,7 @@ function Rank() {
             the backend rather than with one language, and saying so beats
             storing a score built on nothing.
         */
-        if (scoredLanguages.length && failed.length === scoredLanguages.length) {
+        if (languagesToMeasure.length && failed.length === languagesToMeasure.length) {
 
             throw new Error(
                 `Morphology failed on all ${failed.length} languages. ` +
@@ -468,6 +466,123 @@ function Rank() {
             morphologyMeasured: morphology.length,
             failedLanguages: failed,
         };
+    }
+
+    function hasCompleteLeaderboardMetrics(saved) {
+        if (!saved) {
+            return false;
+        }
+
+        return (
+            
+            saved.token_count !== null &&
+            saved.token_count !== undefined &&
+            Number.isFinite(Number(saved.token_count)) &&
+
+            saved.fertility !== null &&
+            saved.fertility !== undefined &&
+            Number.isFinite(Number(saved.fertility)) &&
+
+            saved.compression !== null &&
+            saved.compression !== undefined &&
+            Number.isFinite(Number(saved.compression)) &&
+
+            saved.token_premium !== null &&
+            saved.token_premium !== undefined &&
+            Number.isFinite(Number(saved.token_premium)) &&
+
+            saved.f1 !== null &&
+            saved.f1 !== undefined &&
+            Number.isFinite(Number(saved.f1)) &&
+
+            saved.precision !== null &&
+            saved.precision !== undefined &&
+            Number.isFinite(Number(saved.precision)) &&
+
+            saved.recall !== null &&
+            saved.recall !== undefined &&
+            Number.isFinite(Number(saved.recall))
+        );
+    }
+
+    async function initialiseDefaultLeaderboard(signal, scored) {
+        /*
+            These are the three tokenizers that make up the default Rank board.
+            If a tokenizer was measured before, restore its saved measurement.
+            Otherwise, measure it through the normal real-data pipeline.
+        */
+        for (let index = 0; index < INITIAL_TOKENIZERS.length; index += 1) {
+            const name = INITIAL_TOKENIZERS[index];
+
+            let saved = null;
+
+            try {
+                saved = await getSavedLeaderboardEntry(name, signal);
+            }
+            catch (error) {
+                if (error.status !== 404) {
+                    throw error;
+                }
+            }
+
+            /*
+                The tokenizer already has a measurement in the database.
+                Reactivate it without running the expensive measurement again.
+            */
+            if (hasCompleteLeaderboardMetrics(saved)) {
+                setAddStatus(
+                    `Restoring ${name} for the default leaderboard...`
+                );
+
+                await createOrUpdateLeaderboardEntry(
+                    name,
+                    {
+                        token_count: saved.token_count,
+                        fertility: saved.fertility,
+                        compression: saved.compression,
+                        token_premium: saved.token_premium,
+                        f1: saved.f1,
+                        precision: saved.precision,
+                        recall: saved.recall,
+                    },
+                    signal
+                );
+
+                continue;
+            }
+
+            /*
+                This tokenizer has never been measured, so use the real
+                Hugging Face tokenizer and MzansiToken measurement pipeline.
+            */
+            await getTokenizerInfo(name, signal);
+
+            setAddStatus(
+                `Measuring ${name} for the default leaderboard...`
+            );
+
+            const measured = await measure(name, signal, scored);
+
+            await createOrUpdateLeaderboardEntry(
+                name,
+                {
+                    token_count: measured.token_count,
+                    fertility: measured.fertility,
+                    compression: measured.compression,
+                    token_premium: measured.token_premium,
+                    f1: measured.f1,
+                    precision: measured.precision,
+                    recall: measured.recall,
+                },
+                signal
+            );
+        }
+
+        /*
+            Now that all three defaults have been created/restored,
+            fetch the real active leaderboard and put it into React state.
+        */
+        await loadLeaderboard(signal);
     }
 
     async function handleAdd(requested) {
@@ -678,15 +793,7 @@ function Rank() {
 
     const busy = adding || removingId != null;
 
-    /*
-        Placeholders stand in for an empty board and nothing else. They are
-        never merged with measured rows, so what is on screen is always
-        entirely one or entirely the other.
-    */
-    const showingSample =
-        !isLoading && !errorMessage && rows.length === 0;
-
-    const board = showingSample ? PLACEHOLDER_ROWS : rows;
+    const board = rows;
 
     const onBoard = new Set(rows.map((row) => row.name));
 
@@ -776,12 +883,6 @@ function Rank() {
             return;
         }
 
-        /* The sample board has no backend behind it. */
-        if (showingSample) {
-            setBreakdown(PLACEHOLDER_BREAKDOWN);
-            return;
-        }
-
         const controller = new AbortController();
 
         setBreakdownLoading(true);
@@ -827,7 +928,7 @@ function Rank() {
 
         return () => controller.abort();
 
-    }, [leaderName, showingSample]);
+    }, [leaderName]);
 
     const weightSentence = weights
         ? Object.entries(weights)
@@ -987,22 +1088,6 @@ function Rank() {
                 )}
 
             </section>
-
-            {showingSample && (
-
-                <p className="rank-sample-banner">
-                    <span className="status-dot"></span>
-                    <span>
-                        <strong>Sample board.</strong> Nothing has been
-                        measured yet, so these are placeholder tokenizers
-                        with plausible metrics - the scores beside them are
-                        real output of the scoring formula, but the metrics
-                        they were computed from are not measurements. Add a
-                        tokenizer and the whole board becomes live.
-                    </span>
-                </p>
-
-            )}
 
             {/* ---------------- SPOTLIGHT ---------------- */}
 
@@ -1224,7 +1309,7 @@ function Rank() {
                     rows={visible}
                     isLoading={isLoading}
                     errorMessage={errorMessage}
-                    onRemove={showingSample ? null : handleRemove}
+                    onRemove={handleRemove}
                     removingId={removingId}
                     disabled={adding}
                     showAllMetrics={showAllMetrics}

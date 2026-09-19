@@ -4871,6 +4871,11 @@ a.home-card:hover {
     box-shadow: 0 8px 24px oklch(0.25 0.03 252 / 0.06);
 }
 
+.rank-controls .selection-status {
+    flex-basis: 100%;
+    width: 100%;
+}
+
 .rank-control {
     display: inline-flex;
     align-items: center;

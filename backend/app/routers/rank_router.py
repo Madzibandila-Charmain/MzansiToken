@@ -104,14 +104,25 @@ def get_saved_leaderboard_entry(name: str):
 
 # Endpoint 4: POST /leaderboard
 @router.post("/leaderboard")
-def create_or_update_leaderboard_entry(request: LeaderboardUpsertRequest):
-    """
-    Create a new tokenizer entry OR update an existing one with the same name.
-    - Uses upsert_tokenizer service.
-    - Always recalculates overall_score before saving.
-    """
-    tokenizer_id = upsert_tokenizer(request.name, _with_score(request.metrics))
-    return {"tokenizer_id": tokenizer_id, "name": request.name}
+def create_or_update_leaderboard(request: LeaderboardUpsertRequest):
+    metrics = _with_score(request.metrics)
+
+    try:
+        tokenizer_id = upsert_tokenizer(
+            request.name,
+            metrics
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error)
+        )
+
+    return {
+        "id": tokenizer_id,
+        "name": request.name,
+        "metrics": metrics,
+    }
 
 
 # Endpoint 5: PATCH /leaderboard/{id}

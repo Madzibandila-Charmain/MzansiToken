@@ -44,19 +44,44 @@ def add_tokenizer(name: str, metrics: dict) -> int:
 
 def upsert_tokenizer(name: str, metrics: dict) -> int:
     """Create a tokenizer or reactivate an existing tokenizer."""
+
     existing = get_tokenizer_by_name(name)
 
     if existing:
-        update_metrics(existing["id"], metrics)
+        if existing.get("active") == 1:
+            update_metrics(existing["id"], metrics)
+            return existing["id"]
 
         with get_connection() as conn:
+            active_count = conn.execute(
+                "SELECT COUNT(*) FROM tokenizers WHERE active = 1;"
+            ).fetchone()[0]
+
+            if active_count >= 10:
+                raise ValueError(
+                    "The leaderboard already has 10 active tokenizers."
+                )
+
             conn.execute(
                 "UPDATE tokenizers SET active = 1 WHERE id = ?;",
-                (existing["id"],),
+                (existing["id"],)
             )
+
             perform_backup()
 
+        update_metrics(existing["id"], metrics)
+
         return existing["id"]
+
+    with get_connection() as conn:
+        active_count = conn.execute(
+            "SELECT COUNT(*) FROM tokenizers WHERE active = 1;"
+        ).fetchone()[0]
+
+        if active_count >= 10:
+            raise ValueError(
+                "The leaderboard already has 10 active tokenizers."
+            )
 
     return add_tokenizer(name, metrics)
 

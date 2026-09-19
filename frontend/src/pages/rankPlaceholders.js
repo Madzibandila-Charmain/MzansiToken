@@ -4,85 +4,21 @@
     Date: 18 September 2026
 */
 
-export const PLACEHOLDER_ROWS = [
-    {
-        id: "sample-1",
-        name: "Davlan/afro-xlmr-base",
-        token_count: 245300,
-        overall_score: 69.55,
-        fertility: 2.30,
-        compression: 3.35,
-        token_premium: 1.48,
-        f1: 0.66,
-        precision: 0.64,
-        recall: 0.68,
-        languages: 7,
-    },
-    {
-        id: "sample-2",
-        name: "xlm-roberta-base",
-        token_count: 266400,
-        overall_score: 65.00,
-        fertility: 2.50,
-        compression: 3.20,
-        token_premium: 1.60,
-        f1: 0.62,
-        precision: 0.6,
-        recall: 0.64,
-        languages: 7,
-    },
-    {
-        id: "sample-3",
-        name: "google/mt5-base",
-        token_count: 302600,
-        overall_score: 59.20,
-        fertility: 2.84,
-        compression: 3.02,
-        token_premium: 1.78,
-        f1: 0.60,
-        precision: 0.58,
-        recall: 0.62,
-        languages: 7,
-    },
-    {
-        id: "sample-4",
-        name: "bert-base-multilingual-cased",
-        token_count: 330100,
-        overall_score: 53.75,
-        fertility: 3.10,
-        compression: 2.80,
-        token_premium: 1.95,
-        f1: 0.58,
-        precision: 0.56,
-        recall: 0.6,
-        languages: 7,
-    },
-    {
-        id: "sample-5",
-        name: "openai-community/gpt2-large",
-        token_count: 431400,
-        overall_score: 39.35,
-        fertility: 4.05,
-        compression: 2.31,
-        token_premium: 2.38,
-        f1: 0.55,
-        precision: 0.53,
-        recall: 0.57,
-        languages: 7,
-    },
-    {
-        id: "sample-6",
-        name: "gpt2",
-        token_count: 453800,
-        overall_score: 36.00,
-        fertility: 4.26,
-        compression: 2.21,
-        token_premium: 2.50,
-        f1: 0.55,
-        precision: 0.52,
-        recall: 0.58,
-        languages: 7,
-    },
+/*
+    Initial tokenizer candidates for the Rank page.
+
+    These are model names only. Their metrics must always come from the
+    real MzansiToken measurement pipeline.
+
+    The first three are the original models intended for the initial
+    leaderboard. The remaining three are additional candidates that can
+    be measured and compared using the same scoring formula.
+*/
+export const INITIAL_TOKENIZERS = [
+    "gpt2",
+    "bert-base-uncased",
+    "xlm-roberta-base",
+    "openai-community/gpt2-large",
 ];
 
 /*
