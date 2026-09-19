@@ -23,7 +23,7 @@ import {
 import { useAppState } from "../context/AppStateContext";
 
 import CorpusUpload from "../components/CorpusUpload";
-import { checkCorpusFile } from "../lib/corpusFormats";
+import { checkCorpusFile, shortFileName } from "../lib/corpusFormats";
 
 import TokenizationMetrics from "../components/TokenizationMetrics";
 
@@ -48,7 +48,7 @@ const DEFAULT_COMPARE_TOKENIZER_TWO = "google/gemma-4-12B-it";
 
 /*
     One tokenizer's half of a /compare_mbi response. A missing value stays
-    null so the card reads N/A - 0.00 would claim a measurement.
+    null here; the card is what decides how to print it.
 */
 function readMbi(side) {
 
@@ -216,7 +216,7 @@ function Compare() {
         actually on screen instead - same wording as Inspect.
     */
     const corpusLabel = compareSource === "upload"
-        ? `${compareFileName} \u2022 Uploaded corpus \u2022 `
+        ? `${shortFileName(compareFileName)} \u2022 Uploaded corpus \u2022 `
             + `${compareTokenizerOne || "tokenizer 1"} vs `
             + `${compareTokenizerTwo || "tokenizer 2"}`
         : `Built-in corpus \u2022 ${compareLanguage || "no language selected"}`
@@ -587,9 +587,8 @@ function Compare() {
                 result?.metrics?.compression ?? 0,
 
             /*
-                Not `?? 0`. A missing premium is not a premium of zero, and
-                coercing it here would defeat the N/A the backend is
-                deliberately sending for uploaded files.
+                Not `?? 0`. An uploaded file has no premium at all, and the
+                card needs the null to know to drop itself.
             */
             token_premium:
                 result?.metrics?.token_premium ?? null,
@@ -638,7 +637,7 @@ function Compare() {
     function getMbiMetricDisplay(value) {
 
         if (mbiUnavailable) {
-            return "N/A";
+            return "0.00";
         }
 
         if (mbiLoading) {
@@ -859,7 +858,7 @@ function Compare() {
             setSelectionType("upload");
             setSelectionFailed(false);
             setCorpusLoadingLabel(file.name);
-            setSelectionStatus(`Loading ${file.name}...`);
+            setSelectionStatus(`Loading ${shortFileName(file.name)}...`);
 
             await processUploadedCorpus(
                 file,
@@ -868,7 +867,7 @@ function Compare() {
                 compareTokenizerTwo
             );
 
-            setSelectionStatus(`${file.name} ready.`);
+            setSelectionStatus(`${shortFileName(file.name)} ready.`);
 
         }
         catch {
@@ -1580,18 +1579,9 @@ function Compare() {
                     Corpus Tokenization
                 </div>
 
-                <div className="corpus-label-group">
-
-                    <p className="compare-corpus-label" title={corpusLabel}>
-                        {corpusLabel}
-                    </p>
-
-                    <StatusLine
-                        state={selectionFailed ? "error" : "info"}
-                        text={selectionStatus}
-                    />
-
-                </div>
+                <p className="compare-corpus-label" title={corpusLabel}>
+                    {corpusLabel}
+                </p>
 
                 <CorpusUpload
                     inputId="compare-corpus-upload"
@@ -1610,30 +1600,15 @@ function Compare() {
                     }
                 />
 
-                {/* Status */}
-
-                {selectionStatus && selectionFailed && (
-
-                    <div
-                        className={`compare-selection-status ${
-                            selectionFailed
-                                ? "is-error"
-                                : selectionLoading
-                                    ? "is-loading"
-                                    : "is-ready"
-                        }`}
-                    >
-
-                        <span className="compare-status-dot"></span>
-
-                        <StatusMessage
-                            text={selectionStatus}
-                            failed={selectionFailed}
-                        />
-
-                    </div>
-
-                )}
+                <div className="corpus-status-row">
+                    <StatusLine
+                        state={statusState({
+                            failed: selectionFailed,
+                            loading: selectionLoading,
+                        })}
+                        text={selectionStatus}
+                    />
+                </div>
 
                 {/* Two Tokenizer Displays */}
 

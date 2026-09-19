@@ -25,7 +25,7 @@ import MetricsChart from "../components/MetricsChart";
 import { languageColour } from "../components/languageColours";
 
 import CorpusUpload from "../components/CorpusUpload";
-import { checkCorpusFile } from "../lib/corpusFormats";
+import { checkCorpusFile, shortFileName } from "../lib/corpusFormats";
 
 import { SearchIcon } from "../components/Icons";
 import TypeAnything from "../components/TypeAnything";
@@ -98,7 +98,7 @@ function Inspect() {
             return Array.isArray(parsed) ? parsed : [];
 
         }
-        catch (err) {
+        catch {
             return [];
         }
     });
@@ -118,7 +118,7 @@ function Inspect() {
                     ? parsed
                     : {};
             }
-            catch (err) {
+            catch {
                 return {};
             }
         }
@@ -174,15 +174,7 @@ function Inspect() {
     /* Reference to the actual file input. */
     const fileInputRef = useRef(null);
 
-    /*
-        The label used to read "default", which is the internal name for the
-        built-in corpus and means nothing to a reader. Name the languages
-        actually on screen instead, and keep it correct for one or two.
-    */
-    const corpusLabel = source === "upload"
-        ? `${fileName} \u2022 Uploaded corpus \u2022 ${tokenizer}`
-        : `Built-in corpus \u2022 ${languageLabel} \u2022 ${tokenizer}`;
-
+    /* The languages on screen right now, however they got picked. */
     const shown = selectedLanguages.length
         ? selectedLanguages
         : (language ? [language] : []);
@@ -192,6 +184,18 @@ function Inspect() {
         : shown.length === 1
             ? shown[0]
             : `${shown.slice(0, -1).join(", ")} and ${shown[shown.length - 1]}`;
+
+    /*
+        The label used to read "default", which is the internal name for the
+        built-in corpus and means nothing to a reader. Name the languages
+        actually on screen instead, and keep it correct for one or two.
+
+        It has to come after languageLabel: a const cannot be read on the
+        line above the one that makes it.
+    */
+    const corpusLabel = source === "upload"
+        ? `${shortFileName(fileName)} \u2022 Uploaded corpus \u2022 ${tokenizer}`
+        : `Built-in corpus \u2022 ${languageLabel} \u2022 ${tokenizer}`;
 
     /*
         Save selected languages so they remain unchanged
@@ -367,7 +371,7 @@ function Inspect() {
                             );
 
                         }
-                        catch (err) {
+                        catch {
 
                             setLanguageData(
                                 (previousData) => ({
@@ -765,7 +769,7 @@ function Inspect() {
                         );
 
                 }
-                catch (err) {
+                catch {
 
                     mbiResult = null;
 
@@ -1125,7 +1129,7 @@ function Inspect() {
 
         }
 
-        setUploadStatus(`Reading ${file.name}...`);
+        setUploadStatus(`Loading ${shortFileName(file.name)}...`);
         setUploadFailed(false);
 
         try {
@@ -1236,6 +1240,9 @@ function Inspect() {
                 false
             );
 
+            /* The line said "Loading..." until the page was unmounted. */
+            setUploadStatus(`${shortFileName(file.name)} ready.`);
+            setUploadFailed(false);
 
         }
         catch (err) {
@@ -1245,10 +1252,16 @@ function Inspect() {
                 err
             );
 
-            setError(
-                err.message ||
-                "Could not process the uploaded corpus."
-            );
+            const detail =
+                friendlyError(err) ||
+                "Could not process the uploaded corpus.";
+
+            setError(detail);
+
+            /* Turns the line red. Without it the status stayed green and
+               still claimed the file was loading. */
+            setUploadStatus(detail);
+            setUploadFailed(true);
 
         }
         finally {
@@ -1445,7 +1458,7 @@ function Inspect() {
                                 );
 
                         }
-                        catch (err) {
+                        catch {
 
                             /*
                                 MBI failure should not prevent
@@ -1693,6 +1706,9 @@ function Inspect() {
 
         setCorpusLoadingLabel("built-in corpus");
 
+        setUploadStatus("Loading the built-in corpus...");
+        setUploadFailed(false);
+
         try {
 
             /*
@@ -1747,7 +1763,7 @@ function Inspect() {
                             defaultMbiResult.metrics.total_gold_boundaries ?? 0
                     }; 
                 } 
-                catch (err) { 
+                catch { 
                     defaultMbi = null; 
                 } 
             }
@@ -1846,13 +1862,21 @@ function Inspect() {
                 false
             );
 
+            /* The line still named the file that was just thrown away. */
+            setUploadStatus("Built-in corpus ready.");
+            setUploadFailed(false);
 
         }
         catch (err) {
 
-            setError(
-                err.message
-            );
+            const detail =
+                friendlyError(err) ||
+                "Could not load the built-in corpus.";
+
+            setError(detail);
+
+            setUploadStatus(detail);
+            setUploadFailed(true);
 
         }
         finally {
@@ -2157,18 +2181,9 @@ function Inspect() {
                     Corpus Tokenization
                 </div>
 
-                <div className="corpus-label-group">
-
-                    <p className="corpus-label" title={corpusLabel}>
-                        {corpusLabel}
-                    </p>
-
-                    <StatusLine
-                        state={uploadFailed ? "error" : "info"}
-                        text={uploadStatus}
-                    />
-
-                </div>
+                <p className="corpus-label" title={corpusLabel}>
+                    {corpusLabel}
+                </p>
 
                 <CorpusUpload
                     inputId="corpus-upload"
@@ -2179,6 +2194,16 @@ function Inspect() {
                     loading={selectionLoading}
                     disabled={selectionLoading}
                 />
+
+                <div className="corpus-status-row">
+                    <StatusLine
+                        state={statusState({
+                            failed: uploadFailed,
+                            loading: selectionLoading,
+                        })}
+                        text={uploadStatus}
+                    />
+                </div>
 
                 <div
                     className={

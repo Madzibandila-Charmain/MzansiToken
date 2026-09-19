@@ -5,20 +5,15 @@
 */
 
 /*
-    A value of null is not a zero. A tokenizer with no English baseline has
-    no premium, and a language with no NCHLT entry has no MBI - both should
-    read "N/A" rather than "0.00", which would be a claim we cannot make.
+    Turns a number into card text. Nothing to show prints as a zero, so the
+    row keeps the same shape instead of breaking into letters mid-way.
 */
 
 function figure(value, decimals = 2) {
-    if (value === null || value === undefined) {
-        return "N/A";
-    }
-
     const number = Number(value);
 
-    if (Number.isNaN(number)) {
-        return "N/A";
+    if (value === null || value === undefined || Number.isNaN(number)) {
+        return (0).toFixed(decimals);
     }
 
     return number.toFixed(decimals);
@@ -51,7 +46,7 @@ function Card({ name, value }) {
 
     showMbi - whether this language has NCHLT segmentations at all.
               English does not, so its row is left off entirely rather
-              than shown as three N/As.
+              than shown as three zeros.
 */
 
 function MetricCards({
@@ -68,15 +63,14 @@ function MetricCards({
         English figure, and the user's file is not a translation of that
         corpus.
 
-        The card is left out rather than shown as N/A. A metric that cannot
-        exist for this input is not a missing value to be filled in later;
-        printing a placeholder for it invites the reader to treat it as one.
-        The row simply has three cards.
+        The card is left out rather than printed as a zero. A metric that
+        cannot exist for this input is not a small one, and a zero would be
+        read as a real measurement. The row simply has three cards.
     */
     const isStandalone =
         metrics?.token_premium_basis === "standalone";
 
-    let alignmentValue = "N/A";
+    let alignmentValue = alignmentAsPercentage ? "0.0%" : "0 / 0";
 
     if (
         mbi?.aligned_boundaries !== null &&
@@ -90,7 +84,7 @@ function MetricCards({
 
             alignmentValue = totalBoundaries > 0
                 ? `${((alignedBoundaries / totalBoundaries) * 100).toFixed(1)}%`
-                : "N/A";
+                : "0.0%";
         } else {
             alignmentValue =
                 `${Number(mbi.aligned_boundaries).toLocaleString()} / ` +

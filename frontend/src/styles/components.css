@@ -199,7 +199,7 @@
 
 .corpus-label {
 
-    /* Lets the grid cell shrink instead of overflowing. */
+    /* Lets the grid cell shrink instead of pushing the buttons off the card. */
     min-width: 0;
 
     margin: 0;
@@ -208,7 +208,19 @@
 
     color: oklch(0.45 0.025 252);
 
+    /* One line only. A long file name is cut with an ellipsis and the
+       title attribute carries the full text for anyone who hovers. */
     white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    /* Sits at the right of its column, so it reads as a caption on the
+       buttons rather than drifting off beside the heading. Alignment only -
+       justify-self: end would let it grow to its full text and spill back
+       over the heading instead of being cut. */
+    text-align: right;
 
 }
 /* Upload area */
@@ -242,27 +254,15 @@
     color: oklch(0.52 0.022 252);
 }
 
-/* Label plus its status, stacked in the middle grid cell. */
+/* The status sits on its own row under the buttons, the way it used to. */
 
-.corpus-label-group {
+.corpus-status-row {
 
-    min-width: 0;
-
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-/* One line only - a long file name is cut, and the title attribute
-   carries the full text for anyone who hovers. */
-.corpus-label-group .corpus-label,
-.corpus-label-group .compare-corpus-label {
+    grid-column: 1 / -1;
 
     min-width: 0;
 
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    margin-top: 10px;
 }
 
 .upload-container input[type="file"] {
@@ -432,7 +432,10 @@
 
     .corpus-box {
 
-        grid-template-columns: 1fr;
+        /* minmax(0, 1fr), not 1fr: a plain 1fr refuses to go narrower than
+           its widest child, so the token stream pushed the whole column
+           past the edge of the card on a phone. */
+        grid-template-columns: minmax(0, 1fr);
 
         row-gap: 18px;
 
@@ -441,6 +444,22 @@
     .corpus-label {
 
         white-space: normal;
+
+        overflow: visible;
+
+        text-align: left;
+
+    }
+
+    /* Both buttons are full width down here, so they need their own
+       rows - side by side they added up to more than the card. */
+    .upload-container {
+
+        flex-direction: column;
+
+        align-items: stretch;
+
+        width: 100%;
 
     }
 
@@ -1122,9 +1141,11 @@
     flex-shrink: 0;
 
 }
+/* Amber: something is happening, wait for it. The dot was already amber
+   while the words stayed grey, so a busy line read as a dead one. */
 .selection-status.is-loading {
 
-    color: #777777;
+    color: #8a6400;
 
 }
 .selection-status.is-loading .status-dot {

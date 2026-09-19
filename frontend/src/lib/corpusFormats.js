@@ -49,6 +49,26 @@ export function isAcceptedCorpusFile(name) {
     );
 }
 
+/*
+    Shortens a file name for the screen only - never for the upload itself.
+    A 200-character name pushed the label across the heading and turned the
+    status line into a paragraph, so the middle is dropped and both ends are
+    kept: you can still see what it is and what type it is.
+*/
+export function shortFileName(name, max = 44) {
+
+    const value = String(name || "");
+
+    if (value.length <= max) {
+        return value;
+    }
+
+    const head = Math.ceil((max - 1) / 2);
+    const tail = Math.floor((max - 1) / 2);
+
+    return `${value.slice(0, head)}\u2026${value.slice(value.length - tail)}`;
+}
+
 /* 5242880 -> "5 MB". */
 export function formatBytes(bytes) {
 
