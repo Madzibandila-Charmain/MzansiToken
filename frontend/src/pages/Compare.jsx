@@ -39,6 +39,26 @@ import { formatTokenizedText } from "../lib/tokenText";
 
 
 
+/*
+    One tokenizer's half of a /compare_mbi response. A missing value stays
+    null so the card reads N/A - 0.00 would claim a measurement.
+*/
+function readMbi(side) {
+
+    const metrics = side?.metrics || {};
+
+    return {
+        precision: metrics.precision ?? null,
+        recall: metrics.recall ?? null,
+        f1: metrics.f1 ?? null,
+        aligned_boundaries: metrics.aligned_boundaries ?? null,
+        total_gold_boundaries: metrics.total_gold_boundaries ?? null,
+        words_evaluated: side?.words_evaluated ?? null
+    };
+}
+
+
+
 function Compare() {
 
     const {
@@ -118,18 +138,8 @@ function Compare() {
     const [mbiUnavailable, setMbiUnavailable] = useState("");
 
     const [mbiComparison, setMbiComparison] = useState({
-        tokenizerA: {
-            precision: 0,
-            recall: 0,
-            f1: 0,
-            words_evaluated: 0
-        },
-        tokenizerB: {
-            precision: 0,
-            recall: 0,
-            f1: 0,
-            words_evaluated: 0
-        }
+        tokenizerA: readMbi(null),
+        tokenizerB: readMbi(null)
     });
 
     /*
@@ -331,35 +341,8 @@ function Compare() {
                 }
 
                 setMbiComparison({
-                    tokenizerA: {
-                        precision:
-                            result.tokenizer_a.metrics.precision ?? 0,
-                        recall:
-                            result.tokenizer_a.metrics.recall ?? 0,
-                        f1:
-                            result.tokenizer_a.metrics.f1 ?? 0,
-                        aligned_boundaries:
-                            result.tokenizer_a.metrics.aligned_boundaries ?? 0,
-                        total_gold_boundaries:
-                            result.tokenizer_a.metrics.total_gold_boundaries ?? 0,
-                        words_evaluated:
-                            result.tokenizer_a.words_evaluated ?? 0
-                    },
-
-                    tokenizerB: {
-                        precision:
-                            result.tokenizer_b.metrics.precision ?? 0,
-                        recall:
-                            result.tokenizer_b.metrics.recall ?? 0,
-                        f1:
-                            result.tokenizer_b.metrics.f1 ?? 0,
-                        aligned_boundaries:
-                            result.tokenizer_a.metrics.aligned_boundaries ?? 0,
-                        total_gold_boundaries:
-                            result.tokenizer_a.metrics.total_gold_boundaries ?? 0,
-                        words_evaluated:
-                            result.tokenizer_b.words_evaluated ?? 0
-                    }
+                    tokenizerA: readMbi(result?.tokenizer_a),
+                    tokenizerB: readMbi(result?.tokenizer_b)
                 });
 
             } catch (err) {
@@ -373,23 +356,8 @@ function Compare() {
                     if (!cancelled) {
 
                         setMbiComparison({
-                            tokenizerA: {
-                                precision: 0,
-                                recall: 0,
-                                f1: 0,
-                                aligned_boundaries: 0,
-                                total_gold_boundaries: 0,
-                                words_evaluated: 0
-                            },
-
-                            tokenizerB: {
-                                precision: 0,
-                                recall: 0,
-                                f1: 0,
-                                aligned_boundaries: 0,
-                                total_gold_boundaries: 0,
-                                words_evaluated: 0
-                            }
+                            tokenizerA: readMbi(null),
+                            tokenizerB: readMbi(null)
                         });
 
                         setMbiUnavailable(
@@ -401,7 +369,14 @@ function Compare() {
                 }
 
                 if (!cancelled) {
-                    setMbiError(err.message);
+                    setMbiComparison({
+                        tokenizerA: readMbi(null),
+                        tokenizerB: readMbi(null)
+                    });
+                    setMbiError(
+                        friendlyError(err) ||
+                        "Morphology metrics could not be loaded."
+                    );
                 }
 
             } finally {
@@ -1593,11 +1568,17 @@ function Compare() {
                 here - the options load and the typed-text tokenize. Field
                 failures live under the field they belong to. */}
 
-            {error && (
+            {(error || mbiError) && (
 
                 <div className="compare-error">
                     <span className="status-dot"></span>
-                    <StatusMessage text={error} failed={true} />
+                    <StatusMessage
+                        text={
+                            error ||
+                            `Morphology metrics could not be loaded: ${mbiError}`
+                        }
+                        failed={true}
+                    />
                 </div>
 
             )}
