@@ -991,6 +991,30 @@ function Rank() {
 
             </section>
 
+            {addStatus && (
+                <div
+                    className={`selection-status ${
+                        addFailed
+                            ? "is-error"
+                            : busy
+                                ? "is-loading"
+                                : addPartial
+                                    ? "is-partial"
+                                    : "is-ready"
+                    }`}
+                >
+                    {busy
+                        ? <span className="spinner"></span>
+                        : <span className="status-dot"></span>}
+
+                    <StatusMessage
+                        text={addStatus}
+                        failed={addFailed}
+                        modelName={addedName}
+                    />
+                </div>
+            )}
+
             {showingSample && (
 
                 <p className="rank-sample-banner">
