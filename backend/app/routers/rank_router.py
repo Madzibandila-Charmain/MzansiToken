@@ -22,6 +22,9 @@ from app.services.leaderboard_service import (
     update_metrics,
     upsert_tokenizer,
 )
+from app.services.leaderboard_measurement_service import (
+    compute_leaderboard_metrics,
+)
 
 router = APIRouter(tags=["leaderboard"])
 
@@ -105,16 +108,24 @@ def get_saved_leaderboard_entry(name: str):
 # Endpoint 4: POST /leaderboard
 @router.post("/leaderboard")
 def create_or_update_leaderboard(request: LeaderboardUpsertRequest):
-    metrics = _with_score(request.metrics)
-
     try:
+        metrics = compute_leaderboard_metrics(request.name)
+        metrics = _with_score(metrics)
+
         tokenizer_id = upsert_tokenizer(
             request.name,
             metrics
         )
+
     except ValueError as error:
         raise HTTPException(
             status_code=400,
+            detail=str(error)
+        )
+
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=500,
             detail=str(error)
         )
 
@@ -123,7 +134,6 @@ def create_or_update_leaderboard(request: LeaderboardUpsertRequest):
         "name": request.name,
         "metrics": metrics,
     }
-
 
 # Endpoint 5: PATCH /leaderboard/{id}
 @router.patch("/leaderboard/{tokenizer_id:int}")

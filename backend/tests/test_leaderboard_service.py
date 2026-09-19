@@ -85,19 +85,41 @@ def test_update_metrics_with_no_valid_columns_is_noop():
     assert row["token_count"] == 10
 
 
-def test_remove_tokenizer_deletes_rows_and_metrics():
+def test_remove_tokenizer_deactivates_but_preserves_saved_measurement():
     """
-    Removing a tokenizer should delete the row from `tokenizers` and the
-    corresponding `metrics` row (ON DELETE CASCADE). After removal the
-    tokenizer should no longer be retrievable.
-    """
-    tid = leaderboard_service.add_tokenizer("tok_remove", {"token_count": 5})
-    # Confirm present
-    assert leaderboard_service.get_tokenizer_by_name("tok_remove") is not None
+    Removing a tokenizer should deactivate it rather than delete it.
 
+    The tokenizer and its metrics must remain saved so that the same
+    tokenizer can be restored later without recalculating its measurements.
+    """
+    tid = leaderboard_service.add_tokenizer(
+        "tok_remove",
+        {"token_count": 5}
+    )
+
+    # Confirm the tokenizer exists and is active.
+    tokenizer = leaderboard_service.get_tokenizer_by_name("tok_remove")
+    assert tokenizer is not None
+    assert tokenizer["active"] == 1
+
+    # Remove it from the active leaderboard.
     leaderboard_service.remove_tokenizer(tid)
 
-    assert leaderboard_service.get_tokenizer_by_name("tok_remove") is None
+    # The tokenizer should still exist in the database.
+    tokenizer = leaderboard_service.get_tokenizer_by_name("tok_remove")
+    assert tokenizer is not None
+
+    # It should now be inactive.
+    assert tokenizer["active"] == 0
+
+    # Its saved measurement should still be available.
+    saved = leaderboard_service.get_saved_tokenizer("tok_remove")
+    assert saved is not None
+    assert saved["token_count"] == 5
+
+    # It should no longer appear on the active leaderboard.
+    leaderboard = leaderboard_service.get_leaderboard()
+    assert not any(row["name"] == "tok_remove" for row in leaderboard)
 
 
 def test_get_leaderboard_invalid_sort_raises():
