@@ -4861,21 +4861,27 @@ a.home-card:hover {
     gap: 10px;
 
     margin-bottom: 20px;
+    padding: 14px 16px;
+
+    background: #ffffff;
+
+    border: 1px solid oklch(0.89 0.02 240);
+    border-radius: 16px;
+
+    box-shadow: 0 8px 24px oklch(0.25 0.03 252 / 0.06);
 }
 
 .rank-control {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
 
+    gap: 8px;
     padding: 0 6px 0 14px;
 
-    background: oklch(1 0 0 / 0.84);
+    background: oklch(0.98 0.008 242);
 
-    border: 1px solid oklch(0.89 0.02 240);
+    border: 1px solid oklch(0.91 0.018 240);
     border-radius: 11px;
-
-    backdrop-filter: blur(8px);
 }
 
 .rank-control-label {
@@ -4926,7 +4932,7 @@ a.home-card:hover {
 
     padding: 0 14px;
 
-    background: oklch(1 0 0 / 0.84);
+    background: oklch(0.98 0.008 242);
 
     border: 1px solid oklch(0.89 0.02 240);
     border-radius: 11px;
