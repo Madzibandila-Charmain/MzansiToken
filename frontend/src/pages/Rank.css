@@ -1649,3 +1649,17 @@
     border-width: 2px;
 
 }
+
+.rank-table th.is-left,
+.rank-table td.is-left {
+    text-align: left;
+}
+
+.rank-table th.is-right,
+.rank-table td.is-right {
+    text-align: right;
+}
+
+.rank-table td.is-centered {
+    text-align: center;
+}

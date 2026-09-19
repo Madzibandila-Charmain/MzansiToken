@@ -19,14 +19,13 @@ const COLUMNS = [
         label: "Tokenizer",
         title: "The Hugging Face model id",
         align: "left",
-        /* Not a quality measure - it just makes the first click on this
-           column open A to Z, which is the way a name column should open. */
         lowerIsBetter: true,
     },
     {
         key: "overall_score",
         label: "Score",
         title: "Out of 100, computed by the backend from the four measures",
+        align: "right",
         lowerIsBetter: false,
     },
     {
@@ -35,6 +34,7 @@ const COLUMNS = [
         title:
             "Total tokens spent on the South African languages in the " +
             "corpus. The raw bill, before any of it is averaged",
+        align: "right",
         lowerIsBetter: true,
         extra: true,
     },
@@ -42,24 +42,28 @@ const COLUMNS = [
         key: "compression",
         label: "Compression",
         title: "Bytes per token - how much text each token carries",
+        align: "right",
         lowerIsBetter: false,
     },
     {
         key: "fertility",
         label: "Fertility",
         title: "Tokens per word, averaged over the languages measured",
+        align: "right",
         lowerIsBetter: true,
     },
     {
         key: "token_premium",
         label: "Premium",
         title: "Tokens used against the same text in English. 1.0 is parity",
+        align: "right",
         lowerIsBetter: true,
     },
     {
         key: "f1",
         label: "MBI F1",
         title: "How often the splits land on a real morpheme boundary",
+        align: "right",
         lowerIsBetter: false,
     },
     {
@@ -68,6 +72,7 @@ const COLUMNS = [
         title:
             "Of the boundaries this tokenizer predicted, how many were " +
             "real morpheme boundaries",
+        align: "right",
         lowerIsBetter: false,
         extra: true,
     },
@@ -77,6 +82,7 @@ const COLUMNS = [
         title:
             "Of the real morpheme boundaries, how many this tokenizer " +
             "found",
+        align: "right",
         lowerIsBetter: false,
         extra: true,
     },
@@ -278,7 +284,7 @@ function LeaderboardTable({
                                         isSorted ? "is-sorted" : "",
                                         column.align === "left"
                                             ? "is-left"
-                                            : "",
+                                            : "is-right",
                                     ].join(" ").trim()}
                                     aria-sort={
                                         isSorted
@@ -420,7 +426,10 @@ function LeaderboardTable({
                                     }
 
                                     return (
-                                        <td key={column.key}>
+                                        <td 
+                                            key={column.key}
+                                            className="is-centered"
+                                        >
                                             {formatCell(
                                                 column.key,
                                                 row[column.key]
