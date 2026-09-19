@@ -13,10 +13,15 @@ September 2026
 """
 
 from fastapi import APIRouter, HTTPException
-
 from app.schemas.leaderboard_schemas import LeaderboardUpdateRequest, LeaderboardUpsertRequest
-from app.services.leaderboard_service import get_leaderboard, remove_tokenizer, update_metrics, upsert_tokenizer
 from app.services.scoring import BOUNDS, SCORED_METRICS, WEIGHTS, score_breakdown
+from app.services.leaderboard_service import (
+    get_leaderboard,
+    get_saved_tokenizer,
+    remove_tokenizer,
+    update_metrics,
+    upsert_tokenizer,
+)
 
 router = APIRouter(tags=["leaderboard"])
 
@@ -78,8 +83,26 @@ def describe_scoring():
         },
     }
 
+# Endpoint 3: GET /leaderboard/saved/{name}
+@router.get("/leaderboard/saved/{name}")
+def get_saved_leaderboard_entry(name: str):
+    """
+    Return a previously measured tokenizer and its saved metrics.
 
-# Endpoint 3: POST /leaderboard
+    This includes inactive tokenizers so the frontend can restore
+    previous measurements without recalculating them.
+    """
+    tokenizer = get_saved_tokenizer(name)
+
+    if tokenizer is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Tokenizer has no saved leaderboard measurement.",
+        )
+
+    return tokenizer
+
+# Endpoint 4: POST /leaderboard
 @router.post("/leaderboard")
 def create_or_update_leaderboard_entry(request: LeaderboardUpsertRequest):
     """
@@ -91,7 +114,7 @@ def create_or_update_leaderboard_entry(request: LeaderboardUpsertRequest):
     return {"tokenizer_id": tokenizer_id, "name": request.name}
 
 
-# Endpoint 4: PATCH /leaderboard/{id}
+# Endpoint 5: PATCH /leaderboard/{id}
 @router.patch("/leaderboard/{tokenizer_id:int}")
 def patch_leaderboard_entry(tokenizer_id: int, request: LeaderboardUpdateRequest):
     """
@@ -104,7 +127,7 @@ def patch_leaderboard_entry(tokenizer_id: int, request: LeaderboardUpdateRequest
     return {"tokenizer_id": tokenizer_id, "updated": True}
 
 
-# Endpoint 5: DELETE /leaderboard/{id}
+# Endpoint 6: DELETE /leaderboard/{id}
 @router.delete("/leaderboard/{tokenizer_id:int}")
 def delete_leaderboard_entry(tokenizer_id: int):
     """

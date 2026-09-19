@@ -42,17 +42,24 @@ def add_tokenizer(name: str, metrics: dict) -> int:
         perform_backup()
         return tokenizer_id
 
-
 def upsert_tokenizer(name: str, metrics: dict) -> int:
-    """Create a tokenizer if it does not exist, otherwise update its metrics."""
+    """Create a tokenizer or reactivate an existing tokenizer."""
     existing = get_tokenizer_by_name(name)
+
     if existing:
         update_metrics(existing["id"], metrics)
+
+        with get_connection() as conn:
+            conn.execute(
+                "UPDATE tokenizers SET active = 1 WHERE id = ?;",
+                (existing["id"],),
+            )
+            perform_backup()
+
         return existing["id"]
 
     return add_tokenizer(name, metrics)
- 
- 
+
 def update_metrics(tokenizer_id: int, metrics: dict) -> None:
     """Update one or more metric columns for an existing tokenizer."""
     metric_cols = [METRIC_COLUMN_MAP[c] for c in metrics if c in METRIC_COLUMN_MAP]
@@ -69,14 +76,15 @@ def update_metrics(tokenizer_id: int, metrics: dict) -> None:
             (*values, tokenizer_id),
         )
         perform_backup()
- 
- 
+
 def remove_tokenizer(tokenizer_id: int) -> None:
-    """Removing the tokenizer cascades to its metrics row (ON DELETE CASCADE)."""
+    """Remove a tokenizer from the active leaderboard without deleting its metrics."""
     with get_connection() as conn:
-        conn.execute("DELETE FROM tokenizers WHERE id = ?;", (tokenizer_id,))
+        conn.execute(
+            "UPDATE tokenizers SET active = 0 WHERE id = ?;",
+            (tokenizer_id,),
+        )
         perform_backup()
- 
  
 # ---------------------------------------------------------------------------
 # Read operations
@@ -101,6 +109,7 @@ def get_leaderboard(sort_by: str = "overall_score", descending: bool = True) -> 
                m.overall_score, m.updated_at
         FROM tokenizers t
         JOIN metrics m ON m.tokenizer_id = t.id
+        WHERE t.active = 1
         ORDER BY {column} {direction} NULLS LAST;
     """
     with get_connection() as conn:
@@ -113,4 +122,31 @@ def get_tokenizer_by_name(name: str) -> dict | None:
         row = conn.execute(
             "SELECT * FROM tokenizers WHERE name = ?;", (name,)
         ).fetchone()
+        return dict(row) if row else None
+
+def get_saved_tokenizer(name: str) -> dict | None:
+    """Return a tokenizer and its saved metrics, whether active or inactive."""
+    with get_connection() as conn:
+        row = conn.execute(
+            """
+            SELECT t.id,
+                   t.name,
+                   t.created_at,
+                   t.active,
+                   m.token_count,
+                   m.fertility,
+                   m.compression,
+                   m.token_premium,
+                   m.f1,
+                   m.precision_score AS "precision",
+                   m.recall,
+                   m.overall_score,
+                   m.updated_at
+            FROM tokenizers t
+            JOIN metrics m ON m.tokenizer_id = t.id
+            WHERE t.name = ?;
+            """,
+            (name,),
+        ).fetchone()
+
         return dict(row) if row else None

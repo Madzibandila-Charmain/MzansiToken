@@ -43,9 +43,10 @@ ALLOWED_SORT_COLUMNS = {
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS tokenizers (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    name       TEXT NOT NULL UNIQUE,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    active INTEGER NOT NULL DEFAULT 1
 );
  
 CREATE TABLE IF NOT EXISTS metrics (
@@ -106,13 +107,25 @@ def get_connection():
     finally:
         conn.close()
 
-
-
 def init_db():
-    """Create the schema if it doesn't exist, and lock down file permissions."""
+    """Create the schema if it doesn't exist and apply small schema migrations."""
     with get_connection() as conn:
         conn.executescript(SCHEMA)
- 
+
+        # Existing databases were created before the active column existed.
+        # Add it without deleting any existing leaderboard data.
+        columns = conn.execute(
+            "PRAGMA table_info(tokenizers);"
+        ).fetchall()
+
+        column_names = [row["name"] for row in columns]
+
+        if "active" not in column_names:
+            conn.execute(
+                "ALTER TABLE tokenizers "
+                "ADD COLUMN active INTEGER NOT NULL DEFAULT 1;"
+            )
+
     # Restrict the db (and its WAL/SHM sidecar files) to the owning process's
     # user only. Nobody else on the machine should be able to open the file.
     for suffix in ("", "-wal", "-shm"):
