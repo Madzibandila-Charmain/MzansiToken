@@ -23,6 +23,10 @@ import MetricsChart from "../components/MetricsChart";
 import { languageColour } from "../components/languageColours";
 
 import CorpusUpload from "../components/CorpusUpload";
+import {
+    isAcceptedCorpusFile,
+    UNSUPPORTED_CORPUS_MESSAGE
+} from "../lib/corpusFormats";
 
 import TypeAnything from "../components/TypeAnything";
 
@@ -1094,17 +1098,15 @@ function Inspect() {
         }
 
         /*
-            Make sure the selected file is a text file.
+            Catch an unsupported file before the upload, so the user is not
+            waiting on a round trip to be told. The server checks this again,
+            and checks the bytes as well.
         */
 
-        if (
-            !file.name
-                .toLowerCase()
-                .endsWith(".txt")
-        ) {
+        if (!isAcceptedCorpusFile(file.name)) {
 
             setError(
-                "Please select a .txt file."
+                UNSUPPORTED_CORPUS_MESSAGE
             );
 
             return;

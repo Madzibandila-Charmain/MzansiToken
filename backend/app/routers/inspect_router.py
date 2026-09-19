@@ -3,13 +3,21 @@ inspect_router.py - the INSPECT view: default corpus, uploaded file, typed text.
 
 Routes:
     POST /inspect/default   tokenize a language's FLORES corpus + metrics
-    POST /inspect/upload    tokenize an uploaded .txt file + metrics
+    POST /inspect/upload    tokenize an uploaded corpus file + metrics
     POST /tokenize-text     tokenize typed text + metrics
 """
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi.concurrency import run_in_threadpool
 
 from app.schemas.request_schemas import InspectRequest, TokenizeTextRequest
+from app.services.corpus_extract import (
+    CorpusExtractionError,
+    SUPPORTED_SUFFIXES,
+    extract_corpus_text,
+    sanitise_filename,
+    suffix_of,
+)
 from app.services.flores_state import corpus
 from app.services.metrics import calculate_efficiency_metrics_one_language
 from app.services.tokenizer import tokenize_corpus, tokenize_text
@@ -81,41 +89,67 @@ async def inspect_upload(
     tokenizer: str = Form(...),
 ):
     """
-    Tokenize a user-uploaded .txt file and compute its metrics.
+    Tokenize a user-uploaded corpus file and compute its metrics.
+
+    Accepted formats are listed in corpus_extract.SUPPORTED_SUFFIXES. The
+    filename only decides which reader is tried - the leading bytes have
+    to agree with it before anything is parsed.
 
     React sends multipart/form-data: file, tokenizer.
 
     No language is required - an uploaded file can be any language, or a mixture, and the per-word premium does not need to know which.
     """
-    if not file.filename or not file.filename.lower().endswith(".txt"):
-        raise HTTPException(status_code=400, detail="Only .txt files are supported.")
+    # Cheap checks first, in cost order: the extension, then the tokenizer
+    # name, then the bytes, and only then a model that may need downloading.
+    if suffix_of(file.filename) not in SUPPORTED_SUFFIXES:
+        supported = ", ".join(SUPPORTED_SUFFIXES)
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type. Supported formats are: {supported}.",
+        )
 
     validate_tokenizer(tokenizer)
 
     # Read and check the file before loading the tokenizer - no point downloading a model for a request we are about to reject.
     contents = await read_capped(file, MAX_UPLOAD_BYTES)
 
+    # Everything that touches the uploaded bytes lives in corpus_extract, so
+    # the guards are in one place rather than spread across the routers.
     try:
-        text = contents.decode("utf-8")
-    except UnicodeDecodeError:
-        raise HTTPException(status_code=400, detail="The uploaded file must be UTF-8 encoded.")
+        text, source_format = extract_corpus_text(file.filename, contents)
+    except CorpusExtractionError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
 
-    if not text.strip():
-        raise HTTPException(status_code=400, detail="The uploaded file is empty.")
-
+    # Loading a tokenizer can mean downloading hundreds of megabytes, and
+    # tokenizing a corpus is seconds of pure CPU. This endpoint is async, so
+    # unlike the sync ones FastAPI does NOT move that work off the event loop
+    # by itself - left here, one upload stalls every other request in flight.
     try:
-        tokenizer_model = get_or_load_tokenizer(tokenizer)
+        tokenizer_model = await run_in_threadpool(get_or_load_tokenizer, tokenizer)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
     # Split into non-blank lines, same convention as load_flores()
     sentences = [line.strip() for line in text.splitlines() if line.strip()]
 
-    tokenized = tokenize_corpus(tokenizer_model, sentences)
-    metrics = calculate_efficiency_metrics_one_language(tokenized, sentences, tokenizer, None, tokenizer_model, corpus, basis="per_word",)
+    tokenized = await run_in_threadpool(tokenize_corpus, tokenizer_model, sentences)
+
+    metrics = await run_in_threadpool(
+        calculate_efficiency_metrics_one_language,
+        tokenized,
+        sentences,
+        tokenizer,
+        None,
+        tokenizer_model,
+        corpus,
+        basis="per_word",
+    )
 
     return {
-        "filename": file.filename,
+        # Echoed straight back into the corpus label in the UI, so it is
+        # reduced to a bare, bounded name first.
+        "filename": sanitise_filename(file.filename),
+        "source_format": source_format,
         "tokenizer": tokenizer,
         "tokenized_text": tokenized,
         "metrics": metrics,
