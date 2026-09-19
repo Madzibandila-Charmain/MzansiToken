@@ -11,6 +11,7 @@ import {
     deleteLeaderboardEntry,
     friendlyError,
     getLeaderboard,
+    getSavedLeaderboardEntry,
     getMBI,
     getMetrics,
     getMorphologyLanguages,
@@ -470,7 +471,6 @@ function Rank() {
     }
 
     async function handleAdd(requested) {
-
         const name = String(requested ?? filter).trim();
 
         if (!name || adding) {
@@ -489,14 +489,72 @@ function Rank() {
         setAddStatus(`Loading ${name}...`);
 
         try {
-
             /*
-                Checked first so a typo or a gated model comes back as the
+                Check first so a typo or a gated model comes back as the
                 backend's own sentence - with its Hugging Face link - before
                 the user waits through a full measurement run.
             */
             await getTokenizerInfo(name, controller.signal);
 
+            /*
+                Check whether this tokenizer was measured before.
+
+                If it was previously removed from the leaderboard, its
+                measurements are still stored in the database. Restoring
+                those measurements avoids running the expensive efficiency
+                and morphology calculations again.
+            */
+            setAddStatus(`Checking saved results for ${name}...`);
+
+            let saved = null;
+
+            try {
+                saved = await getSavedLeaderboardEntry(
+                    name,
+                    controller.signal
+                );
+            }
+            catch (error) {
+                /*
+                    A 404 simply means this tokenizer has never been measured.
+                    Any other error should still be reported normally.
+                */
+                if (error.status !== 404) {
+                    throw error;
+                }
+            }
+
+            if (saved) {
+                setAddStatus(`Restoring saved results for ${name}...`);
+
+                await createOrUpdateLeaderboardEntry(
+                    name,
+                    {
+                        token_count: saved.token_count,
+                        fertility: saved.fertility,
+                        compression: saved.compression,
+                        token_premium: saved.token_premium,
+                        f1: saved.f1,
+                        precision: saved.precision,
+                        recall: saved.recall,
+                    },
+                    controller.signal
+                );
+
+                await loadLeaderboard(controller.signal);
+
+                setAddStatus(
+                    `${name} restored using its previous measurement.`
+                );
+
+                setFilter("");
+                return;
+            }
+
+            /*
+                No saved measurement exists, so this is a new tokenizer.
+                This is the only path that performs the expensive measurement.
+            */
             const measured = await measure(name, controller.signal);
 
             setAddStatus(`Saving ${name}...`);
@@ -531,7 +589,6 @@ function Rank() {
                 than it says.
             */
             if (failures.length) {
-
                 setAddPartial(true);
 
                 setAddStatus(
@@ -540,10 +597,8 @@ function Rank() {
                     `${failures.map((item) => item.language).join(", ")}: ` +
                     `${failures[0].detail}`
                 );
-
             }
             else {
-
                 setAddStatus(
                     `${name} scored on ${measured.languagesMeasured} ` +
                     `languages${morphologyNote}.`
@@ -551,10 +606,8 @@ function Rank() {
             }
 
             setFilter("");
-
         }
         catch (error) {
-
             if (error.name === "AbortError") {
                 return;
             }
@@ -572,10 +625,8 @@ function Rank() {
                 friendlyError(error) ||
                 `Could not add ${name} to the leaderboard.`
             );
-
         }
         finally {
-
             if (addControllerRef.current === controller) {
                 addControllerRef.current = null;
                 setAdding(false);
