@@ -7,6 +7,13 @@ fastapi==0.141.1
 uvicorn==0.52.3
 python-multipart==0.0.32   # FastAPI needs this to parse the /inspect/upload form
 
+# Uploaded corpus formats
+# Reads .docx in memory - no disk extraction, so ZIP path traversal is not
+# reachable. Pinned because the XXE mitigation is a property of the version:
+# 1.2.0 builds its lxml parser with resolve_entities=False, which is what
+# stops a crafted document.xml reading server files. Re-check on any bump.
+python-docx==1.2.0
+
 # Tokenizers
 transformers==5.15.0
 sentencepiece==0.2.2       # required by the NLLB, XLM-R and Mistral tokenizers
