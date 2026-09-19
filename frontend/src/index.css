@@ -5734,10 +5734,45 @@ a.home-card:hover {
     border-radius: 14px;
 }
 
-.rank-state.is-loading .status-dot {
-    background: var(--za-gold);
+.rank-state.is-loading {
+    flex-direction: column;
+    justify-content: center;
+    gap: 14px;
 
-    animation: status-pulse 1.1s ease-in-out infinite;
+    padding: 56px 24px;
+}
+
+/* ---------------------------------------------------------
+   RANK SPINNERS - board overlay while a tokenizer is measured
+   Mukovhe Ranwashe (RNWMUK001) · 19 Sep 2026
+   --------------------------------------------------------- */
+
+.rank-board {
+    position: relative;
+}
+
+.rank-board.is-busy > :not(.block-overlay) {
+    filter: blur(2px);
+    opacity: 0.55;
+
+    transition: filter 0.2s ease, opacity 0.2s ease;
+}
+
+.rank-board .block-overlay {
+    z-index: 3;
+
+    background: oklch(1 0 0 / 0.25);
+}
+
+.rank-setup .selection-status .spinner,
+.rank-breakdown-count .spinner {
+    width: 16px;
+    height: 16px;
+
+    border-width: 2px;
+
+    flex: none;
+    vertical-align: middle;
 }
 
 .rank-state.is-error {
