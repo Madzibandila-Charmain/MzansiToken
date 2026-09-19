@@ -517,6 +517,18 @@ export async function getLeaderboard(
     );
 }
 
+export async function getSavedLeaderboardEntry(name, signal) {
+    const response = await fetch(
+        `${API_BASE_URL}/leaderboard/saved/${encodeURIComponent(name)}`,
+        {signal}
+    );
+
+    return handleResponse(
+        response,
+        "Failed to load saved leaderboard entry."
+    );
+}
+
 /*
     The formula behind overall_score: which metrics count and how much.
 

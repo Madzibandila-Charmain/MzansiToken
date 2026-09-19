@@ -11,6 +11,7 @@ import {
     deleteLeaderboardEntry,
     friendlyError,
     getLeaderboard,
+    getSavedLeaderboardEntry,
     getMBI,
     getMetrics,
     getMorphologyLanguages,
@@ -26,7 +27,6 @@ import StatusMessage from "../components/StatusMessage";
 import {
     PLACEHOLDER_BREAKDOWN,
     PLACEHOLDER_ROWS,
-    PLACEHOLDER_RUN,
 } from "./rankPlaceholders";
 
 /*
@@ -208,7 +208,6 @@ function Rank() {
     const [suggestions, setSuggestions] = useState([]);
     const [scoredLanguages, setScoredLanguages] = useState([]);
     const [weights, setWeights] = useState(null);
-    const [runBars, setRunBars] = useState(null);
 
     const [sortKey, setSortKey] = useState("overall_score");
     const [bestFirst, setBestFirst] = useState(true);
@@ -472,7 +471,6 @@ function Rank() {
     }
 
     async function handleAdd(requested) {
-
         const name = String(requested ?? filter).trim();
 
         if (!name || adding) {
@@ -491,14 +489,72 @@ function Rank() {
         setAddStatus(`Loading ${name}...`);
 
         try {
-
             /*
-                Checked first so a typo or a gated model comes back as the
+                Check first so a typo or a gated model comes back as the
                 backend's own sentence - with its Hugging Face link - before
                 the user waits through a full measurement run.
             */
             await getTokenizerInfo(name, controller.signal);
 
+            /*
+                Check whether this tokenizer was measured before.
+
+                If it was previously removed from the leaderboard, its
+                measurements are still stored in the database. Restoring
+                those measurements avoids running the expensive efficiency
+                and morphology calculations again.
+            */
+            setAddStatus(`Checking saved results for ${name}...`);
+
+            let saved = null;
+
+            try {
+                saved = await getSavedLeaderboardEntry(
+                    name,
+                    controller.signal
+                );
+            }
+            catch (error) {
+                /*
+                    A 404 simply means this tokenizer has never been measured.
+                    Any other error should still be reported normally.
+                */
+                if (error.status !== 404) {
+                    throw error;
+                }
+            }
+
+            if (saved) {
+                setAddStatus(`Restoring saved results for ${name}...`);
+
+                await createOrUpdateLeaderboardEntry(
+                    name,
+                    {
+                        token_count: saved.token_count,
+                        fertility: saved.fertility,
+                        compression: saved.compression,
+                        token_premium: saved.token_premium,
+                        f1: saved.f1,
+                        precision: saved.precision,
+                        recall: saved.recall,
+                    },
+                    controller.signal
+                );
+
+                await loadLeaderboard(controller.signal);
+
+                setAddStatus(
+                    `${name} restored using its previous measurement.`
+                );
+
+                setFilter("");
+                return;
+            }
+
+            /*
+                No saved measurement exists, so this is a new tokenizer.
+                This is the only path that performs the expensive measurement.
+            */
             const measured = await measure(name, controller.signal);
 
             setAddStatus(`Saving ${name}...`);
@@ -519,8 +575,6 @@ function Rank() {
 
             await loadLeaderboard(controller.signal);
 
-            setRunBars(measured.bars);
-
             const morphologyNote = measured.morphologyMeasured
                 ? `, morphology on ${measured.morphologyMeasured}`
                 : ", no morphology data";
@@ -535,7 +589,6 @@ function Rank() {
                 than it says.
             */
             if (failures.length) {
-
                 setAddPartial(true);
 
                 setAddStatus(
@@ -544,10 +597,8 @@ function Rank() {
                     `${failures.map((item) => item.language).join(", ")}: ` +
                     `${failures[0].detail}`
                 );
-
             }
             else {
-
                 setAddStatus(
                     `${name} scored on ${measured.languagesMeasured} ` +
                     `languages${morphologyNote}.`
@@ -555,10 +606,8 @@ function Rank() {
             }
 
             setFilter("");
-
         }
         catch (error) {
-
             if (error.name === "AbortError") {
                 return;
             }
@@ -576,10 +625,8 @@ function Rank() {
                 friendlyError(error) ||
                 `Could not add ${name} to the leaderboard.`
             );
-
         }
         finally {
-
             if (addControllerRef.current === controller) {
                 addControllerRef.current = null;
                 setAdding(false);
@@ -782,14 +829,6 @@ function Rank() {
 
     }, [leaderName, showingSample]);
 
-    const bars = runBars || (showingSample ? PLACEHOLDER_RUN : null);
-
-    const barMax = bars
-        ? Math.max(...bars.map((bar) => bar.token_count || 0), 1)
-        : 1;
-
-    const totalTokens = sum(board.map((row) => row.token_count));
-
     const weightSentence = weights
         ? Object.entries(weights)
             .sort((a, b) => b[1] - a[1])
@@ -833,72 +872,7 @@ function Rank() {
                         segmentations, then scored out of 100 - so the rows
                         can be read against each other.
                     </p>
-
                 </div>
-
-                <aside
-                    className="rank-run"
-                    aria-label="The corpus behind the scores"
-                >
-
-                    <div className="rank-run-head">
-
-                        <span className="rank-run-label">
-                            {runBars ? "latest corpus run" : "corpus per run"}
-                        </span>
-
-                        <strong className="rank-run-value">
-                            {compact(
-                                bars
-                                    ? sum(
-                                        bars.map((bar) => bar.token_count)
-                                    )
-                                    : totalTokens
-                            )}
-                        </strong>
-
-                    </div>
-
-                    <div className="rank-run-bars" aria-hidden="true">
-
-                        {(bars || []).map((bar) => (
-
-                            <span
-                                key={bar.language}
-                                className={
-                                    bar.language === BASELINE_LANGUAGE
-                                        ? "rank-run-bar is-baseline"
-                                        : "rank-run-bar"
-                                }
-                                title={
-                                    `${bar.language}: ` +
-                                    `${(bar.token_count || 0)
-                                        .toLocaleString()} tokens`
-                                }
-                                style={{
-                                    height: `${Math.max(
-                                        8,
-                                        ((bar.token_count || 0) / barMax) * 100
-                                    )}%`
-                                }}
-                            ></span>
-
-                        ))}
-
-                    </div>
-
-                    <div className="rank-run-foot">
-
-                        <span>tokens per tokenizer</span>
-
-                        <span className="rank-run-note">
-                            997 sentences &times; 8 languages
-                        </span>
-
-                    </div>
-
-                </aside>
-
             </section>
 
             {/* ---------------- CONTROLS ---------------- */}
@@ -989,31 +963,30 @@ function Rank() {
 
                 </div>
 
+                {addStatus && (
+                    <div
+                        className={`selection-status ${
+                            addFailed
+                                ? "is-error"
+                                : busy
+                                    ? "is-loading"
+                                    : addPartial
+                                        ? "is-partial"
+                                        : "is-ready"
+                        }`}
+                    >
+                        {busy
+                            ? <span className="spinner"></span>
+                            : <span className="status-dot"></span>}
+                        <StatusMessage
+                            text={addStatus}
+                            failed={addFailed}
+                            modelName={addedName}
+                        />
+                    </div>
+                )}
+
             </section>
-
-            {addStatus && (
-                <div
-                    className={`selection-status ${
-                        addFailed
-                            ? "is-error"
-                            : busy
-                                ? "is-loading"
-                                : addPartial
-                                    ? "is-partial"
-                                    : "is-ready"
-                    }`}
-                >
-                    {busy
-                        ? <span className="spinner"></span>
-                        : <span className="status-dot"></span>}
-
-                    <StatusMessage
-                        text={addStatus}
-                        failed={addFailed}
-                        modelName={addedName}
-                    />
-                </div>
-            )}
 
             {showingSample && (
 
