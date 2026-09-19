@@ -473,7 +473,7 @@ function Rank() {
 
     async function handleAdd(requested) {
 
-        const name = String(requested ?? tokenizerInput).trim();
+        const name = String(requested ?? filter).trim();
 
         if (!name || adding) {
             return;
@@ -554,7 +554,7 @@ function Rank() {
                 );
             }
 
-            setTokenizerInput("");
+            setFilter("");
 
         }
         catch (error) {
@@ -980,7 +980,7 @@ function Rank() {
                         disabled={
                             busy ||
                             isLoading ||
-                            !tokenizerInput.trim()
+                            !filter.trim()
                         }
                     >
                         <span aria-hidden="true">+</span>
