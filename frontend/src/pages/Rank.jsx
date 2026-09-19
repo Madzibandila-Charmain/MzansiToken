@@ -10,12 +10,12 @@ import "./Rank.css";
 
 import {
     createOrUpdateLeaderboardEntry,
+    restoreLeaderboardEntry,
     deleteLeaderboardEntry,
     friendlyError,
     getLeaderboard,
-    getSavedLeaderboardEntry,
-    getMBI,
     getMetrics,
+    getSavedLeaderboardEntry,
     getMorphologyLanguages,
     getOptions,
     getScoring,
@@ -119,41 +119,6 @@ function vendor(name) {
     const parts = String(name || "").split("/");
 
     return parts.length > 1 ? parts[0] : "Hugging Face";
-}
-
-/*
-    Mean of the values that are actually numbers.
-
-    Returns null rather than 0 for an empty list. Zero is a measurement;
-    "we have none" is not, and the backend drops a null component from the
-    score rather than scoring it as the worst possible result.
-*/
-function mean(values) {
-
-    const numbers = values.filter(
-        (value) => typeof value === "number" && Number.isFinite(value)
-    );
-
-    if (!numbers.length) {
-        return null;
-    }
-
-    const total = numbers.reduce((carry, value) => carry + value, 0);
-
-    return Number((total / numbers.length).toFixed(4));
-}
-
-function sum(values) {
-
-    const numbers = values.filter(
-        (value) => typeof value === "number" && Number.isFinite(value)
-    );
-
-    if (!numbers.length) {
-        return null;
-    }
-
-    return numbers.reduce((carry, value) => carry + value, 0);
 }
 
 /* 16 400 000 -> "16.4m". The corpus-run card has no room for the digits. */
@@ -360,116 +325,6 @@ function Rank() {
 
     }, []);
 
-    /*
-        Efficiency across every language, morphology across every language
-        NCHLT covers, averaged into the one set of numbers the leaderboard
-        stores. The backend turns these into the score.
-    */
-    async function measure(name, signal, languagesToMeasure=scoredLanguages) {
-
-        setAddStatus(`Reading ${name} across the corpus...`);
-
-        const metrics = await getMetrics(name, signal);
-
-        const languages = Object.keys(metrics).filter(
-            (language) => language !== BASELINE_LANGUAGE
-        );
-
-        const perLanguage = languages.map((language) => metrics[language]);
-
-        const morphology = [];
-
-        /*
-            Languages that have NCHLT data but could not be read. Kept apart
-            from the ones NCHLT simply does not cover: "this language is not
-            in the dataset" and "this language is in the dataset and the
-            request failed" are different facts and the user is told which.
-        */
-        const failed = [];
-
-        /*
-            One language at a time on purpose. Each call tokenizes every
-            word NCHLT has for that language, and firing seven at once only
-            queues them in the same backend process while making the
-            progress count meaningless. Sequential, so the user is told
-            where it has got to.
-        */
-        for (let index = 0; index < languagesToMeasure.length; index += 1) {
-
-            const language = languagesToMeasure[index];
-
-            setAddStatus(
-                `Checking morpheme boundaries - ${language} ` +
-                `(${index + 1} of ${languagesToMeasure.length})...`
-            );
-
-            try {
-
-                const result = await getMBI(name, language, signal);
-
-                morphology.push(result.metrics || {});
-
-            }
-            catch (error) {
-
-                if (error.name === "AbortError") {
-                    throw error;
-                }
-
-                /* A gap in the dataset, not a failure worth reporting. */
-                if (isUnsupportedLanguage(error)) {
-                    continue;
-                }
-
-                /*
-                    A real failure on one language used to throw, which
-                    threw away the seven languages of efficiency data that
-                    had already been read and left the tokenizer off the
-                    board entirely. One language timing out is not a reason
-                    to lose the whole measurement - it is a reason to say
-                    which language, and score the tokenizer on what was
-                    actually read. The backend renormalises the weights.
-                */
-                failed.push({
-                    language,
-                    detail: friendlyError(error) || "could not be read",
-                });
-            }
-        }
-
-        /*
-            Unless every one of them failed - then something is wrong with
-            the backend rather than with one language, and saying so beats
-            storing a score built on nothing.
-        */
-        if (languagesToMeasure.length && failed.length === languagesToMeasure.length) {
-
-            throw new Error(
-                `Morphology failed on all ${failed.length} languages. ` +
-                `${failed[0].detail}`
-            );
-        }
-
-        return {
-            bars: Object.keys(metrics).map((language) => ({
-                language,
-                token_count: metrics[language]?.token_count ?? 0,
-            })),
-            token_count: sum(perLanguage.map((entry) => entry?.token_count)),
-            fertility: mean(perLanguage.map((entry) => entry?.fertility)),
-            compression: mean(perLanguage.map((entry) => entry?.compression)),
-            token_premium: mean(
-                perLanguage.map((entry) => entry?.token_premium)
-            ),
-            f1: mean(morphology.map((entry) => entry?.f1)),
-            precision: mean(morphology.map((entry) => entry?.precision)),
-            recall: mean(morphology.map((entry) => entry?.recall)),
-            languagesMeasured: languages.length,
-            morphologyMeasured: morphology.length,
-            failedLanguages: failed,
-        };
-    }
-
     function hasCompleteLeaderboardMetrics(saved) {
         if (!saved) {
             return false;
@@ -624,7 +479,7 @@ function Rank() {
             if (hasCompleteLeaderboardMetrics(saved)) {
                 setAddStatus(`Restoring saved results for ${name}...`);
 
-                await createOrUpdateLeaderboardEntry(
+                await restoreLeaderboardEntry(
                     name,
                     controller.signal
                 );

@@ -21,6 +21,7 @@ from app.services.leaderboard_service import (
     remove_tokenizer,
     update_metrics,
     upsert_tokenizer,
+    restore_tokenizer,
 )
 from app.services.leaderboard_measurement_service import (
     compute_leaderboard_metrics,
@@ -133,6 +134,33 @@ def create_or_update_leaderboard(request: LeaderboardUpsertRequest):
         "id": tokenizer_id,
         "name": request.name,
         "metrics": metrics,
+    }
+
+# Endpoint 4.1: POST /leaderboard/{path}
+@router.post("/leaderboard/{name:path}/restore")
+def restore_leaderboard_entry(name: str):
+    try:
+        tokenizer = restore_tokenizer(name)
+
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error)
+        )
+
+    return {
+        "id": tokenizer["id"],
+        "name": tokenizer["name"],
+        "metrics": {
+            "token_count": tokenizer.get("token_count"),
+            "fertility": tokenizer.get("fertility"),
+            "compression": tokenizer.get("compression"),
+            "token_premium": tokenizer.get("token_premium"),
+            "f1": tokenizer.get("f1"),
+            "precision": tokenizer.get("precision"),
+            "recall": tokenizer.get("recall"),
+            "overall_score": tokenizer.get("overall_score"),
+        },
     }
 
 # Endpoint 5: PATCH /leaderboard/{id}

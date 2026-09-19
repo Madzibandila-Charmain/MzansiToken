@@ -579,6 +579,21 @@ export async function createOrUpdateLeaderboardEntry(
     );
 }
 
+export async function restoreLeaderboardEntry(name, signal) {
+    const response = await fetch(
+        `${API_BASE_URL}/leaderboard/${encodeURIComponent(name)}/restore`,
+        {
+            method: "POST",
+            signal,
+        }
+    );
+
+    return handleResponse(
+        response,
+        "Failed to restore leaderboard entry."
+    );
+}
+
 export async function deleteLeaderboardEntry(
     tokenizerId,
     signal

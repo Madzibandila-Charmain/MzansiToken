@@ -110,6 +110,42 @@ def remove_tokenizer(tokenizer_id: int) -> None:
             (tokenizer_id,),
         )
         perform_backup()
+
+def restore_tokenizer(name: str) -> dict:
+    """
+    Restore a previously saved tokenizer without recalculating its metrics.
+
+    The tokenizer must already exist in the database. Its saved metrics are
+    reused exactly as they were stored.
+    """
+    existing = get_saved_tokenizer(name)
+
+    if existing is None:
+        raise ValueError(
+            f"No saved leaderboard entry exists for '{name}'."
+        )
+
+    if existing.get("active") == 1:
+        return existing
+
+    with get_connection() as conn:
+        active_count = conn.execute(
+            "SELECT COUNT(*) FROM tokenizers WHERE active = 1;"
+        ).fetchone()[0]
+
+        if active_count >= 10:
+            raise ValueError(
+                "The leaderboard already has 10 active tokenizers."
+            )
+
+        conn.execute(
+            "UPDATE tokenizers SET active = 1 WHERE id = ?;",
+            (existing["id"],)
+        )
+
+        perform_backup()
+
+    return get_saved_tokenizer(name)
  
 # ---------------------------------------------------------------------------
 # Read operations
