@@ -1184,7 +1184,12 @@ function Inspect() {
                     result.metrics?.compression ?? 0,
 
                 token_premium:
-                    result.metrics?.token_premium ?? null
+                    result.metrics?.token_premium ?? null,
+
+                /* Carried through so the metric row can say WHY the
+                   premium is N/A instead of just showing N/A. */
+                token_premium_basis:
+                    result.metrics?.token_premium_basis ?? null
             });
 
             /*

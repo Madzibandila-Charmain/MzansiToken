@@ -62,6 +62,20 @@ function MetricCards({
     alignmentAsPercentage = false
 }) {
 
+    /*
+        An uploaded file is measured against itself and nothing else, so it
+        has no premium at all - both premium formulas divide by a FLORES
+        English figure, and the user's file is not a translation of that
+        corpus.
+
+        The card is left out rather than shown as N/A. A metric that cannot
+        exist for this input is not a missing value to be filled in later;
+        printing a placeholder for it invites the reader to treat it as one.
+        The row simply has three cards.
+    */
+    const isStandalone =
+        metrics?.token_premium_basis === "standalone";
+
     let alignmentValue = "N/A";
 
     if (
@@ -108,12 +122,20 @@ function MetricCards({
                     value={figure(metrics?.compression ?? 0)}
                 />
 
-                <Card
-                    name="Token Premium"
-                    value={figure(metrics?.token_premium)}
-                />
+                {!isStandalone && (
+                    <Card
+                        name="Token Premium"
+                        value={figure(metrics?.token_premium)}
+                    />
+                )}
 
             </div>
+
+            {isStandalone && (
+                <p className="metric-note">
+                    Measured on this file alone.
+                </p>
+            )}
 
             {/* Morphology, from the NCHLT gold segmentations */}
 

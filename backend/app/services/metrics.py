@@ -235,7 +235,7 @@ def compute_efficiency_metrics(tokenizer, corpus: dict[str, list[str]]) -> dict[
     return results
 
 def calculate_efficiency_metrics_one_language(tokenized_sentences, sentences, model_name: str, language: str,
-                               tokenizer, corpus: dict[str, list[str]], basis: str = "parallel_corpus"):
+                               tokenizer, corpus: dict[str, list[str]] | None, basis: str = "parallel_corpus"):
     """
     Calculate the four efficiency metrics for one language, given sentences that
     have ALREADY been tokenized.
@@ -243,21 +243,36 @@ def calculate_efficiency_metrics_one_language(tokenized_sentences, sentences, mo
     basis picks how token_premium is measured:
       "parallel_corpus" - tokens(lang) / tokens(English). Only meaningful when this text really is the English corpus translated.
       "per_word"        - fertility(lang) / fertility(English). Works for any text, because a ratio of averages does not care how much text you gave it.
+      "standalone"      - no premium at all, and no baseline is fetched.
 
-    Use per_word for anything the user typed or uploaded.
+    "standalone" exists for text the user supplied. Both premium formulas
+    divide by a FLORES English figure, so on an uploaded file they compare
+    the user's text against a corpus of English news and wiki prose. That
+    ratio then carries the DOMAIN difference as well as the language one,
+    and reports the total as if it were a property of the tokenizer. The
+    other three metrics are computed from the supplied text alone and stay
+    honest; the premium cannot be, so it is reported as None rather than
+    as a number that looks fine and means something else.
+
+    Passing "standalone" means `corpus` is never read, so callers may pass
+    None for it - and nothing pays to tokenize English FLORES.
     """
     lang_token_count = token_count(tokenized_sentences)
     lang_fertility = fertility(tokenized_sentences, sentences)
     lang_compression = compression(tokenized_sentences, sentences)
 
-    english = get_english_stats(model_name, tokenizer, corpus)
-
-    if basis == "per_word":
-        premium = token_premium_per_word(lang_fertility, english["fertility"])
-    elif language == "English":
-        premium = token_premium(lang_token_count, lang_token_count)
+    if basis == "standalone":
+        # Deliberately no get_english_stats call - see the docstring.
+        premium = None
     else:
-        premium = token_premium(lang_token_count, english["token_count"])
+        english = get_english_stats(model_name, tokenizer, corpus)
+
+        if basis == "per_word":
+            premium = token_premium_per_word(lang_fertility, english["fertility"])
+        elif language == "English":
+            premium = token_premium(lang_token_count, lang_token_count)
+        else:
+            premium = token_premium(lang_token_count, english["token_count"])
 
     return {
         "token_count": lang_token_count,

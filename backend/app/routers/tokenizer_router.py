@@ -10,7 +10,9 @@ Routes:
 
 from fastapi import APIRouter, HTTPException
 
+from app.services.corpus_extract import SUPPORTED_SUFFIXES
 from app.services.flores_state import corpus
+from app.services.limits import as_payload as limits_payload
 from app.services.qualitative import get_sentence_count
 from app.services.tokenizer_state import (SUPPORTED_TOKENIZERS, get_or_load_tokenizer, tokenizer_cache_info,)
 from app.services.tokenizer import (get_tokenizer_info, tokenize_corpus, tokenize_text,)
@@ -106,12 +108,19 @@ def get_options():
     Dropdown options for the INSPECT view: the languages in the dataset and the
     tokenizers on offer. React calls this once when INSPECT loads.
 
+    It also carries the input limits, so the UI can state them before someone
+    picks a file rather than after the server has refused it. They are served
+    from the module that enforces them - a limit shown as 5 MB while 4 is
+    enforced would be worse than showing nothing.
+
     Example response:
-        {"languages": ["English", "isiZulu", ...], "tokenizers": ["gpt2", ...]}
+        {"languages": ["English", "isiZulu", ...], "tokenizers": ["gpt2", ...],
+         "limits": {"max_upload_mb": 5, "accepted_extensions": [".txt", ...]}}
     """
     return {
         "languages": list(corpus.keys()),
         "tokenizers": SUPPORTED_TOKENIZERS,
+        "limits": limits_payload(SUPPORTED_SUFFIXES),
     }
 
 
