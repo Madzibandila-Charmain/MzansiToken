@@ -2,21 +2,12 @@
     corpusFormats.js
     Author: Mukovhe Ranwashe (RNWMUK001)
 
-    The accepted upload formats, in one place.
+    One list of the file types we accept, and one function that checks a file
+    against it. Both pages use them, so the rule lives in one place.
 
-    This started out inside CorpusUpload.jsx, next to the accept attribute it
-    configures. The linter was right to object: a file that exports both a
-    component and plain constants breaks React fast refresh, so the constants
-    moved here and the component imports them.
-
-    Kept in step with corpus_extract.SUPPORTED_SUFFIXES on the backend.
-
-    None of this is a security control. The accept attribute only filters the
-    file picker, and this check runs on the user's own machine, so both are
-    trivially bypassed by drag-and-drop or by a crafted request. The server
-    re-checks the extension AND the leading bytes, because a filename is a
-    claim by whoever is uploading. All this buys is a useful message before a
-    pointless round trip.
+    This is a courtesy check, not a security one - it runs on the user's own
+    machine. The server checks the extension AND the leading bytes again.
+    Keep this list in step with corpus_extract.SUPPORTED_SUFFIXES.
 */
 
 export const ACCEPTED_CORPUS_EXTENSIONS = [
@@ -56,4 +47,39 @@ export function isAcceptedCorpusFile(name) {
     return ACCEPTED_CORPUS_EXTENSIONS.some(
         (extension) => lowered.endsWith(extension)
     );
+}
+
+/* 5242880 -> "5 MB". */
+export function formatBytes(bytes) {
+
+    if (!bytes && bytes !== 0) {
+        return "";
+    }
+
+    const mb = bytes / (1024 * 1024);
+
+    return mb >= 1
+        ? `${Math.round(mb)} MB`
+        : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+/* Returns a message to show, or null if the file is fine. */
+export function checkCorpusFile(file, limits) {
+
+    if (!file) {
+        return null;
+    }
+
+    if (!isAcceptedCorpusFile(file.name)) {
+        return UNSUPPORTED_CORPUS_MESSAGE;
+    }
+
+    const cap = limits?.max_upload_bytes;
+
+    if (cap && file.size > cap) {
+        return `That file is ${formatBytes(file.size)}. `
+            + `The biggest we can take is ${formatBytes(cap)}.`;
+    }
+
+    return null;
 }

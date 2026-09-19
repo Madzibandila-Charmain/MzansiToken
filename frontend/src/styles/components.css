@@ -150,7 +150,10 @@
 
     display: grid;
 
-    grid-template-columns: 1fr auto auto;
+    /* The middle column is the label, and it has to be the one that shrinks.
+       With `1fr auto auto` a long filename grew it and shoved the buttons
+       off the card. */
+    grid-template-columns: auto minmax(0, 1fr) auto;
 
     align-items: center;
 
@@ -196,6 +199,9 @@
 
 .corpus-label {
 
+    /* Lets the grid cell shrink instead of overflowing. */
+    min-width: 0;
+
     margin: 0;
 
     font-size: 14px;
@@ -235,6 +241,30 @@
 
     color: oklch(0.52 0.022 252);
 }
+
+/* Label plus its status, stacked in the middle grid cell. */
+
+.corpus-label-group {
+
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* One line only - a long file name is cut, and the title attribute
+   carries the full text for anyone who hovers. */
+.corpus-label-group .corpus-label,
+.corpus-label-group .compare-corpus-label {
+
+    min-width: 0;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .upload-container input[type="file"] {
 
     position: absolute;
@@ -1112,6 +1142,28 @@
 .selection-status.is-ready .status-dot {
 
     background: #5b9b68;
+
+}
+/* Blue: just telling you something, nothing is wrong. */
+.selection-status.is-info {
+
+    color: #2a5d9f;
+
+}
+.selection-status.is-info .status-dot {
+
+    background: #3d7ec4;
+
+}
+/* Amber: used before a limit is hit, so it is a heads-up not a failure. */
+.selection-status.is-warning {
+
+    color: #8a6400;
+
+}
+.selection-status.is-warning .status-dot {
+
+    background: #e0a217;
 
 }
 .selection-status.is-error {

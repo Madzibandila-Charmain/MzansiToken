@@ -574,23 +574,13 @@
 
 }
 
-/* ---------------------------------------------------------
-   THE DISPLAY TYPEFACE, FOR THIS PAGE'S HEADING
-   Mukovhe Ranwashe (RNWMUK001)
+/* This heading used to share a rule with .metric-value and friends. Once the
+   stylesheet was split that rule moved to components.css, which loads first,
+   so the page rule above started winning and the spacing changed. Re-applied
+   here to keep it as it was.
 
-   This lived in a grouped selector beside .corpus-heading, .metric-value and
-   .chart-title - component classes - so the group straddled two files once
-   the stylesheet was split. The cascade flipped: the page rule above started
-   winning and the heading's letter-spacing silently changed.
-
-   Kept separate here, after that rule, so the resolved value is exactly what
-   it was before the split.
-
-   NOTE: that means -0.015em still overrides the -1.5px set above. That is
-   almost certainly an accident predating the split - a deliberate -1.5px
-   swept away by a broad typography rule written later. At 45px the heading
-   renders at -0.675px. Worth deciding on, separately.
-   --------------------------------------------------------- */
+   Note: -0.015em beats the -1.5px set above. That was already true before the
+   split - a broad rule written later quietly won. Worth a decision. */
 
 .inspect-intro h1 {
 

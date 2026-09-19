@@ -1,10 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-/*
-    The shared style layers, imported in cascade order. Each page imports
-    its own stylesheet from its own file, so nothing global knows about
-    Home, Inspect, Rank or Compare.
-*/
+/* Shared styles, in the order they must load. Pages import their own. */
 import './styles/tokens.css'
 import './styles/base.css'
 import './styles/layout.css'

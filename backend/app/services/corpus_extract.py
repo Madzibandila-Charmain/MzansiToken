@@ -196,9 +196,8 @@ def _extract_docx(data: bytes) -> str:
     """
     Pull the visible text out of a Word document, in memory.
 
-    Paragraphs and table cells both count - a corpus pasted into a table is
-    still a corpus. Nothing is extracted to disk, so ZIP path traversal is not
-    reachable from here.
+    Body text, tables, content controls and text boxes all count. Nothing is
+    extracted to disk, so ZIP path traversal is not reachable from here.
     """
     if not data.startswith(ZIP_MAGIC):
         _reject_known_binary(data)
@@ -225,7 +224,7 @@ def _extract_docx(data: bytes) -> str:
             )
 
     try:
-        import docx
+        from lxml import etree
     except ImportError:
         raise CorpusExtractionError(
             "Word document support is not installed on the server.",
@@ -233,20 +232,48 @@ def _extract_docx(data: bytes) -> str:
         )
 
     try:
-        document = docx.Document(io.BytesIO(data))
-    except Exception:
-        # python-docx raises a variety of types on malformed input, and the
-        # specific one is of no use to whoever is uploading.
-        raise CorpusExtractionError(
-            "That .docx file could not be read."
-        )
+        with zipfile.ZipFile(io.BytesIO(data)) as archive:
+            document_xml = archive.read("word/document.xml")
+    except (zipfile.BadZipFile, KeyError):
+        raise CorpusExtractionError("That .docx file could not be read.")
 
-    lines = [paragraph.text for paragraph in document.paragraphs]
+    # Read the XML ourselves instead of using python-docx's paragraph list.
+    # That list only sees paragraphs sitting directly in the body, so text in
+    # a form field or a text box is skipped without any error - a filled-in
+    # assignment came back as two characters. Every <w:t> catches the lot.
+    # Headers and footers are left out on purpose: they repeat on every page.
+    W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
-    for table in document.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                lines.append(cell.text)
+    # Stops a crafted file reading server files or phoning home.
+    parser = etree.XMLParser(resolve_entities=False, no_network=True,
+                             huge_tree=False)
+
+    try:
+        root = etree.fromstring(document_xml, parser)
+    except etree.XMLSyntaxError:
+        raise CorpusExtractionError("That .docx file could not be read.")
+
+    lines, current = [], []
+
+    def flush():
+        if current:
+            lines.append("".join(current))
+            current.clear()
+
+    for element in root.iter():
+        tag = element.tag
+        if tag == W + "p":
+            # iter() is document order, so a <w:p> marks the end of the
+            # paragraph before it.
+            flush()
+        elif tag == W + "t":
+            current.append(element.text or "")
+        elif tag == W + "tab":
+            current.append("\t")
+        elif tag in (W + "br", W + "cr"):
+            flush()
+
+    flush()
 
     return "\n".join(lines)
 

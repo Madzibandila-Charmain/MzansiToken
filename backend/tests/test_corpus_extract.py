@@ -250,3 +250,80 @@ def test_filenames_are_reduced_to_a_bare_name(raw, expected):
 
 def test_long_filenames_are_truncated():
     assert len(sanitise_filename("z" * 400 + ".txt")) <= 124
+
+# ── Word hides text in places .paragraphs does not reach ──────────────────────
+#
+# This is the bug that shipped: a filled-in assignment template came back as
+# two characters, because python-docx's Document.paragraphs only returns <w:p>
+# elements that are DIRECT children of <w:body>. Every answer in that document
+# sat inside a content control, so all of it was skipped - silently, with
+# metrics then computed on what was left.
+
+NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+
+
+def docx_with_hidden_text() -> bytes:
+    """A document shaped the way Word writes a filled-in form."""
+    import docx
+
+    document = docx.Document()
+    document.add_paragraph("cc")
+
+    body = document.element.body
+
+    body.append(docx.oxml.parse_xml(
+        f"<w:sdt {NS}><w:sdtContent>"
+        "<w:p><w:r><w:t>Answer inside a content control</w:t></w:r></w:p>"
+        "<w:p><w:r><w:t>Second line of the filled answer</w:t></w:r></w:p>"
+        "</w:sdtContent></w:sdt>"))
+
+    body.append(docx.oxml.parse_xml(
+        f"<w:p {NS}><w:r><w:pict><w:txbxContent>"
+        "<w:p><w:r><w:t>Text inside a text box</w:t></w:r></w:p>"
+        "</w:txbxContent></w:pict></w:r></w:p>"))
+
+    table = document.add_table(rows=1, cols=1)
+    table.cell(0, 0).text = "Text in a table cell"
+
+    buffer = io.BytesIO()
+    document.save(buffer)
+    return buffer.getvalue()
+
+
+def test_content_control_text_is_extracted():
+    text, _ = extract_corpus_text("filled.docx", docx_with_hidden_text())
+
+    assert "Answer inside a content control" in text
+    assert "Second line of the filled answer" in text
+
+
+def test_text_box_text_is_extracted():
+    text, _ = extract_corpus_text("filled.docx", docx_with_hidden_text())
+
+    assert "Text inside a text box" in text
+
+
+def test_a_filled_form_does_not_collapse_to_almost_nothing():
+    """
+    The regression itself. Before the fix this returned 'cc' and the app
+    reported one token with complete confidence.
+    """
+    text, _ = extract_corpus_text("filled.docx", docx_with_hidden_text())
+
+    assert len(text.split()) > 10
+    assert text.strip() != "cc"
+
+
+def test_ordinary_paragraphs_still_work():
+    import docx
+
+    document = docx.Document()
+    for line in ["Sawubona umhlaba", "Unjani namuhla", "Ngiyaphila"]:
+        document.add_paragraph(line)
+
+    buffer = io.BytesIO()
+    document.save(buffer)
+
+    text, _ = extract_corpus_text("plain.docx", buffer.getvalue())
+
+    assert text.splitlines() == ["Sawubona umhlaba", "Unjani namuhla", "Ngiyaphila"]

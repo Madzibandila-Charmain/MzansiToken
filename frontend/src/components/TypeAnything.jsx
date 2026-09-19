@@ -2,19 +2,25 @@
     Reusable Type Anything component
     Author: Madzibandila Charmain
 
-    Amended by Mukovhe Ranwashe (RNWMUK001), 17 September 2026: it used to
-    take a renderTokens FUNCTION as a prop, because each page kept its own
-    copy of that function. It renders the shared TokenStream instead, so the
-    caller no longer has to supply behaviour along with data.
+    Amended by Mukovhe Ranwashe (RNWMUK001): renders the shared TokenStream
+    instead of taking a render function as a prop, and stops typing at the
+    server's character limit instead of letting the request fail.
 */
 
 import TokenStream from "./TokenStream";
+import StatusLine from "./StatusLine";
+import { capState } from "../lib/statusState";
 
 function TypeAnything({
     inputText,
     onInputChange,
-    results
+    results,
+    maxChars = null
 }) {
+
+    const used = inputText.length;
+    const full = maxChars !== null && used >= maxChars;
+
     return (
         <section className="text-input-box">
 
@@ -23,7 +29,7 @@ function TypeAnything({
                 Type Anything
             </div>
 
-            {/* Text input */}
+            {/* maxLength does the stopping; the count just shows where you are. */}
             <textarea
                 className="text-input-area"
                 value={inputText}
@@ -31,7 +37,20 @@ function TypeAnything({
                     onInputChange(event.target.value)
                 }
                 placeholder="Type or paste your text here..."
+                maxLength={maxChars ?? undefined}
+                aria-describedby={maxChars ? "typed-count" : undefined}
             />
+
+            {maxChars !== null && (
+                <StatusLine
+                    state={capState(used, maxChars)}
+                    text={
+                        full
+                            ? `That is the most we can take - ${maxChars.toLocaleString()} characters.`
+                            : `${used.toLocaleString()} of ${maxChars.toLocaleString()} characters`
+                    }
+                />
+            )}
 
             {/* Tokenizer results */}
             <div

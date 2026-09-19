@@ -23,18 +23,18 @@ import {
 import { useAppState } from "../context/AppStateContext";
 
 import CorpusUpload from "../components/CorpusUpload";
-import {
-    isAcceptedCorpusFile,
-    UNSUPPORTED_CORPUS_MESSAGE
-} from "../lib/corpusFormats";
+import { checkCorpusFile } from "../lib/corpusFormats";
 
 import TokenizationMetrics from "../components/TokenizationMetrics";
 
+import { SearchIcon } from "../components/Icons";
 import TypeAnything from "../components/TypeAnything";
 import CompareCharts from "../components/CompareCharts";
 
 import TokenStream from "../components/TokenStream";
 
+import StatusLine from "../components/StatusLine";
+import { statusState } from "../lib/statusState";
 import StatusMessage from "../components/StatusMessage";
 
 import { languageColour } from "../components/languageColours";
@@ -98,6 +98,9 @@ function Compare() {
     */
     const [languages, setLanguages] = useState([]);
     const [tokenizers, setTokenizers] = useState([]);
+
+    /* Upload size and character caps, straight from /options. */
+    const [limits, setLimits] = useState(null);
 
     const [tokenizerOneInput, setTokenizerOneInput] = useState("");
     const [tokenizerTwoInput, setTokenizerTwoInput] = useState("");
@@ -236,6 +239,7 @@ function Compare() {
 
                 setLanguages(result.languages || []);
                 setTokenizers(result.tokenizers || []);
+                setLimits(result.limits || null);
 
                 const defaultLanguage =
                     result.defaults?.language || "isiZulu";
@@ -836,18 +840,13 @@ function Compare() {
             return;
         }
 
-        /*
-            Compare had no check here and relied on the backend for it, so a
-            .pdf dragged past the picker went all the way to the server before
-            anything said no. Inspect has always checked; this matches it.
-        */
-        if (!isAcceptedCorpusFile(file.name)) {
+        /* Wrong type or too big? Say so now rather than after the upload. */
+        const problem = checkCorpusFile(file, limits);
+
+        if (problem) {
 
             setSelectionFailed(true);
-
-            setSelectionStatus(
-                UNSUPPORTED_CORPUS_MESSAGE
-            );
+            setSelectionStatus(problem);
 
             return;
 
@@ -1444,28 +1443,7 @@ function Compare() {
                                 }
                             >
 
-                                <svg
-                                    className="search-button-icon"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    aria-hidden="true"
-                                >
-                                    <circle
-                                        cx="11"
-                                        cy="11"
-                                        r="7"
-                                        stroke="currentColor"
-                                        strokeWidth="2.5"
-                                    />
-
-                                    <path
-                                        d="M16.5 16.5L21 21"
-                                        stroke="currentColor"
-                                        strokeWidth="2.5"
-                                        strokeLinecap="round"
-                                    />
-                                </svg>
+                                <SearchIcon />
 
                                 <span> Search</span>
 
@@ -1477,25 +1455,14 @@ function Compare() {
 
                         {tokenizerOneStatus && (
 
-                            <div
-                                className={`selection-status ${
-                                    tokenizerOneFailed
-                                        ? "is-error"
-                                        : tokenizerOneLoading
-                                            ? "is-loading"
-                                            : "is-ready"
-                                }`}
-                            >
-
-                                <span className="status-dot"></span>
-
-                                <StatusMessage
+                            <StatusLine
+                                    state={statusState({
+                                        failed: tokenizerOneFailed,
+                                        loading: tokenizerOneLoading
+                                    })}
                                     text={tokenizerOneStatus}
-                                    failed={tokenizerOneFailed}
                                     modelName={tokenizerOneInput}
                                 />
-
-                            </div>
 
                         )}
 
@@ -1559,28 +1526,7 @@ function Compare() {
                                 }
                             >
 
-                                <svg
-                                    className="search-button-icon"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    aria-hidden="true"
-                                >
-                                    <circle
-                                        cx="11"
-                                        cy="11"
-                                        r="7"
-                                        stroke="currentColor"
-                                        strokeWidth="2.5"
-                                    />
-
-                                    <path
-                                        d="M16.5 16.5L21 21"
-                                        stroke="currentColor"
-                                        strokeWidth="2.5"
-                                        strokeLinecap="round"
-                                    />
-                                </svg>
+                                <SearchIcon />
 
                                 <span> Search</span>
 
@@ -1590,25 +1536,14 @@ function Compare() {
 
                         {tokenizerTwoStatus && (
 
-                            <div
-                                className={`selection-status ${
-                                    tokenizerTwoFailed
-                                        ? "is-error"
-                                        : tokenizerTwoLoading
-                                            ? "is-loading"
-                                            : "is-ready"
-                                }`}
-                            >
-
-                                <span className="status-dot"></span>
-
-                                <StatusMessage
+                            <StatusLine
+                                    state={statusState({
+                                        failed: tokenizerTwoFailed,
+                                        loading: tokenizerTwoLoading
+                                    })}
                                     text={tokenizerTwoStatus}
-                                    failed={tokenizerTwoFailed}
                                     modelName={tokenizerTwoInput}
                                 />
-
-                            </div>
 
                         )}
 
@@ -1645,9 +1580,18 @@ function Compare() {
                     Corpus Tokenization
                 </div>
 
-                <p className="compare-corpus-label">
-                    {corpusLabel}
-                </p>
+                <div className="corpus-label-group">
+
+                    <p className="compare-corpus-label" title={corpusLabel}>
+                        {corpusLabel}
+                    </p>
+
+                    <StatusLine
+                        state={selectionFailed ? "error" : "info"}
+                        text={selectionStatus}
+                    />
+
+                </div>
 
                 <CorpusUpload
                     inputId="compare-corpus-upload"
@@ -1773,6 +1717,7 @@ function Compare() {
 
             {/* Type Anything */}
             <TypeAnything
+                maxChars={limits?.max_text_chars ?? null}
                 inputText={inputText}
                 onInputChange={setInputText}
                 results={[

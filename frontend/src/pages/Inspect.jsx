@@ -25,18 +25,17 @@ import MetricsChart from "../components/MetricsChart";
 import { languageColour } from "../components/languageColours";
 
 import CorpusUpload from "../components/CorpusUpload";
-import {
-    isAcceptedCorpusFile,
-    UNSUPPORTED_CORPUS_MESSAGE
-} from "../lib/corpusFormats";
+import { checkCorpusFile } from "../lib/corpusFormats";
 
+import { SearchIcon } from "../components/Icons";
 import TypeAnything from "../components/TypeAnything";
 
 import TokenStream from "../components/TokenStream";
 
 import MetricCards from "../components/MetricCards";
 
-import StatusMessage from "../components/StatusMessage";
+import StatusLine from "../components/StatusLine";
+import { statusState } from "../lib/statusState";
 
 import { formatTokenizedText } from "../lib/tokenText";
 
@@ -74,6 +73,13 @@ function Inspect() {
 
     /* Languages provided by the backend. */
     const [languages, setLanguages] = useState([]);
+
+    /* Upload size and character caps, straight from /options. */
+    const [limits, setLimits] = useState(null);
+
+    /* Shown next to the upload button. */
+    const [uploadStatus, setUploadStatus] = useState("");
+    const [uploadFailed, setUploadFailed] = useState(false);
 
     const [selectedLanguages, setSelectedLanguages] = useState(() => {
 
@@ -173,6 +179,10 @@ function Inspect() {
         built-in corpus and means nothing to a reader. Name the languages
         actually on screen instead, and keep it correct for one or two.
     */
+    const corpusLabel = source === "upload"
+        ? `${fileName} \u2022 Uploaded corpus \u2022 ${tokenizer}`
+        : `Built-in corpus \u2022 ${languageLabel} \u2022 ${tokenizer}`;
+
     const shown = selectedLanguages.length
         ? selectedLanguages
         : (language ? [language] : []);
@@ -229,6 +239,8 @@ function Inspect() {
                 setTokenizers(
                     Array.isArray(result?.tokenizers) ? result.tokenizers : []
                 );
+
+                setLimits(result?.limits || null);
 
                 if (!inspectInitialised) {
 
@@ -1099,21 +1111,22 @@ function Inspect() {
             return;
         }
 
-        /*
-            Catch an unsupported file before the upload, so the user is not
-            waiting on a round trip to be told. The server checks this again,
-            and checks the bytes as well.
-        */
+        /* Wrong type or too big? Say so now rather than after the upload. */
 
-        if (!isAcceptedCorpusFile(file.name)) {
+        const problem = checkCorpusFile(file, limits);
 
-            setError(
-                UNSUPPORTED_CORPUS_MESSAGE
-            );
+        if (problem) {
+
+            setUploadStatus(problem);
+            setUploadFailed(true);
+            setError(problem);
 
             return;
 
         }
+
+        setUploadStatus(`Reading ${file.name}...`);
+        setUploadFailed(false);
 
         try {
 
@@ -1937,21 +1950,7 @@ function Inspect() {
                                     selectionLoading
                                 }
                             >
-                                <svg
-                                    className="search-button-icon"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    aria-hidden="true"
-                                >
-                                    <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2.5" />
-                                    <path
-                                        d="M16.5 16.5L21 21"
-                                        stroke="currentColor"
-                                        strokeWidth="2.5"
-                                        strokeLinecap="round"
-                                    />
-                                </svg>
+                                <SearchIcon />
                                 <span> Search</span>
                             </button>
 
@@ -2007,25 +2006,14 @@ function Inspect() {
 
                         {tokenizerStatus && (
 
-                            <div
-                                className={`selection-status ${
-                                    tokenizerFailed
-                                        ? "is-error"
-                                        : selectionLoading
-                                                ? "is-loading"
-                                                : "is-ready"
-                                }`}
-                            >
-
-                                <span className="status-dot"></span>
-
-                                <StatusMessage
+                            <StatusLine
+                                    state={statusState({
+                                        failed: tokenizerFailed,
+                                        loading: selectionLoading
+                                    })}
                                     text={tokenizerStatus}
-                                    failed={tokenizerFailed}
                                     modelName={tokenizerInput}
                                 />
-
-                            </div>
 
                         )}
 
@@ -2169,13 +2157,18 @@ function Inspect() {
                     Corpus Tokenization
                 </div>
 
-                <p className="corpus-label">
+                <div className="corpus-label-group">
 
-                    {source === "upload"
-                        ? `${fileName} \u2022 Uploaded corpus \u2022 ${tokenizer}`
-                        : `Built-in corpus \u2022 ${languageLabel} \u2022 ${tokenizer}`}
+                    <p className="corpus-label" title={corpusLabel}>
+                        {corpusLabel}
+                    </p>
 
-                </p>
+                    <StatusLine
+                        state={uploadFailed ? "error" : "info"}
+                        text={uploadStatus}
+                    />
+
+                </div>
 
                 <CorpusUpload
                     inputId="corpus-upload"
@@ -2379,15 +2372,10 @@ function Inspect() {
 
                 {mbiUnavailable && (
 
-                    <div className="selection-status is-error">
-
-                        <span className="status-dot"></span>
-
-                        <span>
-                            {mbiUnavailable}
-                        </span>
-
-                    </div>
+                    <StatusLine
+                        state="error"
+                        text={mbiUnavailable}
+                    />
 
                 )}
 
@@ -2404,6 +2392,7 @@ function Inspect() {
 
             {/* Text input box */}
             <TypeAnything
+                maxChars={limits?.max_text_chars ?? null}
                 inputText={inputText}
                 onInputChange={setInputText}
                 results={[
