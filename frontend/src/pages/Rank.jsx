@@ -538,15 +538,6 @@ function Rank() {
 
                 await createOrUpdateLeaderboardEntry(
                     name,
-                    {
-                        token_count: saved.token_count,
-                        fertility: saved.fertility,
-                        compression: saved.compression,
-                        token_premium: saved.token_premium,
-                        f1: saved.f1,
-                        precision: saved.precision,
-                        recall: saved.recall,
-                    },
                     signal
                 );
 
@@ -567,15 +558,6 @@ function Rank() {
 
             await createOrUpdateLeaderboardEntry(
                 name,
-                {
-                    token_count: measured.token_count,
-                    fertility: measured.fertility,
-                    compression: measured.compression,
-                    token_premium: measured.token_premium,
-                    f1: measured.f1,
-                    precision: measured.precision,
-                    recall: measured.recall,
-                },
                 signal
             );
         }
@@ -646,15 +628,6 @@ function Rank() {
 
                 await createOrUpdateLeaderboardEntry(
                     name,
-                    {
-                        token_count: saved.token_count,
-                        fertility: saved.fertility,
-                        compression: saved.compression,
-                        token_premium: saved.token_premium,
-                        f1: saved.f1,
-                        precision: saved.precision,
-                        recall: saved.recall,
-                    },
                     controller.signal
                 );
 
@@ -672,21 +645,10 @@ function Rank() {
                 No saved measurement exists, so this is a new tokenizer.
                 This is the only path that performs the expensive measurement.
             */
-            const measured = await measure(name, controller.signal);
-
             setAddStatus(`Saving ${name}...`);
 
             await createOrUpdateLeaderboardEntry(
                 name,
-                {
-                    token_count: measured.token_count,
-                    fertility: measured.fertility,
-                    compression: measured.compression,
-                    token_premium: measured.token_premium,
-                    f1: measured.f1,
-                    precision: measured.precision,
-                    recall: measured.recall,
-                },
                 controller.signal
             );
 

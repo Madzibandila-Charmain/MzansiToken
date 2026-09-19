@@ -557,24 +557,18 @@ export async function getScoring(
 
 export async function createOrUpdateLeaderboardEntry(
     name,
-    metrics,
     signal
 ) {
-
     const response = await fetch(
         `${API_BASE_URL}/leaderboard`,
         {
             method: "POST",
-
             headers: {
                 "Content-Type": "application/json",
             },
-
             body: JSON.stringify({
                 name,
-                metrics,
             }),
-
             signal,
         }
     );
