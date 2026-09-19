@@ -957,12 +957,18 @@ function Rank() {
 
                         <input
                             type="text"
-                            value={filter}
+                            value={tokenizerInput}
                             onChange={(event) =>
                                 setFilter(event.target.value)
                             }
+                            onKeyDown={(event) => {
+                                if (event.key === "Enter") {
+                                    handleAdd();
+                                }
+                            }}
                             placeholder="Find a tokenizer..."
                             aria-label="Find a tokenizer on the board"
+                            disabled={busy || isLoading}
                         />
 
                     </div>
