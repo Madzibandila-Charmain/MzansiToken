@@ -6,6 +6,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import "./Rank.css";
+
 import {
     createOrUpdateLeaderboardEntry,
     deleteLeaderboardEntry,
@@ -948,14 +950,6 @@ function Rank() {
             <section className="rank-hero">
 
                 <div className="rank-hero-copy">
-
-                    <p className="rank-eyebrow">
-                        <span
-                            className="rank-eyebrow-rule"
-                            aria-hidden="true"
-                        ></span>
-                        Public benchmark / 08 languages
-                    </p>
 
                     <h1 className="rank-title">
                         Which tokenizer{" "}

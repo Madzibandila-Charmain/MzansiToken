@@ -1,0 +1,1665 @@
+/* 
+   RANK
+   Mukovhe Ranwashe (RNWMUK001) ·  Sep 2026
+   Hero, controls, add panel, leaderboard table, explainers.
+*/
+
+.rank {
+    position: relative;
+
+    width: calc(100% - 40px);
+    max-width: 1180px;
+
+    margin: 0 auto;
+    padding-bottom: 60px;
+}
+
+/* ---------------------------------------------------------
+   HERO
+   --------------------------------------------------------- */
+
+.rank-hero {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 54px 0 34px;
+    text-align: center;
+}
+
+.rank-hero-copy {
+    width: 100%;
+    max-width: 900px;
+    text-align: center;
+}
+
+.rank-title {
+    max-width: 15ch;
+    margin: 0 auto 20px;
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: clamp(38px, 5.2vw, 58px);
+    font-weight: 700;
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    color: oklch(0.2 0.03 252);
+    text-align: center;
+}
+
+.rank-title-accent {
+    color: var(--za-green);
+}
+
+.rank-lede {
+    max-width: 70ch;
+    margin: 0 auto;
+    font-size: 15px;
+    line-height: 1.68;
+    color: oklch(0.38 0.02 252);
+    text-align: center;
+}
+
+.rank-lede strong {
+    font-weight: 600;
+
+    color: oklch(0.24 0.03 252);
+}
+
+/* Eight bars: English short, the rest two to three times taller. */
+
+.rank-run {
+    padding: 20px 22px 16px;
+
+    background: oklch(1 0 0 / 0.86);
+
+    border: 1px solid oklch(0.9 0.02 240);
+    border-radius: 18px;
+
+    backdrop-filter: blur(10px);
+
+    box-shadow: 0 14px 34px oklch(0.25 0.03 252 / 0.07);
+}
+
+.rank-run-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.rank-run-label {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+
+    color: oklch(0.52 0.02 252);
+}
+
+.rank-run-value {
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 27px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+
+    color: oklch(0.2 0.03 252);
+}
+
+.rank-run-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+
+    height: 58px;
+
+    margin: 16px 0 12px;
+}
+
+.rank-run-bar {
+    flex: 1;
+
+    min-height: 6px;
+
+    background: color-mix(in oklab, var(--za-green) 62%, white);
+
+    border-radius: 4px 4px 2px 2px;
+}
+
+/* English is the baseline, so it is marked rather than left to look
+   like the shortest bar by accident. */
+.rank-run-bar.is-baseline {
+    background: color-mix(in oklab, var(--za-gold) 78%, white);
+}
+
+.rank-run-foot {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+
+    color: oklch(0.55 0.02 252);
+}
+
+.rank-run-note {
+    color: var(--za-green);
+}
+
+/* ---------------------------------------------------------
+   CONTROLS
+   --------------------------------------------------------- */
+
+.rank-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+
+    margin-bottom: 20px;
+    padding: 14px 16px;
+
+    background: #ffffff;
+
+    border: 1px solid oklch(0.89 0.02 240);
+    border-radius: 16px;
+
+    box-shadow: 0 8px 24px oklch(0.25 0.03 252 / 0.06);
+}
+
+.rank-controls .selection-status {
+    flex-basis: 100%;
+    width: 100%;
+}
+
+.rank-control {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 8px;
+    padding: 0 6px 0 14px;
+
+    background: oklch(0.98 0.008 242);
+
+    border: 1px solid oklch(0.91 0.018 240);
+    border-radius: 11px;
+}
+
+.rank-control-label {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+
+    color: oklch(0.55 0.02 252);
+}
+
+.rank-control select {
+    height: 40px;
+
+    padding: 0 8px;
+
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+
+    color: oklch(0.24 0.03 252);
+
+    background: transparent;
+
+    border: 0;
+
+    cursor: pointer;
+}
+
+.rank-control select:focus-visible {
+    outline: 2px solid var(--za-green);
+    outline-offset: 2px;
+    border-radius: 7px;
+}
+
+.rank-controls-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    margin-left: auto;
+}
+
+.rank-find {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 0 14px;
+
+    background: oklch(0.98 0.008 242);
+
+    border: 1px solid oklch(0.89 0.02 240);
+    border-radius: 11px;
+
+    backdrop-filter: blur(8px);
+}
+
+.rank-find-icon {
+    width: 15px;
+    height: 15px;
+
+    fill: none;
+    stroke: oklch(0.58 0.02 252);
+    stroke-width: 2.2;
+    stroke-linecap: round;
+}
+
+.rank-find input {
+    width: 168px;
+    height: 40px;
+
+    font-family: inherit;
+    font-size: 13px;
+
+    color: oklch(0.24 0.03 252);
+
+    background: transparent;
+
+    border: 0;
+    outline: none;
+}
+
+.rank-add-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    height: 42px;
+
+    padding: 0 18px;
+
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+
+    color: var(--za-white);
+
+    background: oklch(0.2 0.03 252);
+
+    border: 0;
+    border-radius: 11px;
+
+    cursor: pointer;
+
+    transition: background-color 0.18s ease;
+}
+
+.rank-add-cta:hover {
+    background: var(--za-green);
+}
+
+/* ---------------------------------------------------------
+   THE ADD PANEL
+   --------------------------------------------------------- */
+
+.rank-setup {
+    margin-bottom: 20px;
+    padding: 20px 24px;
+
+    background: oklch(1 0 0 / 0.86);
+
+    border: 1px solid oklch(0.89 0.02 240);
+    border-radius: 18px;
+
+    backdrop-filter: blur(10px);
+}
+
+.rank-setup-heading {
+    margin-bottom: 12px;
+
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+
+    color: oklch(0.45 0.025 252);
+}
+
+.rank-setup .tokenizer-search {
+    max-width: 560px;
+}
+
+.rank-setup-note {
+    max-width: 62ch;
+
+    margin: 14px 0 0;
+
+    font-size: 12.5px;
+    line-height: 1.6;
+
+    color: oklch(0.52 0.022 252);
+}
+
+.rank-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+
+    margin-top: 14px;
+}
+
+.rank-suggestion {
+    padding: 6px 12px;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+
+    color: oklch(0.36 0.03 252);
+
+    background: oklch(1 0 0 / 0.72);
+
+    border: 1px solid oklch(0.88 0.025 240);
+    border-radius: 999px;
+
+    cursor: pointer;
+
+    transition:
+        border-color 0.18s ease,
+        background-color 0.18s ease,
+        color 0.18s ease;
+}
+
+.rank-suggestion:hover:not(:disabled) {
+    border-color: var(--za-green);
+    color: var(--za-green);
+    background: oklch(1 0 0 / 0.95);
+}
+
+.rank-suggestion.is-on-board {
+    color: oklch(0.55 0.02 252);
+    border-style: dashed;
+}
+
+.rank-suggestion:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/*
+   THE SAMPLE-BOARD BANNER
+   Mukovhe Ranwashe
+   September 2026
+ */
+
+.rank-sample-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+
+    margin: 0 0 20px;
+    padding: 14px 18px;
+
+    font-size: 13px;
+    line-height: 1.6;
+
+    color: oklch(0.36 0.06 70);
+
+    background: color-mix(in oklab, var(--za-gold) 16%, white);
+
+    border: 1px solid color-mix(in oklab, var(--za-gold) 55%, white);
+    border-radius: 14px;
+}
+
+.rank-sample-banner .status-dot {
+    flex: none;
+
+    margin-top: 6px;
+
+    background: var(--za-gold);
+}
+
+.rank-sample-banner strong {
+    color: oklch(0.3 0.08 70);
+}
+
+/*
+   SPOTLIGHT: LEADER AND CHASERS
+   Mukovhe Ranwashe
+   September 2026
+*/
+
+.rank-spotlight {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px;
+
+    margin-bottom: 20px;
+}
+
+.rank-leader {
+    position: relative;
+
+    padding: 22px 26px 26px;
+
+    overflow: hidden;
+
+    color: var(--za-white);
+
+    background:
+        radial-gradient(
+            circle at 82% 18%,
+            oklch(1 0 0 / 0.14) 0 38%,
+            transparent 64%
+        ),
+        linear-gradient(
+            145deg,
+            color-mix(in oklab, var(--za-blue) 88%, black) 0%,
+            color-mix(in oklab, var(--za-blue) 62%, oklch(0.4 0.09 268)) 100%
+        );
+
+    border-radius: 20px;
+
+    box-shadow: 0 18px 40px oklch(0.2 0.08 268 / 0.28);
+}
+
+.rank-leader-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+
+    margin-bottom: 26px;
+}
+
+.rank-leader-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 6px 13px 6px 9px;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+
+    color: color-mix(in oklab, var(--za-gold) 88%, white);
+
+    background: oklch(1 0 0 / 0.12);
+
+    border-radius: 999px;
+}
+
+.rank-leader-badge-icon svg {
+    display: block;
+    width: 15px;
+    height: 15px;
+
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.rank-leader-meta {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+
+    color: oklch(1 0 0 / 0.55);
+}
+
+.rank-leader-name {
+    margin: 0 0 4px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: clamp(26px, 3.1vw, 34px);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    word-break: break-word;
+
+    color: var(--za-white);
+}
+
+.rank-leader-vendor {
+    margin: 0 0 24px;
+
+    font-size: 12.5px;
+
+    color: oklch(1 0 0 / 0.58);
+}
+
+.rank-leader-figures {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 22px;
+}
+
+.rank-leader-score-value {
+    display: block;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: clamp(48px, 6.4vw, 66px);
+    font-weight: 700;
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+}
+
+.rank-leader-score-note {
+    display: block;
+
+    margin-top: 8px;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+
+    color: oklch(1 0 0 / 0.5);
+}
+
+.rank-leader-stats {
+    display: flex;
+    gap: 26px;
+
+    margin: 0;
+
+    padding-left: 22px;
+
+    border-left: 1px solid oklch(1 0 0 / 0.16);
+}
+
+.rank-leader-stats div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 4px;
+}
+
+.rank-leader-stats dt {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+
+    color: oklch(1 0 0 / 0.5);
+}
+
+.rank-leader-stats dd {
+    margin: 0;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+
+    color: var(--za-white);
+}
+
+/* Who is chasing. One bar each, all running 0 to 100. */
+
+.rank-close {
+    display: flex;
+    flex-direction: column;
+
+    padding: 22px 26px 20px;
+
+    background: oklch(1 0 0 / 0.86);
+
+    border: 1px solid oklch(0.9 0.02 240);
+    border-radius: 20px;
+
+    backdrop-filter: blur(10px);
+}
+
+.rank-close-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.rank-close-head h2 {
+    margin: 0;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+
+    color: oklch(0.2 0.03 252);
+}
+
+.rank-close-icon svg {
+    display: block;
+    width: 17px;
+    height: 17px;
+
+    fill: none;
+    stroke: var(--za-red);
+    stroke-width: 2;
+    stroke-linecap: round;
+}
+
+.rank-close-sub {
+    margin: 6px 0 18px;
+
+    font-size: 12.5px;
+
+    color: oklch(0.5 0.022 252);
+}
+
+.rank-close-list {
+    flex: 1;
+
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+
+    margin: 0 0 14px;
+    padding: 0;
+
+    list-style: none;
+}
+
+.rank-close-list li {
+    display: grid;
+    grid-template-columns: minmax(0, 96px) minmax(0, 1fr) 42px;
+    align-items: center;
+    gap: 12px;
+}
+
+.rank-close-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+
+    color: oklch(0.34 0.025 252);
+}
+
+.rank-close-track {
+    height: 7px;
+
+    background: oklch(0.92 0.012 240);
+    border-radius: 999px;
+
+    overflow: hidden;
+}
+
+.rank-close-fill {
+    display: block;
+    height: 100%;
+
+    border-radius: 999px;
+}
+
+.rank-close-value {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+
+    color: oklch(0.24 0.03 252);
+}
+
+.rank-close-foot {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+
+    margin: 0;
+    padding-top: 13px;
+
+    font-size: 11.5px;
+
+    color: oklch(0.54 0.022 252);
+
+    border-top: 1px solid oklch(0.93 0.012 240);
+}
+
+.rank-close-foot .status-dot {
+    flex: none;
+
+    background: var(--za-green);
+}
+
+/*
+   THE BREAKDOWN CARD
+   Mukovhe Ranwashe (RNWMUK001)
+
+   The same surface as .rank-close, so the two cards under the
+   spotlight read as a pair rather than one card and one loose list.
+*/
+
+.rank-breakdown {
+    display: flex;
+    flex-direction: column;
+
+    padding: 22px 26px 20px;
+    margin-bottom: 30px;
+
+    background: oklch(1 0 0 / 0.86);
+
+    border: 1px solid oklch(0.9 0.02 240);
+    border-radius: 20px;
+
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.rank-breakdown-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+
+    margin-bottom: 18px;
+}
+
+.rank-breakdown-head h2 {
+    margin: 0;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+
+    color: oklch(0.2 0.03 252);
+}
+
+.rank-breakdown-head p {
+    margin: 6px 0 0;
+
+    font-size: 12.5px;
+
+    color: oklch(0.5 0.022 252);
+}
+
+.rank-breakdown-count {
+    flex: none;
+
+    margin: 0;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+    white-space: nowrap;
+
+    color: oklch(0.54 0.022 252);
+}
+
+.rank-breakdown-foot {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+
+    margin: 14px 0 0;
+    padding-top: 13px;
+
+    font-size: 11.5px;
+
+    color: oklch(0.54 0.022 252);
+
+    border-top: 1px solid oklch(0.93 0.012 240);
+}
+
+.rank-breakdown-foot .status-dot {
+    flex: none;
+
+    background: var(--za-green);
+}
+
+.rank-breakdown-list {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 13px;
+
+    margin: 0;
+
+    padding: 0;
+
+    list-style: none;
+
+}
+
+.rank-breakdown-list li {
+
+    display: grid;
+
+    grid-template-columns: minmax(0, 96px) minmax(0, 1fr) 50px;
+
+    align-items: center;
+
+    gap: 12px;
+
+}
+
+.rank-breakdown-name {
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+
+    font-size: 11.5px;
+
+    color: oklch(0.34 0.025 252);
+
+}
+
+.rank-breakdown-track {
+
+    width: 100%;
+
+    height: 7px;
+
+    background: oklch(0.92 0.012 240);
+
+    border-radius: 999px;
+
+    overflow: hidden;
+
+}
+
+.rank-breakdown-fill {
+
+    display: block;
+
+    height: 100%;
+
+    background: var(--za-green);
+
+    border-radius: 999px;
+
+}
+
+.rank-breakdown-value {
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+
+    font-size: 12px;
+
+    text-align: right;
+
+    font-variant-numeric: tabular-nums;
+
+    color: oklch(0.24 0.03 252);
+
+}
+
+/* ---------------------------------------------------------
+   THE BOARD
+   --------------------------------------------------------- */
+
+.rank-board {
+    margin-bottom: 20px;
+    padding: 22px 8px 10px;
+
+    background: oklch(1 0 0 / 0.86);
+
+    border: 1px solid oklch(0.9 0.02 240);
+    border-radius: 20px;
+
+    backdrop-filter: blur(10px);
+}
+
+.rank-board-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px;
+
+    padding: 0 16px 16px;
+}
+
+.rank-board-head h2 {
+    margin: 0 0 5px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+
+    color: oklch(0.2 0.03 252);
+}
+
+.rank-board-head p {
+    margin: 0;
+
+    font-size: 12.5px;
+
+    color: oklch(0.5 0.022 252);
+}
+
+.rank-board-count {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+
+    color: oklch(0.55 0.02 252);
+}
+
+.rank-board-count strong {
+    color: oklch(0.24 0.03 252);
+}
+
+.rank-table-scroll {
+    overflow-x: auto;
+}
+
+.rank-table {
+    width: 100%;
+
+    border-collapse: collapse;
+
+    font-size: 13.5px;
+}
+
+.rank-table th {
+    padding: 12px;
+
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    text-align: right;
+    white-space: nowrap;
+
+    color: oklch(0.55 0.022 252);
+
+    border-top: 1px solid oklch(0.91 0.018 240);
+    border-bottom: 1px solid oklch(0.91 0.018 240);
+
+    cursor: pointer;
+
+    user-select: none;
+}
+
+.rank-table th.is-left,
+.rank-table td.is-left {
+    text-align: left;
+}
+
+/* The name column absorbs the slack so the numeric columns stay
+   tight together and can be read down rather than hunted across. */
+.rank-table th.is-left,
+.rank-table td.is-left {
+    width: 99%;
+}
+
+.rank-table th:hover {
+    color: oklch(0.3 0.03 252);
+}
+
+.rank-table th.is-sorted {
+    color: var(--za-green);
+}
+
+/* Reserved whether or not this column is the sorted one, so the
+   header row does not shift sideways when the sort changes. */
+.rank-sort-arrow {
+    display: inline-block;
+    width: 12px;
+
+    margin-left: 5px;
+
+    text-align: left;
+}
+
+.rank-position-head,
+.rank-remove-head {
+    cursor: default;
+}
+
+.rank-table td {
+    padding: 13px 12px;
+
+    text-align: right;
+    white-space: nowrap;
+
+    font-variant-numeric: tabular-nums;
+
+    color: oklch(0.32 0.025 252);
+
+    border-bottom: 1px solid oklch(0.94 0.01 240);
+}
+
+.rank-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.rank-table-row {
+    transition: background-color 0.16s ease;
+}
+
+.rank-table-row:hover {
+    background: oklch(0.985 0.008 242);
+}
+
+.rank-table-row.is-removing {
+    opacity: 0.45;
+}
+
+.rank-position {
+    width: 52px;
+
+    padding-left: 16px !important;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+
+    color: oklch(0.64 0.02 252);
+}
+
+/* Colour comes from the NAME, never the rank, so a re-sort does not
+   repaint every row. */
+
+.rank-identity {
+    display: inline-flex;
+    align-items: center;
+    gap: 11px;
+}
+
+.rank-chip {
+    flex: none;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 27px;
+    height: 27px;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+
+    color: var(--za-white);
+
+    border-radius: 9px;
+}
+
+.rank-identity-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    min-width: 0;
+}
+
+.rank-name {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13px;
+    font-weight: 600;
+
+    color: oklch(0.22 0.03 252);
+}
+
+.rank-vendor {
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    font-size: 11px;
+
+    color: oklch(0.6 0.02 252);
+}
+
+/* Always drawn against 100, never against the leader. */
+
+.rank-score-cell {
+    width: 124px;
+    min-width: 124px;
+}
+
+.rank-score {
+    display: block;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+
+    color: oklch(0.2 0.03 252);
+}
+
+.rank-score-track {
+    display: block;
+
+    width: 100%;
+    height: 4px;
+
+    margin-top: 5px;
+
+    background: oklch(0.92 0.012 240);
+    border-radius: 999px;
+
+    overflow: hidden;
+}
+
+.rank-score-fill {
+    display: block;
+    height: 100%;
+
+    border-radius: 999px;
+
+    transition: width 0.4s ease;
+}
+
+/* Removing is a button, because the row used to delete itself on
+   any click with nothing on screen saying that it would. */
+
+.rank-remove-cell {
+    width: 48px;
+
+    padding-right: 16px !important;
+}
+
+.rank-remove {
+    width: 26px;
+    height: 26px;
+
+    padding: 0;
+
+    font-size: 15px;
+    line-height: 1;
+
+    color: oklch(0.65 0.02 252);
+
+    background: transparent;
+
+    border: 1px solid transparent;
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    transition:
+        color 0.16s ease,
+        border-color 0.16s ease,
+        background-color 0.16s ease;
+}
+
+.rank-remove:hover:not(:disabled) {
+    color: var(--za-red);
+    border-color: color-mix(in oklab, var(--za-red) 45%, transparent);
+    background: oklch(1 0 0 / 0.9);
+}
+
+.rank-remove:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* The states before there is a table. */
+
+.rank-state {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    margin: 0 8px 12px;
+    padding: 30px 24px;
+
+    font-size: 14px;
+
+    color: oklch(0.42 0.025 252);
+
+    border-radius: 14px;
+}
+
+.rank-state.is-loading {
+    flex-direction: column;
+    justify-content: center;
+    gap: 14px;
+
+    padding: 56px 24px;
+}
+
+/* ---------------------------------------------------------
+   RANK SPINNERS - board overlay while a tokenizer is measured
+   Mukovhe Ranwashe (RNWMUK001) · 19 Sep 2026
+   --------------------------------------------------------- */
+
+.rank-board {
+    position: relative;
+}
+
+.rank-board.is-busy > :not(.block-overlay) {
+    filter: blur(2px);
+    opacity: 0.55;
+
+    transition: filter 0.2s ease, opacity 0.2s ease;
+}
+
+.rank-board .block-overlay {
+    z-index: 3;
+
+    background: oklch(1 0 0 / 0.25);
+}
+
+.rank-setup .selection-status .spinner,
+.rank-breakdown-count .spinner {
+    width: 16px;
+    height: 16px;
+
+    border-width: 2px;
+
+    flex: none;
+    vertical-align: middle;
+}
+
+.rank-state.is-error {
+    color: oklch(0.45 0.16 25);
+
+    background: color-mix(in oklab, var(--za-red) 8%, white);
+}
+
+.rank-state.is-error .status-dot {
+    background: var(--za-red);
+}
+
+.rank-state.is-empty {
+    display: block;
+
+    text-align: center;
+}
+
+.rank-empty-title {
+    margin: 0 0 8px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+
+    color: oklch(0.24 0.03 252);
+}
+
+.rank-state.is-empty p {
+    max-width: 46ch;
+
+    margin: 0 auto;
+
+    line-height: 1.6;
+}
+
+/* 
+   THE TWO EXPLAINERS
+   Mukovhe Ranwashe
+   September 2026
+*/
+
+.rank-explainers {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px;
+
+    margin-bottom: 34px;
+}
+
+.rank-how {
+    padding: 26px 28px 24px;
+
+    color: var(--za-white);
+
+    background: linear-gradient(
+        150deg,
+        color-mix(in oklab, var(--za-red) 88%, white) 0%,
+        color-mix(in oklab, var(--za-gold) 58%, var(--za-red)) 100%
+    );
+
+    border-radius: 20px;
+
+    box-shadow: 0 16px 36px oklch(0.55 0.16 30 / 0.2);
+}
+
+.rank-how-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    margin: 0 0 14px;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+
+    color: oklch(1 0 0 / 0.82);
+}
+
+.rank-how-label .rank-eyebrow-rule {
+    background: oklch(1 0 0 / 0.8);
+}
+
+.rank-how h2 {
+    max-width: 22ch;
+
+    margin: 0 0 14px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 23px;
+    font-weight: 700;
+    line-height: 1.22;
+
+    color: var(--za-white);
+}
+
+.rank-how p {
+    max-width: 48ch;
+
+    margin: 0;
+
+    font-size: 13px;
+    line-height: 1.68;
+
+    color: oklch(1 0 0 / 0.9);
+}
+
+.rank-how-figures {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+
+    margin-top: 22px;
+}
+
+.rank-how-figures div {
+    padding: 13px 14px;
+
+    background: oklch(1 0 0 / 0.15);
+
+    border-radius: 12px;
+}
+
+.rank-how-figures strong {
+    display: block;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+
+    color: var(--za-white);
+}
+
+.rank-how-figures span {
+    display: block;
+
+    margin-top: 3px;
+
+    font-size: 11px;
+
+    color: oklch(1 0 0 / 0.78);
+}
+
+.rank-what {
+    padding: 26px 28px;
+
+    background: oklch(1 0 0 / 0.86);
+
+    border: 1px solid oklch(0.9 0.02 240);
+    border-radius: 20px;
+
+    backdrop-filter: blur(10px);
+}
+
+.rank-what h2 {
+    margin: 0 0 6px;
+
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+
+    color: oklch(0.2 0.03 252);
+}
+
+.rank-what ul {
+    margin: 0;
+    padding: 0;
+
+    list-style: none;
+}
+
+.rank-what li {
+    display: flex;
+    gap: 13px;
+
+    padding: 16px 0;
+
+    border-bottom: 1px solid oklch(0.94 0.01 240);
+}
+
+.rank-what li:last-child {
+    padding-bottom: 0;
+
+    border-bottom: 0;
+}
+
+.rank-what-icon {
+    flex: none;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 30px;
+    height: 30px;
+
+    background: color-mix(in oklab, var(--za-green) 12%, white);
+
+    border-radius: 10px;
+}
+
+.rank-what-icon svg {
+    width: 16px;
+    height: 16px;
+
+    fill: none;
+    stroke: var(--za-green);
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.rank-what strong {
+    display: block;
+
+    margin-bottom: 4px;
+
+    font-size: 13.5px;
+    font-weight: 600;
+
+    color: oklch(0.22 0.03 252);
+}
+
+.rank-what p {
+    margin: 0;
+
+    font-size: 12.5px;
+    line-height: 1.62;
+
+    color: oklch(0.48 0.022 252);
+}
+
+.rank-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    padding-top: 20px;
+
+    font-size: 11.5px;
+
+    color: oklch(0.55 0.022 252);
+
+    border-top: 1px solid oklch(0.91 0.018 240);
+}
+
+.rank-footer-note {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    text-align: right;
+}
+
+
+/* ---------------------------------------------------------
+   NARROW
+   --------------------------------------------------------- */
+
+@media (max-width: 1020px) {
+
+    .rank-hero {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 28px;
+
+        padding-top: 38px;
+    }
+
+    .rank-spotlight,
+    .rank-explainers {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 720px) {
+
+    .rank {
+        width: calc(100% - 24px);
+    }
+
+    .rank-controls-right {
+        width: 100%;
+
+        margin-left: 0;
+    }
+
+    .rank-find {
+        flex: 1;
+    }
+
+    .rank-find input {
+        width: 100%;
+    }
+
+    .rank-leader-stats {
+        padding-left: 0;
+
+        border-left: 0;
+    }
+
+    .rank-how-figures {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .rank-table th,
+    .rank-table td {
+        padding: 11px 8px;
+    }
+
+    .rank-score-cell {
+        width: 96px;
+        min-width: 96px;
+    }
+}
+
+
+/* All nine columns sort; three are folded away by default. */
+.rank-board-tools {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.rank-metrics-toggle {
+    padding: 6px 13px;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+
+    color: oklch(0.42 0.025 252);
+
+    background: oklch(1 0 0 / 0.8);
+
+    border: 1px solid oklch(0.88 0.025 240);
+    border-radius: 999px;
+
+    cursor: pointer;
+
+    transition:
+        border-color 0.18s ease,
+        color 0.18s ease;
+}
+
+.rank-metrics-toggle:hover {
+    border-color: var(--za-green);
+    color: var(--za-green);
+}
+
+.rank-metrics-toggle[aria-pressed="true"] {
+    color: var(--za-green);
+    border-color: var(--za-green);
+
+    background: color-mix(in oklab, var(--za-green) 8%, white);
+}
+
+/* Partial result: a real score built on less than the full set. */
+.selection-status.is-partial {
+    color: oklch(0.42 0.09 68);
+}
+
+.selection-status.is-partial .status-dot {
+    background: var(--za-gold);
+}
+
+/* Nine columns need the room six did not. */
+.rank-table.is-wide th,
+.rank-table.is-wide td {
+    padding: 12px 9px;
+}
+
+.rank-table.is-wide th.is-left,
+.rank-table.is-wide td.is-left {
+    width: auto;
+    max-width: 230px;
+}
+
+.rank-table.is-wide .rank-vendor {
+    display: block;
+    max-width: 200px;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rank-table.is-wide .rank-score-cell {
+    width: 104px;
+    min-width: 104px;
+}
+
+.upload-spinner {
+
+    width: 16px;
+    height: 16px;
+
+    border-width: 2px;
+
+}
+
+.rank-table th.is-left,
+.rank-table td.is-left {
+    text-align: left;
+}
+
+.rank-table th.is-right,
+.rank-table td.is-right {
+    text-align: right;
+}
+
+.rank-table td.is-centered {
+    text-align: center;
+}
