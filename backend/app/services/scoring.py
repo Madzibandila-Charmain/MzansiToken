@@ -126,8 +126,13 @@ def score_breakdown(metrics):
     Return a full explanation of the score:
     - overall_score: the final number
     - components: each metric scaled 0–100
-    - weights: which weights were actually used
+    - weights: the published weight of each metric that had data
     - missing: list of metrics with no data
+
+    A warning about "weights": these are the published weights, and when
+    something is missing they do not add up to 1. overall_score divides by
+    the weight it actually used, so multiplying these by the components
+    will NOT reproduce overall_score unless every metric is present.
     """
     parts = component_scores(metrics)
     present = [name for name, value in parts.items() if value is not None]
@@ -136,5 +141,6 @@ def score_breakdown(metrics):
         "overall_score": overall_score(metrics),
         "components": parts,
         "weights": {name: WEIGHTS[name] for name in present},
+        "weight_used": round(sum(WEIGHTS[name] for name in present), 4),
         "missing": [name for name, value in parts.items() if value is None],
     }

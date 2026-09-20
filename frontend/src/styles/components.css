@@ -1141,16 +1141,23 @@
     flex-shrink: 0;
 
 }
-/* Amber: something is happening, wait for it. The dot was already amber
-   while the words stayed grey, so a busy line read as a dead one. */
+/*
+   THE YELLOW
+   The dot is the flag gold off the home page - the same one the word
+   "Ngiyabonga" is written in. The words cannot be that gold: on a white
+   card it comes out at 1.7:1, which is unreadable, so they use the darkest
+   shade of it that still passes at 4.7:1 and still reads as gold.
+*/
+
+/* Gold: something is happening, wait for it. */
 .selection-status.is-loading {
 
-    color: #8a6400;
+    color: #946a00;
 
 }
 .selection-status.is-loading .status-dot {
 
-    background: #e0a11a;
+    background: #ffb81c;
 
     animation: status-pulse 1.2s ease-in-out infinite;
 
@@ -1176,15 +1183,15 @@
     background: #3d7ec4;
 
 }
-/* Amber: used before a limit is hit, so it is a heads-up not a failure. */
+/* Gold: used before a limit is hit, so it is a heads-up not a failure. */
 .selection-status.is-warning {
 
-    color: #8a6400;
+    color: #946a00;
 
 }
 .selection-status.is-warning .status-dot {
 
-    background: #e0a217;
+    background: #ffb81c;
 
 }
 .selection-status.is-error {

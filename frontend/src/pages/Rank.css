@@ -1666,3 +1666,188 @@
 .rank-table td.is-centered {
     text-align: center;
 }
+
+/* =====================
+    THE GRID
+    Mukovhe Ranwashe (RNWMUK001)
+
+    Every tokenizer against every language. Same card as the breakdown
+    panel above it, so the two read as one idea at two zoom levels.
+===================== */
+
+.rank-matrix {
+    display: flex;
+    flex-direction: column;
+
+    padding: 22px 26px 18px;
+    margin-bottom: 30px;
+
+    background: oklch(1 0 0 / 0.86);
+
+    border: 1px solid oklch(0.9 0.02 240);
+    border-radius: 20px;
+
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.rank-matrix-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+
+    margin-bottom: 16px;
+}
+
+.rank-matrix-title {
+    font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+
+    color: oklch(0.28 0.03 252);
+}
+
+.rank-matrix-sub {
+    font-size: 11.5px;
+
+    color: oklch(0.54 0.022 252);
+}
+
+/* Narrow windows scroll the grid instead of crushing eight columns. */
+.rank-matrix-scroll {
+    overflow-x: auto;
+
+    margin: 0 -4px;
+    padding: 0 4px;
+}
+
+.rank-matrix-table {
+    width: 100%;
+
+    /* The 2px gap between cells is the page showing through, which is what
+       keeps two similar shades from reading as one block. */
+    border-collapse: separate;
+    border-spacing: 2px;
+
+    font-variant-numeric: tabular-nums;
+}
+
+.rank-matrix-corner,
+.rank-matrix-lang,
+.rank-matrix-mean-head {
+    padding: 0 6px 8px;
+
+    font-family: "DM Sans", sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+
+    color: oklch(0.5 0.022 252);
+
+    white-space: nowrap;
+}
+
+.rank-matrix-corner {
+    text-align: left;
+}
+
+.rank-matrix-lang,
+.rank-matrix-mean-head {
+    text-align: center;
+}
+
+/* English is the yardstick, not a result, so a rule sets it apart. */
+.rank-matrix-lang.is-baseline,
+.rank-matrix-cell.is-baseline {
+    border-right: 1px dashed oklch(0.82 0.02 240);
+}
+
+.rank-matrix-name {
+    max-width: 190px;
+
+    padding: 0 12px 0 2px;
+
+    font-family: "DM Sans", sans-serif;
+    font-size: 12.5px;
+    font-weight: 600;
+    text-align: left;
+
+    color: oklch(0.3 0.03 252);
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rank-matrix-cell {
+    min-width: 58px;
+
+    padding: 9px 6px;
+
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+
+    border-radius: 6px;
+}
+
+/* Not measured yet, or it failed. Nothing is claimed either way. */
+.rank-matrix-cell.is-empty {
+    color: oklch(0.72 0.02 252);
+
+    background: oklch(0.96 0.008 242);
+}
+
+.rank-matrix-mean {
+    padding: 9px 4px 9px 12px;
+
+    font-size: 12.5px;
+    font-weight: 700;
+    text-align: right;
+
+    color: oklch(0.32 0.03 252);
+}
+
+.rank-matrix-foot {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    margin-top: 16px;
+    padding-top: 13px;
+
+    font-size: 11px;
+
+    color: oklch(0.54 0.022 252);
+
+    border-top: 1px solid oklch(0.93 0.012 240);
+}
+
+.rank-matrix-key {
+    display: flex;
+    gap: 2px;
+}
+
+.rank-matrix-key-step {
+    width: 26px;
+    height: 10px;
+
+    border-radius: 2px;
+}
+
+@media (max-width: 800px) {
+
+    .rank-matrix {
+        padding: 20px 16px 16px;
+    }
+
+    .rank-matrix-name {
+        max-width: 120px;
+    }
+
+    .rank-matrix-foot {
+        flex-wrap: wrap;
+    }
+}

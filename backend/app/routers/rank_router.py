@@ -18,6 +18,7 @@ September 2026
 from fastapi import APIRouter, HTTPException
 from app.schemas.leaderboard_schemas import LeaderboardUpsertRequest
 from app.services.scoring import BOUNDS, WEIGHTS, score_breakdown
+from app.services.tokenizer_state import validate_tokenizer
 from app.services.leaderboard_service import (
     get_leaderboard,
     get_saved_tokenizer,
@@ -75,7 +76,12 @@ def describe_scoring():
     }
 
 # Endpoint 3: GET /leaderboard/saved/{name}
-@router.get("/leaderboard/saved/{name}")
+#
+# {name:path}, not {name}. Over half the models we support have a vendor
+# prefix - "openai-community/gpt2-large" - and a plain {name} only matches
+# one path segment, so every one of those came back 404. The sibling
+# restore route below already had it right.
+@router.get("/leaderboard/saved/{name:path}")
 def get_saved_leaderboard_entry(name: str):
     """
     Return a previously measured tokenizer and its saved metrics.
@@ -96,12 +102,22 @@ def get_saved_leaderboard_entry(name: str):
 # Endpoint 4: POST /leaderboard
 @router.post("/leaderboard")
 def create_or_update_leaderboard(request: LeaderboardUpsertRequest):
+    """
+    Measure a tokenizer and put it on the board.
+
+    The name is cleaned first and the cleaned one is used from there on.
+    " gpt2" and "gpt2" are the same model, but as two different strings they
+    would take two rows against a UNIQUE column, two leaderboard slots, and
+    two full runs over the corpus.
+    """
+    name = validate_tokenizer(request.name)
+
     try:
-        metrics = compute_leaderboard_metrics(request.name)
+        metrics = compute_leaderboard_metrics(name)
         metrics = _with_score(metrics)
 
         tokenizer_id = upsert_tokenizer(
-            request.name,
+            name,
             metrics
         )
 
@@ -119,7 +135,7 @@ def create_or_update_leaderboard(request: LeaderboardUpsertRequest):
 
     return {
         "id": tokenizer_id,
-        "name": request.name,
+        "name": name,
         "metrics": metrics,
     }
 
@@ -154,9 +170,16 @@ def restore_leaderboard_entry(name: str):
 @router.delete("/leaderboard/{tokenizer_id:int}")
 def delete_leaderboard_entry(tokenizer_id: int):
     """
-    Remove a tokenizer entry from the leaderboard.
-    - Calls remove_tokenizer service.
-    - Returns confirmation payload.
+    Take a tokenizer off the active leaderboard.
+
+    The measurements are kept, so the entry can be restored later without
+    paying for the whole corpus again. "removed" says that plainly;
+    "deleted" claimed something the database does not do.
     """
-    remove_tokenizer(tokenizer_id)
-    return {"tokenizer_id": tokenizer_id, "deleted": True}
+    if not remove_tokenizer(tokenizer_id):
+        raise HTTPException(
+            status_code=404,
+            detail="No leaderboard entry with that id.",
+        )
+
+    return {"tokenizer_id": tokenizer_id, "removed": True}

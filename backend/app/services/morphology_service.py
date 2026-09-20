@@ -1,5 +1,5 @@
 """
-MBI service - Morphological Binary Identification
+MBI service - Morphological Boundary Identification
 Service that compares tokenization with gold morpheme segmentations according to the NCHLT dataset
 
 Author: Ethan Ngwetjana

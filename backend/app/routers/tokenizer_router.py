@@ -29,11 +29,17 @@ def get_tokenizer_endpoint(model_name: str):
     Load a tokenizer and return its details.
 
     React calls this first when the user picks a model and clicks Load. It
-    confirms the model exists and returns its vocab size, type and class name.
+    confirms the model exists and returns its vocab size, the longest input
+    it accepts, and its class name.
 
     Example call: GET /tokenizer/gpt2
     Example response:
-        {"model_name": "gpt2", "vocab_size": 50257, "model_type": "gpt2", ...}
+        {
+            "model_name": "gpt2",
+            "vocab_size": 50257,
+            "model_max_length": 1024,
+            "class": "GPT2TokenizerFast"
+        }
     """
     try:
         tokenizer = get_or_load_tokenizer(model_name)

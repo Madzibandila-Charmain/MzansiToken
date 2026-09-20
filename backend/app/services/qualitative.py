@@ -4,7 +4,8 @@ TAD Capstone Project
 
 What does this file do?
     This file shows how a tokenizer splits the same sentence
-    across all 8 South African languages in the FLORES dataset.
+    across all eight FLORES languages - seven South African ones and
+    English, which is the baseline rather than a language under study.
 
     Because FLORES is parallel text, sentence number 67 in English is the same idea as sentence 67 in isiZulu — just translated.
     That means we can compare how different languages break down the exact same content into tokens.

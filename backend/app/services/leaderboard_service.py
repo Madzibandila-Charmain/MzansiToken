@@ -39,8 +39,14 @@ def add_tokenizer(name: str, metrics: dict) -> int:
                 "INSERT INTO metrics (tokenizer_id) VALUES (?);",
                 (tokenizer_id,),
             )
-        perform_backup()
-        return tokenizer_id
+
+    # Outside the "with", not inside it. get_connection only commits when
+    # the block exits, and perform_backup opens its own connection - so a
+    # backup taken inside the block copies the database as it was BEFORE
+    # this write, and a write that then fails is archived rolled back.
+    perform_backup()
+
+    return tokenizer_id
 
 def upsert_tokenizer(name: str, metrics: dict) -> int:
     """Create a tokenizer or reactivate an existing tokenizer."""
@@ -67,7 +73,7 @@ def upsert_tokenizer(name: str, metrics: dict) -> int:
                 (existing["id"],)
             )
 
-            perform_backup()
+        perform_backup()
 
         update_metrics(existing["id"], metrics)
 
@@ -100,16 +106,28 @@ def update_metrics(tokenizer_id: int, metrics: dict) -> None:
             f"WHERE tokenizer_id = ?;",
             (*values, tokenizer_id),
         )
-        perform_backup()
 
-def remove_tokenizer(tokenizer_id: int) -> None:
-    """Remove a tokenizer from the active leaderboard without deleting its metrics."""
+    perform_backup()
+
+def remove_tokenizer(tokenizer_id: int) -> bool:
+    """
+    Take a tokenizer off the active leaderboard, keeping its metrics.
+
+    Returns whether a row actually changed, so the caller can tell a real
+    removal from an id that was never there. Without this the endpoint
+    happily confirmed deleting entry 99999.
+    """
     with get_connection() as conn:
-        conn.execute(
+        cursor = conn.execute(
             "UPDATE tokenizers SET active = 0 WHERE id = ?;",
             (tokenizer_id,),
         )
+        changed = cursor.rowcount > 0
+
+    if changed:
         perform_backup()
+
+    return changed
 
 def restore_tokenizer(name: str) -> dict:
     """
@@ -143,7 +161,7 @@ def restore_tokenizer(name: str) -> dict:
             (existing["id"],)
         )
 
-        perform_backup()
+    perform_backup()
 
     return get_saved_tokenizer(name)
  

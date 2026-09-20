@@ -9,7 +9,8 @@ Usage:
 from pathlib import Path
 
 # Maps human-readable language names to their FLORES filename codes.
-# These are the 9 South African languages in the project scope.
+# Eight FLORES languages: seven South African ones plus English, which is here as the baseline every token premium is measured against, not as a
+# language under study. South Africa has eleven official languages; Tshivenda and isiNdebele have no FLORES file, so they are out of scope.
 LANGUAGES = {
     "English":   "eng_Latn",
     "Sepedi":    "nso_Latn",
@@ -47,7 +48,7 @@ def load_flores(data_dir: str) -> dict[str, list[str]]:
 
     # Iterate through all languages defined in LANGUAGES dict
     for language_name, file_code in LANGUAGES.items():
-        # Build the full file path (e.g. "eng.dev")
+        # Build the full file path (e.g. "eng_Latn.dev")
         filepath = data_dir / f"{file_code}.dev"
 
         # Skip if the file doesn’t exist

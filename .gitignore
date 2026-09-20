@@ -13,3 +13,7 @@ env/
 # OS/Editor junk
 .DS_Store
 .vscode/
+
+# Generated at runtime, not source
+backend/data/backups/
+.pytest_cache/

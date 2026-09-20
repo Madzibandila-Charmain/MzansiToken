@@ -600,7 +600,9 @@ footer {
     align-items: center;
     justify-content: center;
 
-    opacity: 0.2;
+    /* The flag behind the page. Lifted a step so the colours actually
+       read, but no further - the cards sit on top of it. */
+    opacity: 0.25;
 
     pointer-events: none;
     user-select: none;

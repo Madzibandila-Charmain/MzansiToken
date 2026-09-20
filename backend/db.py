@@ -51,11 +51,14 @@ CREATE TABLE IF NOT EXISTS tokenizers (
  
 CREATE TABLE IF NOT EXISTS metrics (
     tokenizer_id   INTEGER PRIMARY KEY,
-    token_count    INTEGER,  -- total tokens produced on the reference corpus
-    fertility      REAL,     -- avg tokens per word
-    compression    REAL,     -- chars per token (or bytes per token)
-    token_premium  REAL,     -- e.g. tokens used vs. a baseline tokenizer
-    f1             REAL,     -- downstream/segmentation F1
+    -- Every figure below is the seven South African languages only.
+    -- English is the baseline they are measured against, so averaging it
+    -- in would add the same free 1.0 to every tokenizer alike.
+    token_count    INTEGER,  -- tokens over the seven languages, summed
+    fertility      REAL,     -- mean tokens per whitespace-separated word
+    compression    REAL,     -- mean UTF-8 bytes per token
+    token_premium  REAL,     -- mean tokens vs the SAME tokenizer on English
+    f1             REAL,     -- mean morpheme-boundary F1 against NCHLT gold
     precision_score REAL,    -- named 'precision_score': PRECISION is a SQL reserved word
     recall         REAL,
     overall_score  REAL,     -- composite score, computed and written by the app

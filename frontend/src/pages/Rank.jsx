@@ -24,6 +24,8 @@ import {
 
 import LeaderboardTable from "../components/LeaderboardTable";
 
+import LanguageHeatmap from "../components/LanguageHeatmap";
+
 import StatusMessage from "../components/StatusMessage";
 
 import { INITIAL_TOKENIZERS } from "./rankPlaceholders";
@@ -191,6 +193,14 @@ function Rank() {
 
     /* Per-language premiums for whoever is top of the board. */
     const [breakdown, setBreakdown] = useState([]);
+
+    /* Every FLORES language, in the order the backend lists them, so the
+       grid's columns match the corpus rather than a list typed in here. */
+    const [floresLanguages, setFloresLanguages] = useState([]);
+
+    /* name -> { cells: { language: premium }, mean }. Filled one tokenizer
+       at a time so the grid draws as the answers arrive. */
+    const [matrix, setMatrix] = useState({});
     const [breakdownLoading, setBreakdownLoading] = useState(false);
 
     /*
@@ -235,6 +245,9 @@ function Rank() {
                 setSuggestions(options.tokenizers || []);
 
                 const floresLanguages = options.languages || [];
+
+                setFloresLanguages(floresLanguages);
+
                 let scored = [];
 
                 /*
@@ -685,6 +698,14 @@ function Rank() {
 
     const leaderName = leader?.name || "";
 
+    /* A plain string, so the grid's effect only reruns when the board's
+       membership actually changes. Newline-joined because a model name can
+       contain a slash but never a line break. */
+    const boardNames = useMemo(
+        () => ranked.map((row) => row.name).join("\n"),
+        [ranked]
+    );
+
     /*
         The leader's per-language premiums. Fetched rather than derived,
         because the board only stores the average and the interesting part
@@ -748,6 +769,133 @@ function Rank() {
         return () => controller.abort();
 
     }, [leaderName]);
+
+    /*
+        The same per-language read, for every tokenizer on the board.
+
+        Keyed on the joined names rather than on `ranked`: the array is
+        rebuilt on every reload, so depending on it would refetch forever.
+
+        One at a time, not Promise.all. The first read of a tokenizer makes
+        the backend tokenize the whole corpus in eight languages, and firing
+        ten of those at once would hold the API open for everything else.
+        Each answer is stored as it lands, so the grid fills in rather than
+        sitting blank until the last one is done.
+    */
+    useEffect(() => {
+
+        const names = boardNames ? boardNames.split("\n") : [];
+
+        /* Nothing to read. What is already stored can stay: the grid only
+           ever draws the rows the board currently has, and keeping a
+           measurement means a tokenizer added back is instant. */
+        if (names.length === 0) {
+            return;
+        }
+
+        const controller = new AbortController();
+        let stopped = false;
+
+        async function readEveryTokenizer() {
+
+            for (const name of names) {
+
+                try {
+
+                    const perLanguage = await getMetrics(
+                        name,
+                        controller.signal
+                    );
+
+                    if (stopped) {
+                        return;
+                    }
+
+                    const cells = {};
+                    let total = 0;
+                    let counted = 0;
+
+                    Object.keys(perLanguage || {}).forEach((language) => {
+
+                        const premium = Number(
+                            perLanguage[language]?.token_premium
+                        );
+
+                        if (!Number.isFinite(premium)) {
+                            return;
+                        }
+
+                        cells[language] = premium;
+
+                        /* English is the yardstick, so averaging it in
+                           would flatter every tokenizer by the same 1.0. */
+                        if (language !== BASELINE_LANGUAGE) {
+                            total += premium;
+                            counted += 1;
+                        }
+                    });
+
+                    setMatrix((previous) => ({
+                        ...previous,
+                        [name]: {
+                            cells: cells,
+                            mean: counted ? total / counted : NaN,
+                        },
+                    }));
+
+                }
+                catch (error) {
+
+                    /* Leaving the page aborts the request in flight. Chrome
+                       reports that as a plain TypeError rather than an
+                       AbortError, so check the signal too - otherwise every
+                       navigation away logs a warning about nothing. */
+                    if (error.name === "AbortError" || controller.signal.aborted) {
+                        return;
+                    }
+
+                    /* One tokenizer failing costs one row, not the grid. */
+                    console.warn(
+                        "Could not read per-language metrics for",
+                        name,
+                        error
+                    );
+
+                    if (!stopped) {
+                        setMatrix((previous) => ({
+                            ...previous,
+                            [name]: { cells: {}, mean: NaN },
+                        }));
+                    }
+                }
+            }
+        }
+
+        readEveryTokenizer();
+
+        return () => {
+            stopped = true;
+            controller.abort();
+        };
+
+    }, [boardNames]);
+
+    /* The grid's rows, in the board's own order - two different orders on
+       one page would only invite the reader to reconcile them. */
+    /* Follows whatever the board is showing. Searching the table and
+       leaving the grid on all ten rows reads as the grid ignoring you. */
+    const matrixRows = useMemo(() => (
+        visible.map((row) => ({
+            id: row.name,
+            name: String(row.name).split("/").pop(),
+            cells: matrix[row.name]?.cells || null,
+            mean: matrix[row.name]?.mean,
+        }))
+    ), [visible, matrix]);
+
+    const matrixLoaded = useMemo(() => (
+        visible.filter((row) => matrix[row.name]).length
+    ), [visible, matrix]);
 
     const weightSentence = weights
         ? Object.entries(weights)
@@ -1212,6 +1360,17 @@ function Rank() {
 
                 </section>
 
+            )}
+
+            {/* The whole board at once, not just the leader. */}
+
+            {!errorMessage && (
+                <LanguageHeatmap
+                    languages={floresLanguages}
+                    rows={matrixRows}
+                    loadedCount={matrixLoaded}
+                    total={matrixRows.length}
+                />
             )}
 
             <footer className="rank-footer">

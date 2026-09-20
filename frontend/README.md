@@ -1,16 +1,37 @@
-# React + Vite
+# MzansiToken - frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite. Three pages against the FastAPI backend: Inspect, Compare
+and Rank. The project README, one level up, explains what any of it means.
 
-Currently, two official plugins are available:
+```bash
+npm install
+npm run dev        # http://localhost:5173
+npm run build
+npm run lint
+npm run test:run
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The backend is expected at `http://127.0.0.1:8000`. Point it elsewhere with
+`VITE_API_BASE_URL` in a `.env` file.
 
-## React Compiler
+## How it is arranged
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```
+src/
+  main.jsx              mounts the app, loads the four shared style layers
+  App.jsx               shell, routing, the flag backdrop
+  pages/                Home, Inspect, Compare, Rank - each with its own CSS
+  components/           shared UI: StatusLine, MetricCards, CorpusUpload, ...
+  lib/                  pure helpers, no JSX - safe to import anywhere
+  api/client.jsx        every call to the backend, and the error wording
+  styles/               tokens -> base -> layout -> components
+```
 
-## Expanding the ESLint configuration
+Two rules keep it from tangling. **A file exports either a component or
+plain functions, never both** - React fast refresh silently stops working on
+a file that does both, which is why the helpers live in `lib/`. And **a
+style belongs to the narrowest layer that needs it**: a rule used by one
+page goes in that page's CSS, a rule used by two goes in `components.css`.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+`main.jsx` imports the four shared layers in cascade order and each page
+imports its own file, so nothing but `tokens.css` is ever loaded twice.
