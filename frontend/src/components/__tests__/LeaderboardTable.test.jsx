@@ -62,22 +62,21 @@ describe("LeaderboardTable", () => {
         expect(screen.queryByRole("table")).not.toBeInTheDocument();
     });
 
-    it("renders nothing for a board that failed to load", () => {
+    it("renders nothing of its own on an error - Rank shows that above the board", () => {
 
         /*
-            Rank.jsx shows errorMessage itself now, in the controls bar
-            under "rank by Overall score" - not down here where the
-            board sits. This component just steps out of the way.
+            Rank.jsx already puts errorMessage in a StatusLine above
+            this table (same bar as "rank by Overall score"), with a
+            comment there making the same call this component's own
+            comment does: the error belongs up there, not down here
+            where the board would otherwise be. Rendering it again in
+            here would just double it up on the real page.
         */
-        const { container } = render(
-            <LeaderboardTable errorMessage="Network error" />
-        );
-
-        expect(screen.queryByText("Network error")).not.toBeInTheDocument();
-
-        expect(screen.queryByRole("table")).not.toBeInTheDocument();
+        const { container } = render(<LeaderboardTable errorMessage="Network error" />);
 
         expect(container).toBeEmptyDOMElement();
+
+        expect(screen.queryByRole("table")).not.toBeInTheDocument();
     });
 
     it("tells an empty board apart from one hidden by the filter", () => {
@@ -261,5 +260,5 @@ describe("LeaderboardTable", () => {
         for (const button of screen.getAllByRole("button")) {
             expect(button).toBeDisabled();
         }
-    });
+    }); 
 });
