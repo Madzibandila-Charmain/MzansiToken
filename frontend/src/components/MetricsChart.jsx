@@ -18,6 +18,8 @@ import { useEffect, useRef, useState } from "react";
 
 import { getMetrics, friendlyError } from "../api/client";
 
+import StatusLine from "./StatusLine";
+
 /* One shared source of truth for language colours and families, so the
    pills, the reading panels and these charts can never disagree. */
 import { languageColour, FAMILY, LANGUAGE_ORDER } from "./languageColours";
@@ -178,9 +180,13 @@ function MetricsChart({ tokenizer }) {
 
     if (error && !loading) {
 
+        /*
+            Same StatusLine the rest of the page uses for a failure -
+            this used to be its own boxed banner.
+        */
         return (
             <section className="charts-box">
-                <div className="inspect-error">{error}</div>
+                <StatusLine state="error" text={error} />
             </section>
         );
 

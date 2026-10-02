@@ -33,7 +33,6 @@ import CompareCharts from "../components/CompareCharts";
 
 import StatusLine from "../components/StatusLine";
 import { statusState } from "../lib/statusState";
-import StatusMessage from "../components/StatusMessage";
 
 import { languageColour } from "../components/languageColours";
 
@@ -1514,27 +1513,26 @@ function Compare() {
 
                 </div>
 
-            </section>
+                {/* Only failures that have no status line of their own
+                    get here - the options load and the typed-text
+                    tokenize. Field failures live under the field they
+                    belong to. Under the tokenizer search fields, the
+                    same spot their own status lines sit. */}
 
-            {/* Only failures that have no status line of their own get
-                here - the options load and the typed-text tokenize. Field
-                failures live under the field they belong to. */}
+                {(error || mbiUnavailable || mbiError) && (
 
-            {(error || mbiUnavailable || mbiError) && (
-
-                <div className="compare-error">
-                    <span className="status-dot"></span>
-                    <StatusMessage
+                    <StatusLine
+                        state="error"
                         text={
                             error ||
                             mbiUnavailable ||
                             `Morphology metrics could not be loaded: ${mbiError}`
                         }
-                        failed={true}
                     />
-                </div>
 
-            )}
+                )}
+
+            </section>
 
             {/* Corpus tokenization */}
 
