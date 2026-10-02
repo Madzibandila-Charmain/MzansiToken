@@ -421,6 +421,7 @@ function Rank() {
                         friendlyError(error) ||
                         "Could not load the leaderboard."
                     );
+                    setAddStatus("");
                 }
 
             }
