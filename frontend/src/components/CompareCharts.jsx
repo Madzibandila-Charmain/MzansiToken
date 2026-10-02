@@ -112,8 +112,15 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
     if (loading && !pair) {
 
         return (
-            <section className="compare-charts">
-                <div className="charts-waiting">
+            /*
+                Same two classes as Inspect's first load: is-first-load
+                gives the section a height, charts-overlay centres the
+                spinner above the sentence. This used to use a
+                charts-waiting class that had no CSS at all, so the
+                spinner sat against the text in a collapsed box.
+            */
+            <section className="compare-charts is-first-load">
+                <div className="charts-overlay">
                     <span className="spinner is-big"></span>
                     <span>Comparing {tokenizerA} and {tokenizerB}&hellip;</span>
                 </div>
