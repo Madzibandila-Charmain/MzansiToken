@@ -6,7 +6,7 @@
     Date: 21 August 2026
 */
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import "./Compare.css";
 
@@ -20,7 +20,7 @@ import {
     friendlyError,
 } from "../api/client";
 
-import { useAppState } from "../context/AppStateContext";
+import { useAppState } from "../context/useAppState";
 
 import CorpusUpload from "../components/CorpusUpload";
 import { checkCorpusFile, shortFileName } from "../lib/corpusFormats";
@@ -41,6 +41,16 @@ import { formatTokenizedText } from "../lib/tokenText";
 
 const DEFAULT_COMPARE_TOKENIZER_ONE = "gpt2";
 const DEFAULT_COMPARE_TOKENIZER_TWO = "google/gemma-4-12B-it";
+
+/* What TypeAnything is shown when there is nothing typed yet, or the
+   page is missing a language/tokenizer to type against. Shared so
+   both sides of the pair use the exact same zeroed shape. */
+const EMPTY_TYPED_METRICS = {
+    tokens: 0,
+    fertility: 0,
+    compression: 0,
+    token_premium: 0
+};
 
 
 
@@ -306,6 +316,7 @@ function Compare() {
         compareInitialised,
         compareLanguage,
         compareTokenizerOne,
+        compareTokenizerTwo,
         setCompareLanguage,
         setCompareTokenizerOne,
         setCompareTokenizerTwo,
@@ -437,7 +448,8 @@ function Compare() {
         compareLanguage,
         compareTokenizerOne,
         compareTokenizerTwo,
-        compareSource
+        compareSource,
+        loadDefaultCorpus
     ]);
 
     /*
@@ -446,32 +458,21 @@ function Compare() {
         A short delay prevents a backend request from being
         sent for every individual keystroke.
     */
+    const typedReady = Boolean(
+        inputText.trim() &&
+        compareTokenizerOne &&
+        compareTokenizerTwo &&
+        compareLanguage
+    );
+
     useEffect(() => {
 
-        if (
-            !inputText.trim() ||
-            !compareTokenizerOne ||
-            !compareTokenizerTwo ||
-            !compareLanguage
-        ) {
-
-            setTypedTokenizerOneTokens([]);
-            setTypedTokenizerTwoTokens([]);
-
-            setTypedTokenizerOneMetrics({
-                tokens: 0,
-                fertility: 0,
-                compression: 0,
-                token_premium: 0
-            });
-
-            setTypedTokenizerTwoMetrics({
-                tokens: 0,
-                fertility: 0,
-                compression: 0,
-                token_premium: 0
-            });
-
+        /* Nothing reset here on purpose - typedReady (below, used by
+           the TypeAnything call) already hides the stale tokens/
+           metrics from this effect's last run, so clearing them via
+           setState had nothing behind it. It was flagged by
+           react-hooks/set-state-in-effect for exactly that reason. */
+        if (!typedReady) {
             return;
         }
 
@@ -548,7 +549,8 @@ function Compare() {
         inputText,
         compareLanguage,
         compareTokenizerOne,
-        compareTokenizerTwo
+        compareTokenizerTwo,
+        typedReady
     ]);
 
     /*
@@ -608,8 +610,13 @@ function Compare() {
 
     /*
         Loads the default corpus through both tokenizers.
+
+        useCallback so the effect below can list it as a real
+        dependency. Its default parameters are the only reactive
+        values it reads - everything else is a stable setState setter -
+        so those three are its actual dependencies.
     */
-    async function loadDefaultCorpus(
+    const loadDefaultCorpus = useCallback(async function loadDefaultCorpus(
         selectedLanguage = compareLanguage,
         selectedTokenizerOne = compareTokenizerOne,
         selectedTokenizerTwo = compareTokenizerTwo
@@ -682,7 +689,14 @@ function Compare() {
             setLoading(false);
 
         }
-    }
+    }, [
+        compareLanguage,
+        compareTokenizerOne,
+        compareTokenizerTwo,
+        setCompareFileName,
+        setCompareSelectedFile,
+        setCompareSource
+    ]);
 
     /*
         Sends an uploaded corpus through both tokenizers.
@@ -1639,14 +1653,18 @@ function Compare() {
                     {
                         id: "tokenizer-a",
                         title: compareTokenizerOne,
-                        tokens: typedTokenizerOneTokens,
-                        metrics: typedTokenizerOneMetrics
+                        tokens: typedReady ? typedTokenizerOneTokens : [],
+                        metrics: typedReady
+                            ? typedTokenizerOneMetrics
+                            : EMPTY_TYPED_METRICS
                     },
                     {
                         id: "tokenizer-b",
                         title: compareTokenizerTwo,
-                        tokens: typedTokenizerTwoTokens,
-                        metrics: typedTokenizerTwoMetrics
+                        tokens: typedReady ? typedTokenizerTwoTokens : [],
+                        metrics: typedReady
+                            ? typedTokenizerTwoMetrics
+                            : EMPTY_TYPED_METRICS
                     }
                 ]}
             />
