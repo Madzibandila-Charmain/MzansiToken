@@ -230,6 +230,106 @@ function Compare() {
             + `${compareTokenizerTwo || "tokenizer 2"}`;
 
     /*
+        Moved above every effect that calls it. It used to sit after
+        them, as a `const` initialised by useCallback - unlike a
+        function declaration, a const is not hoisted, so the effect
+        below that references it ran into the temporal dead zone and
+        crashed the page on every load with "Cannot access
+        'loadDefaultCorpus' before initialization". Declaring it
+        before any effect that uses it is the fix - no behaviour
+        change otherwise.
+    */
+    /*
+        Loads the default corpus through both tokenizers.
+
+        useCallback so the effect below can list it as a real
+        dependency. Its default parameters are the only reactive
+        values it reads - everything else is a stable setState setter -
+        so those three are its actual dependencies.
+    */
+    const loadDefaultCorpus = useCallback(async function loadDefaultCorpus(
+        selectedLanguage = compareLanguage,
+        selectedTokenizerOne = compareTokenizerOne,
+        selectedTokenizerTwo = compareTokenizerTwo
+    ) {
+
+        try {
+
+            setLoading(true);
+            setError("");
+
+            const [
+                resultOne,
+                resultTwo
+            ] = await Promise.all([
+
+                getDefaultCorpus(
+                    selectedLanguage,
+                    selectedTokenizerOne
+                ),
+
+                getDefaultCorpus(
+                    selectedLanguage,
+                    selectedTokenizerTwo
+                )
+
+            ]);
+
+            setTokenizerOneTokens(
+                formatTokenizedText(
+                    resultOne.tokenized_text
+                )
+            );
+
+            setTokenizerTwoTokens(
+                formatTokenizedText(
+                    resultTwo.tokenized_text
+                )
+            );
+
+            setTokenizerOneMetrics(
+                formatMetrics(resultOne)
+            );
+
+            setTokenizerTwoMetrics(
+                formatMetrics(resultTwo)
+            );
+
+            setCompareSource("default");
+            setCompareSelectedFile(null);
+            setCompareFileName("default");
+
+        } catch (err) {
+
+            setError(
+                friendlyError(err) ||
+                "Could not load the corpus."
+            );
+
+            /*
+                Re-thrown on purpose. This was swallowed here, so the
+                caller's catch never ran and handleLanguageChange went on
+                to report "ready" for a load that had failed - a green
+                status line over no data. Inspect's version has always
+                re-thrown; this one did not.
+            */
+            throw err;
+
+        } finally {
+
+            setLoading(false);
+
+        }
+    }, [
+        compareLanguage,
+        compareTokenizerOne,
+        compareTokenizerTwo,
+        setCompareFileName,
+        setCompareSelectedFile,
+        setCompareSource
+    ]);
+
+    /*
         Load backend options when Compare opens.
     */
     useEffect(() => {
@@ -608,95 +708,6 @@ function Compare() {
         return compareLanguage !== "English";
     }
 
-    /*
-        Loads the default corpus through both tokenizers.
-
-        useCallback so the effect below can list it as a real
-        dependency. Its default parameters are the only reactive
-        values it reads - everything else is a stable setState setter -
-        so those three are its actual dependencies.
-    */
-    const loadDefaultCorpus = useCallback(async function loadDefaultCorpus(
-        selectedLanguage = compareLanguage,
-        selectedTokenizerOne = compareTokenizerOne,
-        selectedTokenizerTwo = compareTokenizerTwo
-    ) {
-
-        try {
-
-            setLoading(true);
-            setError("");
-
-            const [
-                resultOne,
-                resultTwo
-            ] = await Promise.all([
-
-                getDefaultCorpus(
-                    selectedLanguage,
-                    selectedTokenizerOne
-                ),
-
-                getDefaultCorpus(
-                    selectedLanguage,
-                    selectedTokenizerTwo
-                )
-
-            ]);
-
-            setTokenizerOneTokens(
-                formatTokenizedText(
-                    resultOne.tokenized_text
-                )
-            );
-
-            setTokenizerTwoTokens(
-                formatTokenizedText(
-                    resultTwo.tokenized_text
-                )
-            );
-
-            setTokenizerOneMetrics(
-                formatMetrics(resultOne)
-            );
-
-            setTokenizerTwoMetrics(
-                formatMetrics(resultTwo)
-            );
-
-            setCompareSource("default");
-            setCompareSelectedFile(null);
-            setCompareFileName("default");
-
-        } catch (err) {
-
-            setError(
-                friendlyError(err) ||
-                "Could not load the corpus."
-            );
-
-            /*
-                Re-thrown on purpose. This was swallowed here, so the
-                caller's catch never ran and handleLanguageChange went on
-                to report "ready" for a load that had failed - a green
-                status line over no data. Inspect's version has always
-                re-thrown; this one did not.
-            */
-            throw err;
-
-        } finally {
-
-            setLoading(false);
-
-        }
-    }, [
-        compareLanguage,
-        compareTokenizerOne,
-        compareTokenizerTwo,
-        setCompareFileName,
-        setCompareSelectedFile,
-        setCompareSource
-    ]);
 
     /*
         Sends an uploaded corpus through both tokenizers.
