@@ -31,8 +31,6 @@ import { SearchIcon } from "../components/Icons";
 import TypeAnything from "../components/TypeAnything";
 import CompareCharts from "../components/CompareCharts";
 
-import TokenStream from "../components/TokenStream";
-
 import StatusLine from "../components/StatusLine";
 import { statusState } from "../lib/statusState";
 import StatusMessage from "../components/StatusMessage";
@@ -97,7 +95,6 @@ function Compare() {
         Languages and tokenizers provided by the backend.
     */
     const [languages, setLanguages] = useState([]);
-    const [tokenizers, setTokenizers] = useState([]);
 
     /* Upload size and character caps, straight from /options. */
     const [limits, setLimits] = useState(null);
@@ -143,7 +140,6 @@ function Compare() {
             words_evaluated: 0
         });
 
-    const [mbiLoading, setMbiLoading] = useState(false);
     const [mbiError, setMbiError] = useState("");
     const [mbiUnavailable, setMbiUnavailable] = useState("");
 
@@ -238,7 +234,6 @@ function Compare() {
                 const result = await getOptions();
 
                 setLanguages(result.languages || []);
-                setTokenizers(result.tokenizers || []);
                 setLimits(result.limits || null);
 
                 const defaultLanguage =
@@ -334,7 +329,6 @@ function Compare() {
 
             try {
 
-                setMbiLoading(true);
                 setMbiError("");
                 setMbiUnavailable("");
 
@@ -385,12 +379,6 @@ function Compare() {
                         friendlyError(err) ||
                         "Morphology metrics could not be loaded."
                     );
-                }
-
-            } finally {
-
-                if (!cancelled) {
-                    setMbiLoading(false);
                 }
 
             }
@@ -596,55 +584,6 @@ function Compare() {
             token_premium_basis:
                 result?.metrics?.token_premium_basis ?? null
         };
-    }
-
-    function getMetricValue(metric, metrics) {
-
-        if (metric === "Tokens") {
-
-            return Number(
-                metrics?.tokens ?? 0
-            ).toLocaleString();
-
-        }
-
-        if (metric === "Fertility") {
-
-            return Number(
-                metrics?.fertility ?? 0
-            ).toFixed(2);
-
-        }
-
-        if (metric === "Compression") {
-
-            return Number(
-                metrics?.compression ?? 0
-            ).toFixed(2);
-
-        }
-
-        return "0.00";
-    }
-
-    function formatMbiMetric(value) {
-
-        return Number(
-            value ?? 0
-        ).toFixed(2);
-    }
-
-    function getMbiMetricDisplay(value) {
-
-        if (mbiUnavailable) {
-            return "0.00";
-        }
-
-        if (mbiLoading) {
-            return "Loading...";
-        }
-
-        return formatMbiMetric(value);
     }
 
     /*
@@ -1248,7 +1187,7 @@ function Compare() {
         setSelectionType("default");
         setCorpusLoadingLabel("built-in corpus");
         setSelectionStatus(
-            "Loading built-in corpus..."
+            "Loading the built-in corpus..."
         );
 
         setError("");
@@ -1556,13 +1495,14 @@ function Compare() {
                 here - the options load and the typed-text tokenize. Field
                 failures live under the field they belong to. */}
 
-            {(error || mbiError) && (
+            {(error || mbiUnavailable || mbiError) && (
 
                 <div className="compare-error">
                     <span className="status-dot"></span>
                     <StatusMessage
                         text={
                             error ||
+                            mbiUnavailable ||
                             `Morphology metrics could not be loaded: ${mbiError}`
                         }
                         failed={true}
@@ -1638,12 +1578,12 @@ function Compare() {
                         busyLabel={
                             tokenizerOneLoading
                                 ? `Loading ${tokenizerOneInput
-                                    || "tokenizer 1"}\u2026`
+                                    || "tokenizer 1"}...`
                                 : selectionType === "upload"
-                                    ? `Loading ${corpusLoadingLabel}\u2026`
+                                    ? `Loading ${corpusLoadingLabel}...`
                                 : selectionType === "default"
-                                    ? "Loading built-in corpus\u2026"
-                                : `Loading ${compareLanguage}\u2026`
+                                    ? "Loading the built-in corpus..."
+                                : `Loading ${compareLanguage}...`
                         }
                     />
 
@@ -1671,12 +1611,12 @@ function Compare() {
                         busyLabel={
                             tokenizerTwoLoading
                                 ? `Loading ${tokenizerTwoInput
-                                    || "tokenizer 2"}\u2026`
+                                    || "tokenizer 2"}...`
                                 : selectionType === "upload"
-                                    ? `Loading ${corpusLoadingLabel}\u2026`
+                                    ? `Loading ${corpusLoadingLabel}...`
                                 : selectionType === "default"
-                                    ? "Loading built-in corpus\u2026"
-                                : `Loading ${compareLanguage}\u2026`
+                                    ? "Loading the built-in corpus..."
+                                : `Loading ${compareLanguage}...`
                         }
                     />
 

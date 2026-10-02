@@ -1673,6 +1673,17 @@
 
 .compare-error {
 
+    /*
+        A flex row, because .status-dot sizes itself with width/height and
+        those are ignored on an inline parent - which is why this dot was
+        invisible rather than merely uncoloured.
+    */
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 8px;
+
     width: 100%;
 
     max-width: 1200px;
@@ -1692,6 +1703,15 @@
     color: #a33;
 
     font-size: 14px;
+
+}
+/* The same red the status line uses for its error dot. The dot can be
+   vivid where the text cannot: text needs 4.5:1 on this background. */
+.compare-error .status-dot {
+
+    background: #c74848;
+
+    margin-top: 5px;
 
 }
 
