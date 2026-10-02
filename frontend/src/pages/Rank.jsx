@@ -28,6 +28,8 @@ import LanguageHeatmap from "../components/LanguageHeatmap";
 
 import StatusMessage from "../components/StatusMessage";
 
+import StatusLine from "../components/StatusLine";
+
 import { INITIAL_TOKENIZERS } from "./rankPlaceholders";
 
 /*
@@ -1079,6 +1081,16 @@ function Rank() {
                             modelName={addedName}
                         />
                     </div>
+                )}
+
+                {/*
+                    The board failed to load entirely - under "rank by
+                    Overall score" with everything else this bar
+                    reports, not down where the (now empty) board
+                    itself sits.
+                */}
+                {errorMessage && (
+                    <StatusLine state="error" text={errorMessage} />
                 )}
 
             </section>

@@ -62,13 +62,22 @@ describe("LeaderboardTable", () => {
         expect(screen.queryByRole("table")).not.toBeInTheDocument();
     });
 
-    it("shows an error in place of the table", () => {
+    it("renders nothing for a board that failed to load", () => {
 
-        render(<LeaderboardTable errorMessage="Network error" />);
+        /*
+            Rank.jsx shows errorMessage itself now, in the controls bar
+            under "rank by Overall score" - not down here where the
+            board sits. This component just steps out of the way.
+        */
+        const { container } = render(
+            <LeaderboardTable errorMessage="Network error" />
+        );
 
-        expect(screen.getByText("Network error")).toBeInTheDocument();
+        expect(screen.queryByText("Network error")).not.toBeInTheDocument();
 
         expect(screen.queryByRole("table")).not.toBeInTheDocument();
+
+        expect(container).toBeEmptyDOMElement();
     });
 
     it("tells an empty board apart from one hidden by the filter", () => {

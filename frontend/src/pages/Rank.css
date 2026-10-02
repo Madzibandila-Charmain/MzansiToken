@@ -1252,15 +1252,12 @@
     vertical-align: middle;
 }
 
-.rank-state.is-error {
-    color: oklch(0.45 0.16 25);
-
-    background: color-mix(in oklab, var(--za-red) 8%, white);
-}
-
-.rank-state.is-error .status-dot {
-    background: var(--za-red);
-}
+/*
+    No colour or background of its own any more - StatusLine's own
+    is-error styling (the dot, the red text) is what says this failed.
+    .rank-state still supplies the layout (padding, centring) it shares
+    with the loading and empty states; none of those are errors either.
+*/
 
 .rank-state.is-empty {
     display: block;

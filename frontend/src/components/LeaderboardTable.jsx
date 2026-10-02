@@ -210,12 +210,12 @@ function LeaderboardTable({
 
     if (errorMessage) {
 
-        return (
-            <div className="rank-state is-error">
-                <span className="status-dot"></span>
-                {errorMessage}
-            </div>
-        );
+        /*
+            Said already, under "rank by Overall score" in the
+            controls bar above - not here where the board itself
+            sits. Nothing to show in its place.
+        */
+        return null;
     }
 
     if (!rows.length) {
