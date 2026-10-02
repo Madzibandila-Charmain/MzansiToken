@@ -4,7 +4,7 @@
     September 2026
 */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import "./Rank.css";
 
@@ -141,6 +141,68 @@ const IconTrophy = (
     </svg>
 );
 
+/*
+    Pure - read only their own parameters - so there is no reason to
+    redeclare either one on every render. Used by initialiseDefaultLeaderboard
+    and handleAdd below.
+*/
+function hasCompleteLeaderboardMetrics(saved) {
+    if (!saved) {
+        return false;
+    }
+
+    return (
+
+        saved.token_count !== null &&
+        saved.token_count !== undefined &&
+        Number.isFinite(Number(saved.token_count)) &&
+
+        saved.fertility !== null &&
+        saved.fertility !== undefined &&
+        Number.isFinite(Number(saved.fertility)) &&
+
+        saved.compression !== null &&
+        saved.compression !== undefined &&
+        Number.isFinite(Number(saved.compression)) &&
+
+        saved.token_premium !== null &&
+        saved.token_premium !== undefined &&
+        Number.isFinite(Number(saved.token_premium)) &&
+
+        saved.f1 !== null &&
+        saved.f1 !== undefined &&
+        Number.isFinite(Number(saved.f1)) &&
+
+        saved.precision !== null &&
+        saved.precision !== undefined &&
+        Number.isFinite(Number(saved.precision)) &&
+
+        saved.recall !== null &&
+        saved.recall !== undefined &&
+        Number.isFinite(Number(saved.recall))
+    );
+}
+
+/* "restored 3" / "restored 2 and measured 1" */
+function describeDefaults(restored, measured) {
+
+    const parts = [];
+
+    if (restored) {
+        parts.push(`restored ${restored}`);
+    }
+
+    if (measured) {
+        parts.push(`measured ${measured}`);
+    }
+
+    if (parts.length === 0) {
+        return "Leaderboard ready.";
+    }
+
+    return `Leaderboard ready \u2014 ${parts.join(" and ")}.`;
+}
+
 function Rank() {
 
     const [rows, setRows] = useState([]);
@@ -172,7 +234,11 @@ function Rank() {
     /* name -> { cells: { language: premium }, mean }. Filled one tokenizer
        at a time so the grid draws as the answers arrive. */
     const [matrix, setMatrix] = useState({});
-    const [breakdownLoading, setBreakdownLoading] = useState(false);
+    /* Which leaderName `breakdown` currently reflects - not the same
+       thing as `leaderName` itself while a fetch for a new leader is
+       still in flight. breakdownLoading is derived from comparing the
+       two instead of being its own toggled flag - see the effect. */
+    const [breakdownFor, setBreakdownFor] = useState(null);
 
     /*
         Adding a tokenizer is a long chain of requests. If the user leaves
@@ -187,7 +253,11 @@ function Rank() {
 
     }, []);
 
-    async function loadLeaderboard(signal) {
+    /* useCallback so initialiseDefaultLeaderboard below can list it as
+       a dependency without that dependency changing identity every
+       render - setRows is the only reactive thing this closes over,
+       and setState setters are stable for the life of the component. */
+    const loadLeaderboard = useCallback(async function loadLeaderboard(signal) {
 
         const data = await getLeaderboard(
             {
@@ -198,128 +268,14 @@ function Rank() {
         );
 
         setRows(Array.isArray(data) ? data : []);
-    }
-
-    useEffect(() => {
-
-        const controller = new AbortController();
-
-        async function initialiseRank() {
-
-            setIsLoading(true);
-            setErrorMessage("");
-
-            try {
-
-                const options = await getOptions(controller.signal);
-
-                const floresLanguages = options.languages || [];
-
-                setFloresLanguages(floresLanguages);
-
-                try {
-
-                    setWeights(
-                        (await getScoring(controller.signal)).weights || null
-                    );
-
-                }
-                catch (error) {
-
-                    /* The explainer sentence is optional; the board is not. */
-                    if (error.name !== "AbortError") {
-                        setWeights(null);
-                    }
-                }
-
-                await initialiseDefaultLeaderboard(controller.signal);
-
-            }
-            catch (error) {
-
-                if (error.name !== "AbortError") {
-
-                    setErrorMessage(
-                        friendlyError(error) ||
-                        "Could not load the leaderboard."
-                    );
-                }
-
-            }
-            finally {
-                /* An aborted run (StrictMode mounts twice in dev) must not
-                   end the loading state the live run still owns - it made
-                   the sample board flash up before the real one. */
-                if (!controller.signal.aborted) {
-                    setIsLoading(false);
-                }
-            }
-        }
-
-        initialiseRank();
-
-        return () => controller.abort();
-
     }, []);
 
-    function hasCompleteLeaderboardMetrics(saved) {
-        if (!saved) {
-            return false;
-        }
-
-        return (
-            
-            saved.token_count !== null &&
-            saved.token_count !== undefined &&
-            Number.isFinite(Number(saved.token_count)) &&
-
-            saved.fertility !== null &&
-            saved.fertility !== undefined &&
-            Number.isFinite(Number(saved.fertility)) &&
-
-            saved.compression !== null &&
-            saved.compression !== undefined &&
-            Number.isFinite(Number(saved.compression)) &&
-
-            saved.token_premium !== null &&
-            saved.token_premium !== undefined &&
-            Number.isFinite(Number(saved.token_premium)) &&
-
-            saved.f1 !== null &&
-            saved.f1 !== undefined &&
-            Number.isFinite(Number(saved.f1)) &&
-
-            saved.precision !== null &&
-            saved.precision !== undefined &&
-            Number.isFinite(Number(saved.precision)) &&
-
-            saved.recall !== null &&
-            saved.recall !== undefined &&
-            Number.isFinite(Number(saved.recall))
-        );
-    }
-
-    /* "restored 3" / "restored 2 and measured 1" */
-    function describeDefaults(restored, measured) {
-
-        const parts = [];
-
-        if (restored) {
-            parts.push(`restored ${restored}`);
-        }
-
-        if (measured) {
-            parts.push(`measured ${measured}`);
-        }
-
-        if (parts.length === 0) {
-            return "Leaderboard ready.";
-        }
-
-        return `Leaderboard ready \u2014 ${parts.join(" and ")}.`;
-    }
-
-    async function initialiseDefaultLeaderboard(signal) {
+    /* Same reasoning as loadLeaderboard above - wrapped so the mount
+       effect further down can depend on it honestly instead of lying
+       with an empty array. hasCompleteLeaderboardMetrics and
+       describeDefaults are not listed: they moved to module scope
+       above, so their identity never changes at all. */
+    const initialiseDefaultLeaderboard = useCallback(async function initialiseDefaultLeaderboard(signal) {
         /*
             These are the three tokenizers that make up the default Rank board.
             If a tokenizer was measured before, restore its saved measurement.
@@ -420,7 +376,69 @@ function Rank() {
             had finished. Say what happened instead.
         */
         setAddStatus(describeDefaults(restored, measured));
-    }
+    }, [loadLeaderboard]);
+
+    useEffect(() => {
+
+        const controller = new AbortController();
+
+        async function initialiseRank() {
+
+            setIsLoading(true);
+            setErrorMessage("");
+
+            try {
+
+                const options = await getOptions(controller.signal);
+
+                const floresLanguages = options.languages || [];
+
+                setFloresLanguages(floresLanguages);
+
+                try {
+
+                    setWeights(
+                        (await getScoring(controller.signal)).weights || null
+                    );
+
+                }
+                catch (error) {
+
+                    /* The explainer sentence is optional; the board is not. */
+                    if (error.name !== "AbortError") {
+                        setWeights(null);
+                    }
+                }
+
+                await initialiseDefaultLeaderboard(controller.signal);
+
+            }
+            catch (error) {
+
+                if (error.name !== "AbortError") {
+
+                    setErrorMessage(
+                        friendlyError(error) ||
+                        "Could not load the leaderboard."
+                    );
+                }
+
+            }
+            finally {
+                /* An aborted run (StrictMode mounts twice in dev) must not
+                   end the loading state the live run still owns - it made
+                   the sample board flash up before the real one. */
+                if (!controller.signal.aborted) {
+                    setIsLoading(false);
+                }
+            }
+        }
+
+        initialiseRank();
+
+        return () => controller.abort();
+
+    }, [initialiseDefaultLeaderboard]);
 
     async function handleAdd(requested) {
         const name = String(requested ?? filter).trim();
@@ -704,13 +722,15 @@ function Rank() {
     useEffect(() => {
 
         if (!leaderName) {
-            setBreakdown([]);
+            /* Not cleared here on purpose: the section below only
+               renders when `leader` is truthy, so a stale breakdown
+               sitting in state while there is no leader is never
+               seen. Resetting it was a synchronous setState with
+               nothing behind it. */
             return;
         }
 
         const controller = new AbortController();
-
-        setBreakdownLoading(true);
 
         getMetrics(leaderName, controller.signal)
             .then((perLanguage) => {
@@ -727,6 +747,7 @@ function Rank() {
                     .sort((a, b) => b.premium - a.premium);
 
                 setBreakdown(rows);
+                setBreakdownFor(leaderName);
             })
             .catch((error) => {
 
@@ -742,18 +763,18 @@ function Rank() {
                     );
 
                     setBreakdown([]);
-                }
-            })
-            .finally(() => {
-
-                if (!controller.signal.aborted) {
-                    setBreakdownLoading(false);
+                    setBreakdownFor(leaderName);
                 }
             });
 
         return () => controller.abort();
 
     }, [leaderName]);
+
+    /* True from the render where leaderName changes until the
+       matching fetch above resolves - no separate flag to drift
+       out of sync with what actually happened. */
+    const breakdownLoading = Boolean(leaderName) && breakdownFor !== leaderName;
 
     /*
         The same per-language read, for every tokenizer on the board.

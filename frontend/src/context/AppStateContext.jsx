@@ -4,9 +4,9 @@
     Date: 21 August 2026
 */
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-const AppStateContext = createContext(null);
+import { AppStateContext } from "./appStateContext";
 
 /*
     Compare used to lose everything on a browser refresh while Inspect
@@ -271,21 +271,5 @@ return (
     </AppStateContext.Provider>
 );
 
-
-}
-
-export function useAppState() {
-
-const context = useContext(AppStateContext);
-
-if (!context) {
-
-    throw new Error(
-        "useAppState must be used inside AppStateProvider"
-    );
-
-}
-
-return context;
 
 }
