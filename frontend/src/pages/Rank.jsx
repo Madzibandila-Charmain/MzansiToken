@@ -16,7 +16,6 @@ import {
     getLeaderboard,
     getMetrics,
     getSavedLeaderboardEntry,
-    getMorphologyLanguages,
     getOptions,
     getScoring,
     getTokenizerInfo,
@@ -123,33 +122,10 @@ function vendor(name) {
     return parts.length > 1 ? parts[0] : "Hugging Face";
 }
 
-/* 16 400 000 -> "16.4m". The corpus-run card has no room for the digits. */
-function compact(value) {
-
-    if (typeof value !== "number" || !Number.isFinite(value)) {
-        return "—";
-    }
-
-    if (value >= 1000000) {
-        return `${(value / 1000000).toFixed(1)}m`;
-    }
-
-    if (value >= 1000) {
-        return `${Math.round(value / 1000)}k`;
-    }
-
-    return String(value);
-}
-
 /*
     A language with no NCHLT segmentations is not a failure - it is a
     language the dataset does not cover. Told apart by the backend's own
     wording, which mbi_router keeps stable for exactly this reason.
-*/
-function isUnsupportedLanguage(error) {
-    return /unsupported language/i.test(String(error?.message || ""));
-}
-
 /* Small line icons, inline so the page needs no icon library. */
 const IconEfficiency = (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -171,17 +147,12 @@ function Rank() {
     const [isLoading, setIsLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState("");
 
-    const [suggestions, setSuggestions] = useState([]);
-    const [scoredLanguages, setScoredLanguages] = useState([]);
     const [weights, setWeights] = useState(null);
 
     const [sortKey, setSortKey] = useState("overall_score");
     const [bestFirst, setBestFirst] = useState(true);
     const [filter, setFilter] = useState("");
     const [showAllMetrics, setShowAllMetrics] = useState(false);
-
-    const [addOpen, setAddOpen] = useState(false);
-    const [tokenizerInput, setTokenizerInput] = useState("");
 
     const [adding, setAdding] = useState(false);
     const [addStatus, setAddStatus] = useState("");
@@ -242,56 +213,9 @@ function Rank() {
 
                 const options = await getOptions(controller.signal);
 
-                setSuggestions(options.tokenizers || []);
-
                 const floresLanguages = options.languages || [];
 
                 setFloresLanguages(floresLanguages);
-
-                let scored = [];
-
-                /*
-                    The languages a tokenizer can be scored on for both
-                    efficiency and morphology: in FLORES, in NCHLT, and not
-                    the English baseline. Asked for rather than assumed, so
-                    the page follows the datasets on disk.
-                */
-                try {
-
-                    const morphology = await getMorphologyLanguages(
-                        controller.signal
-                    );
-
-                    const nchlt = new Set(morphology.languages || []);
-
-                    scored = floresLanguages.filter(
-                        (name) =>
-                            name !== BASELINE_LANGUAGE &&
-                            nchlt.has(name)
-                    );
-
-                    setScoredLanguages(scored);
-
-                }
-                catch (error) {
-
-                    /*
-                        An older backend without this route is not a reason
-                        to break the page. Efficiency still scores on every
-                        language; morphology is skipped, and the backend
-                        renormalises the weights for rows with no f1.
-                    */
-                    if (error.name !== "AbortError") {
-
-                        console.warn(
-                            "No morphology languages endpoint; " +
-                            "scoring on efficiency only.",
-                            error
-                        );
-
-                        setScoredLanguages([]);
-                    }
-                }
 
                 try {
 
@@ -308,7 +232,7 @@ function Rank() {
                     }
                 }
 
-                await initialiseDefaultLeaderboard(controller.signal, scored);
+                await initialiseDefaultLeaderboard(controller.signal);
 
             }
             catch (error) {
@@ -375,33 +299,80 @@ function Rank() {
         );
     }
 
-    async function initialiseDefaultLeaderboard(signal, scored) {
+    /* "restored 3" / "restored 2 and measured 1" */
+    function describeDefaults(restored, measured) {
+
+        const parts = [];
+
+        if (restored) {
+            parts.push(`restored ${restored}`);
+        }
+
+        if (measured) {
+            parts.push(`measured ${measured}`);
+        }
+
+        if (parts.length === 0) {
+            return "Leaderboard ready.";
+        }
+
+        return `Leaderboard ready \u2014 ${parts.join(" and ")}.`;
+    }
+
+    async function initialiseDefaultLeaderboard(signal) {
         /*
             These are the three tokenizers that make up the default Rank board.
             If a tokenizer was measured before, restore its saved measurement.
             Otherwise, measure it through the normal real-data pipeline.
         */
-        for (let index = 0; index < INITIAL_TOKENIZERS.length; index += 1) {
-            const name = INITIAL_TOKENIZERS[index];
+        const total = INITIAL_TOKENIZERS.length;
 
-            let saved = null;
+        /*
+            The saved-entry lookups are cheap database reads, so they go out
+            together and three sequential round trips become one wait. The
+            measurements below stay one at a time: each one tokenizes the
+            whole corpus in eight languages, and firing them at once would
+            hold the API open for everything else - the same reason the
+            per-language grid reads one tokenizer at a time.
+        */
+        setAddStatus("Checking for saved measurements...");
 
-            try {
-                saved = await getSavedLeaderboardEntry(name, signal);
-            }
-            catch (error) {
-                if (error.status !== 404) {
-                    throw error;
+        const savedEntries = await Promise.all(
+            INITIAL_TOKENIZERS.map(async (name) => {
+
+                try {
+                    return await getSavedLeaderboardEntry(name, signal);
                 }
-            }
+                catch (error) {
+
+                    /* No saved measurement is an ordinary answer, not a
+                       failure: it just means this one has to be measured. */
+                    if (error.status !== 404) {
+                        throw error;
+                    }
+
+                    return null;
+                }
+            })
+        );
+
+        let restored = 0;
+        let measured = 0;
+
+        for (let index = 0; index < total; index += 1) {
+
+            const name = INITIAL_TOKENIZERS[index];
+            const saved = savedEntries[index];
+            const position = `${index + 1} of ${total}`;
 
             /*
                 The tokenizer already has a measurement in the database.
                 Reactivate it without running the expensive measurement again.
             */
             if (hasCompleteLeaderboardMetrics(saved)) {
+
                 setAddStatus(
-                    `Restoring ${name} for the default leaderboard...`
+                    `Restoring ${name} (${position})...`
                 );
 
                 await createOrUpdateLeaderboardEntry(
@@ -409,30 +380,46 @@ function Rank() {
                     signal
                 );
 
+                restored += 1;
+
                 continue;
             }
 
             /*
                 This tokenizer has never been measured, so use the real
                 Hugging Face tokenizer and MzansiToken measurement pipeline.
+                Worth naming as measuring rather than saving: it is the slow
+                path, and a user who knows which one they are on knows why
+                it is taking as long as it is.
             */
-            await getTokenizerInfo(name, signal);
-
             setAddStatus(
-                `Saving ${name} for the default leaderboard...`
+                `Measuring ${name} for the first time (${position})...`
             );
+
+            await getTokenizerInfo(name, signal);
 
             await createOrUpdateLeaderboardEntry(
                 name,
                 signal
             );
+
+            measured += 1;
         }
 
         /*
             Now that all three defaults have been created/restored,
             fetch the real active leaderboard and put it into React state.
         */
+        setAddStatus("Loading the leaderboard...");
+
         await loadLeaderboard(signal);
+
+        /*
+            The loop used to leave its last "Restoring..." line on screen
+            for good, so the page went on claiming to be busy long after it
+            had finished. Say what happened instead.
+        */
+        setAddStatus(describeDefaults(restored, measured));
     }
 
     async function handleAdd(requested) {
@@ -626,8 +613,6 @@ function Rank() {
     const busy = adding || removingId != null;
 
     const board = rows;
-
-    const onBoard = new Set(rows.map((row) => row.name));
 
     const sortSpec =
         SORT_OPTIONS.find((option) => option.key === sortKey) ||
@@ -1028,14 +1013,20 @@ function Rank() {
                         className={`selection-status ${
                             addFailed
                                 ? "is-error"
-                                : busy
+                                : (busy || isLoading)
                                     ? "is-loading"
                                     : addPartial
                                         ? "is-partial"
                                         : "is-ready"
                         }`}
                     >
-                        {busy
+                        {/*
+                            isLoading belongs here as much as busy does.
+                            Without it the first load drew a green dot and
+                            no spinner beside "Restoring...", so the line
+                            looked finished the whole time it was working.
+                        */}
+                        {(busy || isLoading)
                             ? <span className="spinner"></span>
                             : <span className="status-dot"></span>}
                         <StatusMessage
