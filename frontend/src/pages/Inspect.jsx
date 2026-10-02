@@ -36,6 +36,7 @@ import MetricCards from "../components/MetricCards";
 
 import StatusLine from "../components/StatusLine";
 import { statusState } from "../lib/statusState";
+import StatusMessage from "../components/StatusMessage";
 
 import { formatTokenizedText } from "../lib/tokenText";
 
@@ -134,18 +135,10 @@ function Inspect() {
     /* Language menu */
     const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
 
-    /* Displays whether the frontend is currently waiting for a backend response. */
-    const [loading, setLoading] = useState(false);
-
-    const [mbiLoading, setMbiLoading] = useState(false);
-
     const [selectionLoading, setSelectionLoading] = useState(false);
 
     const [tokenizerStatus, setTokenizerStatus] = useState("");
     const [tokenizerFailed, setTokenizerFailed] = useState(false);
-
-    const [languageStatus, setLanguageStatus] = useState("");
-    const [languageFailed, setLanguageFailed] = useState(false);
 
     /*
         Which panels are actually waiting on the backend. A single flag made
@@ -162,14 +155,6 @@ function Inspect() {
     const [mbiError, setMbiError] = useState("");
 
     const [mbiUnavailable, setMbiUnavailable] = useState("");
-
-    const [mbiMetrics, setMbiMetrics] = useState({
-        precision: 0,
-        recall: 0,
-        f1: 0,
-        aligned_boundaries: 0,
-        total_gold_boundaries: 0
-    });
 
     /* Reference to the actual file input. */
     const fileInputRef = useRef(null);
@@ -228,7 +213,6 @@ function Inspect() {
 
             try {
 
-                setLoading(true);
                 setError("");
 
                 const result = await getOptions();
@@ -423,9 +407,6 @@ function Inspect() {
                 );
 
             }
-            finally {
-                setLoading(false);
-            }
 
         }
 
@@ -458,14 +439,6 @@ function Inspect() {
             )
         ) {
 
-            setMbiMetrics({
-                precision: 0,
-                recall: 0,
-                f1: 0,
-                aligned_boundaries: 0,
-                total_gold_boundaries: 0
-            });
-
             setMbiError("");
 
             setMbiUnavailable("");
@@ -475,33 +448,19 @@ function Inspect() {
 
         try {
 
-            setMbiLoading(true);
-
             setMbiError("");
 
             setMbiUnavailable("");
 
-            const result = await getMBI(
+            /*
+                Called for what it proves, not what it returns: a failure
+                here is what sets mbiError or mbiUnavailable below. The
+                numbers on screen come from languageData.
+            */
+            await getMBI(
                 selectedTokenizer,
                 selectedLanguage
             );
-
-            setMbiMetrics({
-                precision:
-                    result.metrics.precision ?? 0,
-
-                recall:
-                    result.metrics.recall ?? 0,
-
-                f1:
-                    result.metrics.f1 ?? 0,
-
-                aligned_boundaries:
-                    result.metrics.aligned_boundaries ?? 0,
-
-                total_gold_boundaries:
-                    result.metrics.total_gold_boundaries ?? 0
-            });
 
         }
         catch (err) {
@@ -511,14 +470,6 @@ function Inspect() {
                     "Unsupported language"
                 )
             ) {
-
-                setMbiMetrics({
-                    precision: 0,
-                    recall: 0,
-                    f1: 0,
-                    aligned_boundaries: 0,
-                    total_gold_boundaries: 0
-                });
 
                 setMbiUnavailable(
                     `${selectedLanguage} does not have MBI metrics.`
@@ -533,11 +484,6 @@ function Inspect() {
             );
 
             throw err;
-
-        }
-        finally {
-
-            setMbiLoading(false);
 
         }
 
@@ -567,8 +513,6 @@ function Inspect() {
             async () => {
 
                 try {
-
-                    setLoading(true);
 
                     setError("");
 
@@ -634,11 +578,6 @@ function Inspect() {
                     );
 
                 }
-                finally {
-
-                    setLoading(false);
-
-                }
 
             },
             400
@@ -654,67 +593,6 @@ function Inspect() {
         setTypedTokenizedText,
         setTextMetrics
     ]);
-
-    /* Loads default Corpus */
-    async function loadDefaultCorpus(
-        selectedLanguage = language,
-        selectedTokenizer = tokenizer
-    ){
-
-        try {
-
-            setLoading(true);
-
-            setError("");
-
-            const result =
-                await getDefaultCorpus(
-                    selectedLanguage,
-                    selectedTokenizer
-                );
-
-            setCorpusTokenizedText(
-                formatTokenizedText(
-                    result.tokenized_text
-                )
-            );
-
-            setCorpusMetrics({
-                tokens:
-                    result.metrics.token_count ?? 0,
-
-                fertility:
-                    result.metrics.fertility ?? 0,
-
-                compression:
-                    result.metrics.compression ?? 0,
-
-                token_premium:
-                    result.metrics.token_premium
-            });
-
-            await loadMbiMetrics(
-                selectedLanguage,
-                selectedTokenizer
-            );
-
-        }
-        catch (err) {
-
-            setError(
-                err.message
-            );
-
-            throw err;
-
-        }
-        finally {
-
-            setLoading(false);
-
-        }
-
-    }
 
     async function handleLanguageChange(newLanguage) {
 
@@ -736,13 +614,17 @@ function Inspect() {
 
         setBusyLanguages([newLanguage]);
 
-        setLanguageFailed(false);
+        /*
+            The corpus box has one status line, fed by uploadStatus and
+            uploadFailed, and it is the only place Inspect reports corpus
+            progress. This used to write languageStatus/languageFailed,
+            which no JSX reads, so a language change said nothing at all.
+        */
+        setUploadFailed(false);
 
-        setLanguageStatus(
-            `Loading ${newLanguage}`
+        setUploadStatus(
+            `Loading ${newLanguage}...`
         );
-
-        setError("");
 
         try {
 
@@ -853,37 +735,12 @@ function Inspect() {
 
             if (mbiResult) {
 
-                setMbiMetrics({
-                    precision:
-                        mbiResult.metrics.precision ?? 0,
-
-                    recall:
-                        mbiResult.metrics.recall ?? 0,
-
-                    f1:
-                        mbiResult.metrics.f1 ?? 0,
-
-                    aligned_boundaries:
-                        mbiResult.metrics.aligned_boundaries ?? 0,
-
-                    total_gold_boundaries:
-                        mbiResult.metrics.total_gold_boundaries ?? 0
-                });
-
                 setMbiError("");
 
                 setMbiUnavailable("");
 
             }
             else {
-
-                setMbiMetrics({
-                    precision: 0,
-                    recall: 0,
-                    f1: 0,
-                    aligned_boundaries: 0,
-                    total_gold_boundaries: 0
-                });
 
                 if (
                     hasMbiMetrics(
@@ -904,9 +761,9 @@ function Inspect() {
 
             }
 
-            setLanguageFailed(false);
+            setUploadFailed(false);
 
-            setLanguageStatus(
+            setUploadStatus(
                 `${newLanguage} ready.`
             );
 
@@ -920,13 +777,10 @@ function Inspect() {
 
             const detail =
                 friendlyError(err) ||
-                "Could not load language corpus.";
+                "Could not load the language corpus.";
 
-            setError(detail);
-
-            setLanguageFailed(true);
-
-            setLanguageStatus(detail);
+            setUploadStatus(detail);
+            setUploadFailed(true);
 
         }
         finally {
@@ -1026,27 +880,6 @@ function Inspect() {
                             remainingData.metrics
                         );
 
-                        if (
-                            remainingData.mbi
-                        ) {
-
-                            setMbiMetrics(
-                                remainingData.mbi
-                            );
-
-                        }
-                        else {
-
-                            setMbiMetrics({
-                                precision: 0,
-                                recall: 0,
-                                f1: 0,
-                                aligned_boundaries: 0,
-                                total_gold_boundaries: 0
-                            });
-
-                        }
-
                     }
 
                 }
@@ -1123,7 +956,6 @@ function Inspect() {
 
             setUploadStatus(problem);
             setUploadFailed(true);
-            setError(problem);
 
             return;
 
@@ -1135,8 +967,6 @@ function Inspect() {
         try {
 
             setSelectionLoading(true);
-
-            setLoading(true);
 
             setBusyUpload(true);
 
@@ -1216,14 +1046,6 @@ function Inspect() {
                 MBI metrics.
             */
 
-            setMbiMetrics({
-                precision: 0,
-                recall: 0,
-                f1: 0,
-                aligned_boundaries: 0,
-                total_gold_boundaries: 0
-            });
-
             setMbiError("");
 
             setMbiUnavailable("");
@@ -1256,8 +1078,6 @@ function Inspect() {
                 friendlyError(err) ||
                 "Could not process the uploaded corpus.";
 
-            setError(detail);
-
             /* Turns the line red. Without it the status stayed green and
                still claimed the file was loading. */
             setUploadStatus(detail);
@@ -1265,8 +1085,6 @@ function Inspect() {
 
         }
         finally {
-
-            setLoading(false);
 
             setBusyLanguages([]);
             setBusyUpload(false);
@@ -1393,14 +1211,6 @@ function Inspect() {
                     language, so there are no language-specific
                     MBI metrics to load.
                 */
-
-                setMbiMetrics({
-                    precision: 0,
-                    recall: 0,
-                    f1: 0,
-                    aligned_boundaries: 0,
-                    total_gold_boundaries: 0
-                });
 
                 setMbiError("");
 
@@ -1584,24 +1394,12 @@ function Inspect() {
 
                         if (activeMbi) {
 
-                            setMbiMetrics(
-                                activeMbi
-                            );
-
                             setMbiError("");
 
                             setMbiUnavailable("");
 
                         }
                         else {
-
-                            setMbiMetrics({
-                                precision: 0,
-                                recall: 0,
-                                f1: 0,
-                                aligned_boundaries: 0,
-                                total_gold_boundaries: 0
-                            });
 
                             setMbiUnavailable(
                                 `${language} does not have MBI metrics.`
@@ -1611,14 +1409,6 @@ function Inspect() {
 
                     }
                     else {
-
-                        setMbiMetrics({
-                            precision: 0,
-                            recall: 0,
-                            f1: 0,
-                            aligned_boundaries: 0,
-                            total_gold_boundaries: 0
-                        });
 
                         setMbiError("");
 
@@ -1670,8 +1460,6 @@ function Inspect() {
             const detail =
                 friendlyError(err) ||
                 "Could not load tokenizer.";
-
-            setError(detail);
 
             setTokenizerFailed(true);
 
@@ -1821,20 +1609,14 @@ function Inspect() {
 
             /* Update the MBI display. */ 
             if (defaultMbi) { 
-                setMbiMetrics( defaultMbi ); 
+ 
                 
                 setMbiError(""); 
                 
                 setMbiUnavailable(""); 
             } 
             else { 
-                setMbiMetrics({ 
-                    precision: 0, 
-                    recall: 0, 
-                    f1: 0,
-                    aligned_boundaries: 0,
-                    total_gold_boundaries: 0
-                }); 
+ 
                 
                 if ( hasMbiMetrics( language ) ) { 
                     setMbiUnavailable( 
@@ -1872,8 +1654,6 @@ function Inspect() {
             const detail =
                 friendlyError(err) ||
                 "Could not load the built-in corpus.";
-
-            setError(detail);
 
             setUploadStatus(detail);
             setUploadFailed(true);
@@ -1915,6 +1695,24 @@ function Inspect() {
                 </p>
 
             </section>
+
+            {/*
+                Page-level failures: the first load, and tokenizing typed
+                text. Both set `error`, and nothing rendered it, so those
+                two failures were silent. The status line under the corpus
+                box only speaks for the corpus, so it cannot cover these.
+            */}
+            {error && (
+
+                <div className="inspect-error">
+                    <span className="status-dot"></span>
+                    <StatusMessage
+                        text={error}
+                        failed={true}
+                    />
+                </div>
+
+            )}
 
             {/* Tokenizer and Language selection box */}
 
