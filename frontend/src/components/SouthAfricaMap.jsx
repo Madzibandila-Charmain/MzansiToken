@@ -4,29 +4,11 @@
     Date: 17 September 2026
 
     The country, with the flag inside it.
-
-    The outline is real geometry, not a drawing: it is Natural Earth's
-    1:50m country boundary (public domain), projected with a Mercator fit
-    to this box and rounded to one decimal. Lesotho is cut out of it,
-    because it genuinely is a hole in South Africa rather than part of it.
-
-    The flag is constructed rather than traced, so the proportions are the
-    specified ones: the green band is a fifth of the height, each
-    fimbriation a fifteenth, and the pall converges a third of the way
-    along. The two triangle apexes are offset along the axis by
-    t / sin(phi), which is what puts the gold band at an even width all the
-    way down the V instead of pinching at the point.
 */
 
-/* Pantone-matched values used by Brand South Africa. */
-export const FLAG = {
-    green: "#007749",
-    gold: "#FFB81C",
-    red: "#E03C31",
-    blue: "#001489",
-    black: "#000000",
-    white: "#FFFFFF"
-};
+/* Moved out so this file exports only the component - see flagColours.js. */
+import { FLAG } from "./flagColours";
+
 
 const W = 520;
 const H = 440;

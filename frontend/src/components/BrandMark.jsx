@@ -2,21 +2,9 @@
     BrandMark.jsx
     Author: Mukovhe Ranwashe (RNWMUK001)
     Date: 17 September 2026
-
-    The logo: the flag's Y, cut by a token boundary.
-
-    The old mark was a black circle with an M in it, which says nothing
-    about either South Africa or tokenization. This says both. The pall is
-    the flag's, built from the same rule as the map (green a fifth of the
-    height, fimbriations a fifteenth, converging a third along), and the
-    vertical gap down the middle is a token boundary - the thing the whole
-    project is about - cutting the country's colours in two.
-
-    It is drawn in its own square coordinate space so it stays sharp at any
-    size, and it holds up at 32px, which a map outline would not.
 */
 
-import { FLAG } from "./SouthAfricaMap";
+import { FLAG } from "./flagColours";
 
 /* A square, so the mark sits in a tile rather than a flag's 3:2. */
 const S = 48;

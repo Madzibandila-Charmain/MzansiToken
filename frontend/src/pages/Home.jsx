@@ -14,7 +14,7 @@ import { getBackendStatus, friendlyError } from "../api/client";
 
 import { WHEEL, LANGUAGE_ORDER } from "../components/languageColours";
 
-import { FLAG } from "../components/SouthAfricaMap";
+import { FLAG } from "../components/flagColours";
 
 import BrandMark from "../components/BrandMark";
 
