@@ -91,8 +91,13 @@ function MetricsChart({ tokenizer }) {
         The charts used to swap silently: the old tokenizer's slices stayed
         on screen, at full clarity, until the new numbers happened to land.
         This is what the blur and the wheel are driven by.
+
+        loading is derived (below, after requestRef) rather than its own
+        toggled flag, so there is nothing for the effect to set
+        synchronously - react-hooks/set-state-in-effect flagged the old
+        setLoading(true)/setError("") pair at the top of the effect.
     */
-    const [loading, setLoading] = useState(false);
+    const [resolvedFor, setResolvedFor] = useState(null);
     const [measure, setMeasure] = useState("fertility");
 
     /* Which language the pointer is on, and where to put the card. */
@@ -107,6 +112,8 @@ function MetricsChart({ tokenizer }) {
     /* Whether anything has ever been drawn, so a tokenizer switch does not
        collapse the slices to nothing behind the blur. */
     const drawnRef = useRef(false);
+
+    const loading = Boolean(tokenizer) && tokenizer !== resolvedFor;
 
     useEffect(() => {
 
@@ -133,9 +140,6 @@ function MetricsChart({ tokenizer }) {
             setGrown(false);
         }
 
-        setError("");
-        setLoading(true);
-
         getMetrics(tokenizer)
             .then((result) => {
 
@@ -144,7 +148,8 @@ function MetricsChart({ tokenizer }) {
                 }
 
                 setData(result);
-                setLoading(false);
+                setError("");
+                setResolvedFor(tokenizer);
 
                 drawnRef.current = true;
 
@@ -159,7 +164,7 @@ function MetricsChart({ tokenizer }) {
                 }
 
                 setData(null);
-                setLoading(false);
+                setResolvedFor(tokenizer);
 
                 drawnRef.current = false;
 
@@ -171,7 +176,7 @@ function MetricsChart({ tokenizer }) {
 
     }, [tokenizer]);
 
-    if (error) {
+    if (error && !loading) {
 
         return (
             <section className="charts-box">

@@ -42,7 +42,6 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
 
     const [pair, setPair] = useState(null);
     const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
     const [measure, setMeasure] = useState("fertility");
     const [hot, setHot] = useState(null);
 
@@ -50,6 +49,23 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
     const [shape, setShape] = useState("dots");
 
     const requestRef = useRef(0);
+
+    /* Which [tokenizerA, tokenizerB] pair `pair`/`error` currently
+       reflect. `loading` below is derived by comparing this against
+       the pair the page is actually showing now, instead of being a
+       flag the effect flips on and off - the flip was a synchronous
+       setState in the effect body, flagged by
+       react-hooks/set-state-in-effect. JSON.stringify is just a cheap
+       way to compare two strings at once; tokenizer names can contain
+       "/", so they cannot be joined with it safely. */
+    const [resolvedFor, setResolvedFor] = useState(null);
+
+    const requestedFor =
+        tokenizerA && tokenizerB
+            ? JSON.stringify([tokenizerA, tokenizerB])
+            : null;
+
+    const loading = requestedFor !== null && requestedFor !== resolvedFor;
 
     useEffect(() => {
 
@@ -62,8 +78,7 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
         const id = requestRef.current + 1;
         requestRef.current = id;
 
-        setLoading(true);
-        setError("");
+        const key = JSON.stringify([tokenizerA, tokenizerB]);
 
         Promise.all([
             getMetrics(tokenizerA),
@@ -76,7 +91,8 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
                 }
 
                 setPair({ a, b });
-                setLoading(false);
+                setError("");
+                setResolvedFor(key);
 
             })
             .catch((err) => {
@@ -86,17 +102,17 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
                 }
 
                 setPair(null);
-                setLoading(false);
                 setError(
                     friendlyError(err) ||
                     "Could not load the comparison."
                 );
+                setResolvedFor(key);
 
             });
 
     }, [tokenizerA, tokenizerB]);
 
-    if (error) {
+    if (error && !loading) {
 
         return (
             <section className="compare-charts">
