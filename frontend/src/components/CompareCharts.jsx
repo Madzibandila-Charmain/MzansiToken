@@ -31,9 +31,6 @@ import { FAMILY } from "./languageColours";
 const COLOUR_A = "#d2601a";
 const COLOUR_B = "#2f6fd0";
 
-const BETTER = "#2f7d4f";
-const WORSE = "#b23b3b";
-
 /*
     Compare is a difference between two tokenizers, so unlike the Inspect
     wheel it can show the raw corpus total as well - the whole list.
