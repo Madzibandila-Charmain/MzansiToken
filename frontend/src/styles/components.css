@@ -1084,46 +1084,11 @@
    ERROR
    ========================== */
 
-.inspect-error {
-
-    /* Flex for the same reason as .compare-error: an inline parent
-       collapses .status-dot to nothing. */
-    display: flex;
-
-    align-items: flex-start;
-
-    gap: 8px;
-
-    width: calc(100% - 40px);
-
-    max-width: 1000px;
-
-    margin: -50px auto 30px;
-
-    padding: 12px 16px;
-
-    box-sizing: border-box;
-
-    border: 1px solid #e5caca;
-
-    border-radius: 8px;
-
-    background: #fff5f5;
-
-    color: #a33;
-
-    font-size: 14px;
-
-}
-/* Matches .compare-error .status-dot, so the same failure looks the same
-   on both pages. */
-.inspect-error .status-dot {
-
-    background: #c74848;
-
-    margin-top: 5px;
-
-}
+/*
+    Every error on the page now uses StatusLine's own is-error styling
+    (see .selection-status.is-error below) instead of a boxed banner -
+    nothing left here to style.
+*/
 /* ==========================
    TOKENIZER / LANGUAGE STATUS
 ========================== */
@@ -1724,6 +1689,7 @@
     color: oklch(0.74 0.012 252);
 
 }
+
 .tokenization-result {
 
     margin-top: 0;
