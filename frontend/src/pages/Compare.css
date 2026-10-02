@@ -1919,6 +1919,13 @@
    COMPARE CHARTS - Mukovhe Ranwashe (RNWMUK001)
    ========================================================= */
 
+/* Nothing has been drawn yet on a first load, so the section needs a
+   height of its own or the spinner has nowhere to sit. Same treatment
+   and same height as .charts-box.is-first-load on Inspect. */
+.compare-charts.is-first-load {
+    min-height: 260px;
+}
+
 .compare-charts {
     position: relative;
 
