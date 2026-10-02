@@ -1086,6 +1086,14 @@
 
 .inspect-error {
 
+    /* Flex for the same reason as .compare-error: an inline parent
+       collapses .status-dot to nothing. */
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 8px;
+
     width: calc(100% - 40px);
 
     max-width: 1000px;
@@ -1105,6 +1113,15 @@
     color: #a33;
 
     font-size: 14px;
+
+}
+/* Matches .compare-error .status-dot, so the same failure looks the same
+   on both pages. */
+.inspect-error .status-dot {
+
+    background: #c74848;
+
+    margin-top: 5px;
 
 }
 /* ==========================
