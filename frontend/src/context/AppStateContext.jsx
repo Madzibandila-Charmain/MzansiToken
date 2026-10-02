@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from "react";
 
-import { AppStateContext } from "./appStateContext";
+import { AppStateContext } from "./appStateContext.js";
 
 /*
     Compare used to lose everything on a browser refresh while Inspect

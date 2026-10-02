@@ -8,8 +8,7 @@ import Home from "./pages/Home";
 import Inspect from "./pages/Inspect";
 import Compare from "./pages/Compare";
 import Rank from "./pages/Rank";
-
-import { AppStateProvider } from "./context/AppStateContext";
+import { AppStateProvider } from "./context/AppStateContext.jsx";
 
 /*
     The boundary sits inside the router rather than around it, so a crash on
