@@ -274,11 +274,28 @@ function MetricsChart({ tokenizer }) {
 
     /* ---------- doughnut ---------- */
 
-    let angle = START;
+    /*
+        Every slice needs the angle all the slices before it used up. That
+        used to be carried in a variable reassigned inside the map, which
+        mutates a value during render - and a render can be thrown away and
+        run again, so the second pass would start from where the first one
+        finished. The running total is worked out first instead, leaving
+        each slice a pure function of its index.
+    */
+    const spans = names.map(
+        (name) =>
+            (Number(data[name]?.token_count) || 0) / shareBase * TAU
+    );
+
+    const startAngles = spans.reduce(
+        (angles, span) => [...angles, angles[angles.length - 1] + span],
+        [START]
+    );
 
     const donutSlices = names.map((name, index) => {
 
-        const span = (Number(data[name]?.token_count) || 0) / shareBase * TAU;
+        const angle = startAngles[index];
+        const span = spans[index];
         const pad = Math.min(0.016, span / 8);
         const mid = angle + span / 2;
 
@@ -309,8 +326,6 @@ function MetricsChart({ tokenizer }) {
 
             delay: index * 55
         };
-
-        angle = angle + span;
 
         return slice;
     });
