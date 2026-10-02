@@ -1,127 +1,256 @@
-import { render, screen, fireEvent, within } from "@testing-library/react";
+/*
+    LeaderboardTable.test.jsx
+    Author: Mukovhe Ranwashe
+*/
+
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect } from "vitest";
 
 import LeaderboardTable from "../LeaderboardTable";
 
+/*
+    Handed to the component out of score order on purpose, so a sorting
+    assertion can tell the difference between "sorted" and "however the
+    page happened to pass them in".
+*/
+function makeRows() {
+
+    return [
+        {
+            id: "r2",
+            name: "google/byt5-small",
+            overall_score: 71.234,
+            token_count: 9876,
+            compression: 0.75,
+            fertility: null,
+            token_premium: 1.125,
+            f1: 0.5555,
+            precision: 0.4444,
+            recall: 0.3333,
+        },
+        {
+            id: "r1",
+            name: "openai/gpt-4o",
+            overall_score: 91.234,
+            token_count: 12345,
+            compression: 0.5,
+            fertility: 1.2345,
+            token_premium: 1.25,
+            f1: 0.7777,
+            precision: 0.6666,
+            recall: 0.8888,
+        },
+    ];
+}
+
+/* The data rows, with the header row dropped. */
+function dataRows() {
+    return screen.getAllByRole("row").slice(1);
+}
+
 describe("LeaderboardTable", () => {
-	// Sample rows used across multiple tests
-	const rows = [
-		{
-			id: "r1",
-			name: "Tokenizer A",
-			token_count: 12345,
-			fertility: 1.2345,
-			compression: 0.5,
-			token_premium: 0.25,
-			f1: 0.7777,
-			precision: 0.6666,
-			recall: 0.8888,
-			overall_score: 0.91234,
-		},
-		{
-			id: "r2",
-			name: "Tokenizer B",
-			token_count: 9876,
-			fertility: null,
-			compression: 0.75,
-			token_premium: 0.125,
-			f1: 0.5555,
-			precision: 0.4444,
-			recall: 0.3333,
-			overall_score: 0.71234,
-		},
-	];
 
-	it("shows loading text when `isLoading` is true", () => {
-		// Render component with loading flag
-		render(<LeaderboardTable isLoading={true} />);
+    it("shows the loading state in place of the table", () => {
 
-		expect(screen.getByText("Loading leaderboard...")).toBeInTheDocument();
-	});
+        render(<LeaderboardTable isLoading />);
 
-	it("displays an error message when `errorMessage` is provided", () => {
-		// Render component with an error message
-		render(<LeaderboardTable errorMessage="Network error" />);
+        expect(
+            screen.getByText(/loading the leaderboard/i)
+        ).toBeInTheDocument();
 
-		expect(screen.getByText("Network error")).toBeInTheDocument();
-	});
+        expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    });
 
-	it("shows empty state when no rows are provided", () => {
-		// Render component with empty rows array
-		render(<LeaderboardTable rows={[]} />);
+    it("shows an error in place of the table", () => {
 
-		expect(screen.getByText("No leaderboard data available yet.")).toBeInTheDocument();
-	});
+        render(<LeaderboardTable errorMessage="Network error" />);
 
-	it("renders rows and formats numeric cells correctly", () => {
-		// Render with sample rows and validate formatting rules
-		render(<LeaderboardTable rows={rows} />);
+        expect(screen.getByText("Network error")).toBeInTheDocument();
 
-		// There should be a table row for each data row (plus header row)
-		const bodyRows = screen.getAllByRole("row");
+        expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    });
 
-		// Ensure both tokenizers are present by name
-		expect(screen.getByText("Tokenizer A")).toBeInTheDocument();
-		expect(screen.getByText("Tokenizer B")).toBeInTheDocument();
+    it("tells an empty board apart from one hidden by the filter", () => {
 
-		// Token count should use locale formatting (accepts comma, space or NBSP)
-		const tokenCountCells = screen.getAllByText(/12\D345/);
-		expect(tokenCountCells.length).toBeGreaterThan(0);
+        const { unmount } = render(<LeaderboardTable rows={[]} />);
 
-		// Numeric non-token_count values should be formatted to 3 decimals
-		expect(screen.getByText("0.912")).toBeInTheDocument();
+        expect(screen.getByText("Nothing ranked yet.")).toBeInTheDocument();
 
-		// Null fertility for Tokenizer B should render a dash
-		expect(screen.getAllByText("-").length).toBeGreaterThan(0);
-	});
+        unmount();
 
-	it("sorts rows when header is clicked and toggles direction", async () => {
-		// Two rows with different overall_score values; initial sort is desc
-		render(<LeaderboardTable rows={rows} />);
+        render(<LeaderboardTable rows={[]} emptyBecauseFiltered />);
 
-		// Initially the higher overall_score (Tokenizer A) should appear before Tokenizer B
-		const firstDataRow = screen.getAllByRole("row")[1];
-		expect(within(firstDataRow).getByText("Tokenizer A")).toBeInTheDocument();
+        expect(screen.getByText("Nothing matches that.")).toBeInTheDocument();
+    });
 
-		// Click the "Overall" header to toggle sort direction
-		const overallHeader = screen.getByText("Overall");
-		await userEvent.click(overallHeader);
+    it("formats each cell the way its column calls for", () => {
 
-		// After one click the direction should be asc, so Tokenizer B comes first
-		const newFirstDataRow = screen.getAllByRole("row")[1];
-		expect(within(newFirstDataRow).getByText("Tokenizer B")).toBeInTheDocument();
-	});
+        render(<LeaderboardTable rows={makeRows()} showAllMetrics />);
 
-	it("calls `onRowClick` when a row is clicked and applies clickable class", async () => {
-		// Provide an onRowClick handler and ensure it's called with the row data
-		const onRowClick = vi.fn();
-		render(<LeaderboardTable rows={rows} onRowClick={onRowClick} />);
+        /* Score: one decimal, out of 100, no unit. */
+        expect(screen.getByText("91.2")).toBeInTheDocument();
 
-		const dataRows = screen.getAllByRole("row");
-		const firstDataRow = dataRows[1];
+        /*
+            Token count is grouped by locale, so the separator may be a
+            comma, a space or a non-breaking space depending on where the
+            suite runs. Match the digits, not the separator.
+        */
+        expect(screen.getByText(/12\D?345/)).toBeInTheDocument();
 
-		// Row should have clickable class
-		expect(firstDataRow).toHaveClass("is-clickable");
+        /* Compression and premium are ratios and carry a times sign. */
+        expect(screen.getByText("0.50×")).toBeInTheDocument();
+        expect(screen.getByText("1.25×")).toBeInTheDocument();
 
-		// Click the row
-		await userEvent.click(firstDataRow);
+        /* Everything else numeric: two decimals, bare. */
+        expect(screen.getByText("0.78")).toBeInTheDocument();
 
-		// Expect handler to have been called once with the first row object
-		expect(onRowClick).toHaveBeenCalledTimes(1);
-		expect(onRowClick).toHaveBeenCalledWith(rows[0]);
-	});
+        /* A value that could not be measured is an em dash. */
+        expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+    });
 
-	it("shows 'Removing...' and sets aria-busy when `deletingRowId` matches a row id", () => {
-		// Render with deletingRowId set to the first row's id
-		render(<LeaderboardTable rows={rows} deletingRowId={rows[0].id} />);
+    it("folds the extra columns away until they are asked for", () => {
 
-		// The first row's name cell should show 'Removing...'
-		const firstDataRow = screen.getAllByRole("row")[1];
-		expect(within(firstDataRow).getByText("Removing...")).toBeInTheDocument();
+        const { unmount } = render(<LeaderboardTable rows={makeRows()} />);
 
-		// The row element should have aria-busy="true"
-		expect(firstDataRow).toHaveAttribute("aria-busy", "true");
-	});
+        expect(
+            screen.queryByRole("columnheader", { name: /tokens/i })
+        ).not.toBeInTheDocument();
+
+        expect(
+            screen.queryByRole("columnheader", { name: /precision/i })
+        ).not.toBeInTheDocument();
+
+        unmount();
+
+        render(<LeaderboardTable rows={makeRows()} showAllMetrics />);
+
+        expect(
+            screen.getByRole("columnheader", { name: /tokens/i })
+        ).toBeInTheDocument();
+
+        expect(
+            screen.getByRole("columnheader", { name: /precision/i })
+        ).toBeInTheDocument();
+    });
+
+    it("numbers the rows in the order they are displayed", () => {
+
+        render(<LeaderboardTable rows={makeRows()} />);
+
+        expect(within(dataRows()[0]).getByText("01")).toBeInTheDocument();
+        expect(within(dataRows()[1]).getByText("02")).toBeInTheDocument();
+    });
+
+    it("sorts on a header click, reverses, then hands control back", async () => {
+
+        const user = userEvent.setup();
+
+        render(<LeaderboardTable rows={makeRows()} />);
+
+        /* Untouched, the board is in the order it was handed in. */
+        expect(
+            within(dataRows()[0]).getByText("byt5-small")
+        ).toBeInTheDocument();
+
+        const scoreHeader = screen.getByRole(
+            "columnheader",
+            { name: /score/i }
+        );
+
+        /* Higher is better for Score, so it opens descending. */
+        await user.click(scoreHeader);
+
+        expect(scoreHeader).toHaveAttribute("aria-sort", "descending");
+
+        expect(
+            within(dataRows()[0]).getByText("gpt-4o")
+        ).toBeInTheDocument();
+
+        /* The second click reverses the direction. */
+        await user.click(scoreHeader);
+
+        expect(scoreHeader).toHaveAttribute("aria-sort", "ascending");
+
+        expect(
+            within(dataRows()[0]).getByText("byt5-small")
+        ).toBeInTheDocument();
+
+        /*
+            The third clears the sort rather than cycling forever, so the
+            control above the board takes over again.
+        */
+        await user.click(scoreHeader);
+
+        expect(scoreHeader).toHaveAttribute("aria-sort", "none");
+    });
+
+    it("sorts missing values to the bottom whichever way it points", async () => {
+
+        const user = userEvent.setup();
+
+        render(<LeaderboardTable rows={makeRows()} showAllMetrics />);
+
+        const fertilityHeader = screen.getByRole(
+            "columnheader",
+            { name: /fertility/i }
+        );
+
+        /* byt5-small has no fertility, so it goes last either way. */
+        await user.click(fertilityHeader);
+
+        expect(
+            within(dataRows()[1]).getByText("byt5-small")
+        ).toBeInTheDocument();
+
+        await user.click(fertilityHeader);
+
+        expect(
+            within(dataRows()[1]).getByText("byt5-small")
+        ).toBeInTheDocument();
+    });
+
+    it("offers no remove control when there is no handler for it", () => {
+
+        render(<LeaderboardTable rows={makeRows()} />);
+
+        expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    });
+
+    it("reports which row the remove button belonged to", async () => {
+
+        const user = userEvent.setup();
+        const onRemove = vi.fn();
+        const rows = makeRows();
+
+        render(<LeaderboardTable rows={rows} onRemove={onRemove} />);
+
+        await user.click(
+            screen.getByRole("button", {
+                name: /remove google\/byt5-small/i,
+            })
+        );
+
+        expect(onRemove).toHaveBeenCalledTimes(1);
+        expect(onRemove).toHaveBeenCalledWith(rows[0]);
+    });
+
+    it("marks the row busy and locks the buttons while one is removing", () => {
+
+        render(
+            <LeaderboardTable
+                rows={makeRows()}
+                onRemove={() => {}}
+                removingId="r2"
+            />
+        );
+
+        expect(dataRows()[0]).toHaveAttribute("aria-busy", "true");
+        expect(dataRows()[1]).toHaveAttribute("aria-busy", "false");
+
+        /* No second removal can start while the first is in flight. */
+        for (const button of screen.getAllByRole("button")) {
+            expect(button).toBeDisabled();
+        }
+    });
 });
-
