@@ -18,7 +18,7 @@ import {
     friendlyError,
 } from "../api/client";
 
-import { useAppState } from "../context/AppStateContext";
+import { useAppState } from "../context/useAppState";
 
 import MetricsChart from "../components/MetricsChart";
 
@@ -207,6 +207,42 @@ function Inspect() {
     /* Load languages and tokenizers from the FastAPI
        backend when the page loads.
     */
+    /*
+        The effect below reads source/selectedLanguages/language/
+        tokenizer in its `else` branch and calls loadMbiMetrics in its
+        `if` branch, which is why exhaustive-deps wanted all five
+        listed - but this effect means to run once per mount (or once
+        more, right after inspectInitialised itself flips true), not
+        every time the user picks a different language or tokenizer.
+        Listing them for real would re-run the whole thing - including
+        the GET /options call - on every change.
+
+        latestRef holds the current render's values without being a
+        dependency itself: reading ref.current is not a reactive read,
+        so exhaustive-deps has nothing left to ask for. It is kept in
+        sync by the small effect right below it, which runs after
+        every render with no dependency array of its own - there is
+        nothing to be exhaustive about when the point is to run every
+        time.
+    */
+    const latestRef = useRef({
+        source,
+        selectedLanguages,
+        language,
+        tokenizer,
+        loadMbiMetrics
+    });
+
+    useEffect(() => {
+        latestRef.current = {
+            source,
+            selectedLanguages,
+            language,
+            tokenizer,
+            loadMbiMetrics
+        };
+    });
+
     useEffect(() => {
 
         async function initialiseInspect() {
@@ -373,7 +409,7 @@ function Inspect() {
                         }
                     }
 
-                    await loadMbiMetrics(
+                    await latestRef.current.loadMbiMetrics(
                         defaultLanguage,
                         defaultTokenizer
                     );
@@ -384,19 +420,19 @@ function Inspect() {
                 else {
 
                     if (
-                        source === "default" &&
-                        selectedLanguages.length === 0 &&
-                        language
+                        latestRef.current.source === "default" &&
+                        latestRef.current.selectedLanguages.length === 0 &&
+                        latestRef.current.language
                     ) {
 
                         setSelectedLanguages([
-                            language
+                            latestRef.current.language
                         ]);
 
                     }
 
                     setTokenizerInput(
-                        tokenizer
+                        latestRef.current.tokenizer
                     );
                 }
             }
