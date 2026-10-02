@@ -184,7 +184,10 @@
     color: oklch(0.55 0.02 252);
 }
 /* Shown only when /status could not be reached, so the page is honest
-   about the numbers being missing rather than showing zeros. */
+   about the numbers being missing rather than showing zeros. Sits on
+   the hero's colour gradient rather than a white card, so it keeps
+   its own background rather than using the plain StatusLine every
+   other page's failures use. */
 .home-offline {
     display: flex;
     align-items: flex-start;

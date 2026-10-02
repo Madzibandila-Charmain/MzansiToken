@@ -36,7 +36,6 @@ import MetricCards from "../components/MetricCards";
 
 import StatusLine from "../components/StatusLine";
 import { statusState } from "../lib/statusState";
-import StatusMessage from "../components/StatusMessage";
 
 import { formatTokenizedText } from "../lib/tokenText";
 
@@ -1732,24 +1731,6 @@ function Inspect() {
 
             </section>
 
-            {/*
-                Page-level failures: the first load, and tokenizing typed
-                text. Both set `error`, and nothing rendered it, so those
-                two failures were silent. The status line under the corpus
-                box only speaks for the corpus, so it cannot cover these.
-            */}
-            {error && (
-
-                <div className="inspect-error">
-                    <span className="status-dot"></span>
-                    <StatusMessage
-                        text={error}
-                        failed={true}
-                    />
-                </div>
-
-            )}
-
             {/* Tokenizer and Language selection box */}
 
             <section className="inspect-controls">
@@ -1872,6 +1853,18 @@ function Inspect() {
                                     text={tokenizerStatus}
                                     modelName={tokenizerInput}
                                 />
+
+                        )}
+
+                        {/*
+                            Page-level failures: the first load, and
+                            tokenizing typed text. Both set `error`.
+                            Under the tokenizer search and pills - the
+                            same spot the tokenizer's own status uses.
+                        */}
+                        {error && (
+
+                            <StatusLine state="error" text={error} />
 
                         )}
 
@@ -2240,9 +2233,10 @@ function Inspect() {
 
                 {mbiError && (
 
-                    <div className="inspect-error">
-                        {mbiError}
-                    </div>
+                    <StatusLine
+                        state="error"
+                        text={mbiError}
+                    />
 
                 )}
 

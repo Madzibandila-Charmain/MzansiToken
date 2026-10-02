@@ -217,6 +217,22 @@ function Home() {
 
             </section>
 
+            {/*
+                /status could not be reached - above the four stat
+                blocks below, which are the thing this is explaining,
+                not below them. Back to its own boxed banner here
+                (not StatusLine): this sits directly on the hero's
+                colour gradient, not a white card like Inspect and
+                Compare's fields do, and plain text there was too
+                hard to see.
+            */}
+            {statusError && (
+                <p className="home-offline">
+                    <span className="status-dot"></span>
+                    {statusError}
+                </p>
+            )}
+
             {/* ---------------- LIVE NUMBERS ---------------- */}
 
             <section className="home-stats" aria-label="The corpora at a glance">
@@ -250,13 +266,6 @@ function Home() {
                 />
 
             </section>
-
-            {statusError && (
-                <p className="home-offline">
-                    <span className="status-dot"></span>
-                    {statusError}
-                </p>
-            )}
 
             {/* ---------------- WHY ---------------- */}
 
