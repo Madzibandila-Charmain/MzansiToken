@@ -289,6 +289,36 @@ export async function getMetrics(
     );
 }
 
+/*
+    Same data as getMetrics, for several tokenizers in one request.
+    Rank's per-language grid used this one at a time, once per board
+    row, which meant up to ten HTTP round trips on every page load to
+    re-read what the backend had already cached. One call instead.
+
+    Returns { metrics: { [name]: perLanguage }, errors: { [name]: detail } } -
+    a name that failed to load is reported, not thrown, so one bad
+    tokenizer id costs one row rather than the whole grid.
+*/
+export async function getMetricsBulk(
+    tokenizers,
+    signal
+) {
+
+    const response = await fetch(
+        `${API_BASE_URL}/metrics/bulk?names=${encodeURIComponent(
+            tokenizers.join(",")
+        )}`,
+        {
+            signal,
+        }
+    );
+
+    return handleResponse(
+        response,
+        "Failed to load metrics."
+    );
+}
+
 
 /*
  * TOKENIZER INFORMATION

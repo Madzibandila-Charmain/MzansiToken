@@ -15,6 +15,7 @@ import {
     friendlyError,
     getLeaderboard,
     getMetrics,
+    getMetricsBulk,
     getSavedLeaderboardEntry,
     getOptions,
     getScoring,
@@ -778,16 +779,32 @@ function Rank() {
     const breakdownLoading = Boolean(leaderName) && breakdownFor !== leaderName;
 
     /*
-        The same per-language read, for every tokenizer on the board.
+        The same per-language read, for every tokenizer on the board -
+        now one request for the whole board instead of one per row.
 
         Keyed on the joined names rather than on `ranked`: the array is
         rebuilt on every reload, so depending on it would refetch forever.
 
-        One at a time, not Promise.all. The first read of a tokenizer makes
-        the backend tokenize the whole corpus in eight languages, and firing
-        ten of those at once would hold the API open for everything else.
-        Each answer is stored as it lands, so the grid fills in rather than
-        sitting blank until the last one is done.
+        This used to call getMetrics once per tokenizer, one at a time,
+        specifically to avoid firing several uncached tokenizations at
+        the backend concurrently - a cold tokenizer makes it tokenize the
+        whole corpus in eight languages, and ten of those at once would
+        have held the API open for everything else. getMetricsBulk keeps
+        that same one-at-a-time behaviour, just inside one request on the
+        server rather than N requests from the browser - for a board
+        that is already measured (the common case: reloading Rank with
+        tokenizers already on it), every one of those is a cache hit, so
+        collapsing N round trips into one is a real, measurable win and
+        costs nothing for a board that genuinely is still being measured
+        for the first time.
+
+        The one trade-off worth knowing: the grid used to fill in row by
+        row as each read landed. One request means one update instead -
+        for the common cached case that is strictly faster to look at
+        (everything appears almost immediately, rather than ten rows
+        trickling in), but a genuinely unmeasured board now shows
+        "Measuring..." and then fills in all at once, rather than
+        row by row.
     */
     useEffect(() => {
 
@@ -801,28 +818,35 @@ function Rank() {
         }
 
         const controller = new AbortController();
-        let stopped = false;
 
         async function readEveryTokenizer() {
 
-            for (const name of names) {
+            try {
 
-                try {
+                const { metrics: perTokenizer, errors } = await getMetricsBulk(
+                    names,
+                    controller.signal
+                );
 
-                    const perLanguage = await getMetrics(
-                        name,
-                        controller.signal
-                    );
+                const nextEntries = {};
 
-                    if (stopped) {
-                        return;
+                for (const name of names) {
+
+                    const perLanguage = perTokenizer?.[name];
+
+                    if (!perLanguage) {
+                        /* Reported in `errors` by the backend, or simply
+                           missing - either way this row failed, not the
+                           whole grid. */
+                        nextEntries[name] = { cells: {}, mean: NaN };
+                        continue;
                     }
 
                     const cells = {};
                     let total = 0;
                     let counted = 0;
 
-                    Object.keys(perLanguage || {}).forEach((language) => {
+                    Object.keys(perLanguage).forEach((language) => {
 
                         const premium = Number(
                             perLanguage[language]?.token_premium
@@ -842,48 +866,46 @@ function Rank() {
                         }
                     });
 
-                    setMatrix((previous) => ({
-                        ...previous,
-                        [name]: {
-                            cells: cells,
-                            mean: counted ? total / counted : NaN,
-                        },
-                    }));
-
+                    nextEntries[name] = {
+                        cells: cells,
+                        mean: counted ? total / counted : NaN,
+                    };
                 }
-                catch (error) {
 
-                    /* Leaving the page aborts the request in flight. Chrome
-                       reports that as a plain TypeError rather than an
-                       AbortError, so check the signal too - otherwise every
-                       navigation away logs a warning about nothing. */
-                    if (error.name === "AbortError" || controller.signal.aborted) {
-                        return;
-                    }
+                setMatrix((previous) => ({
+                    ...previous,
+                    ...nextEntries,
+                }));
 
+                if (errors && Object.keys(errors).length > 0) {
                     /* One tokenizer failing costs one row, not the grid. */
                     console.warn(
                         "Could not read per-language metrics for",
-                        name,
-                        error
+                        errors
                     );
-
-                    if (!stopped) {
-                        setMatrix((previous) => ({
-                            ...previous,
-                            [name]: { cells: {}, mean: NaN },
-                        }));
-                    }
                 }
+
+            }
+            catch (error) {
+
+                /* Leaving the page aborts the request in flight. Chrome
+                   reports that as a plain TypeError rather than an
+                   AbortError, so check the signal too - otherwise every
+                   navigation away logs a warning about nothing. */
+                if (error.name === "AbortError" || controller.signal.aborted) {
+                    return;
+                }
+
+                console.warn(
+                    "Could not read per-language metrics",
+                    error
+                );
             }
         }
 
         readEveryTokenizer();
 
-        return () => {
-            stopped = true;
-            controller.abort();
-        };
+        return () => controller.abort();
 
     }, [boardNames]);
 

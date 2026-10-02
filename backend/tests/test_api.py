@@ -96,6 +96,7 @@ def test_all_routes_are_registered():
     expected = {
         "/",
         "/metrics/{model_name}",
+        "/metrics/bulk",
         "/tokenizer/{model_name}",
         "/compare",
         "/example/model/{model_name}",
@@ -143,6 +144,73 @@ def test_morphology_metrics_endpoint_returns_values():
     assert isinstance(data["metrics"]["total_gold_boundaries"], int)
 
     assert data["metrics"]["aligned_boundaries"] <= data["metrics"]["total_gold_boundaries"]
+
+
+# ── Bulk metrics (Rank's per-language grid) ──────────────────────────────────
+
+def test_metrics_bulk_returns_each_tokenizer_keyed_by_name():
+    # Rank's grid used to call /metrics/{name} once per board row. This is
+    # the replacement: the same per-language data, for every requested name,
+    # in one response.
+    response = client.get(
+        "/metrics/bulk", params={"names": "gpt2,bert-base-uncased"}
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert set(data["metrics"]) == {"gpt2", "bert-base-uncased"}
+    assert data["errors"] == {}
+
+    # Each entry is exactly what GET /metrics/{name} itself returns - this
+    # is the same cache, read in bulk rather than one name at a time.
+    single = client.get("/metrics/gpt2").json()
+    assert data["metrics"]["gpt2"] == single
+
+
+def test_metrics_bulk_reports_a_bad_name_without_failing_the_batch():
+    response = client.get(
+        "/metrics/bulk", params={"names": "gpt2,not-a-real-tokenizer"}
+    )
+
+    # One bad id costs its own row, not the request.
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert "gpt2" in data["metrics"]
+    assert "not-a-real-tokenizer" in data["errors"]
+    assert "not-a-real-tokenizer" not in data["metrics"]
+
+
+def test_metrics_bulk_ignores_blank_names():
+    # A trailing comma, or repeated commas, must not ask the tokenizer
+    # loader to resolve an empty string.
+    response = client.get("/metrics/bulk", params={"names": "gpt2,,"})
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert list(data["metrics"]) == ["gpt2"]
+    assert data["errors"] == {}
+
+
+def test_metrics_bulk_reports_a_malformed_name_without_failing_the_batch():
+    # Unlike "not found on Hugging Face" (a ValueError), a malformed id
+    # is rejected by validate_tokenizer() as an HTTPException, raised
+    # before any network call. The batch has to catch that one too.
+    response = client.get(
+        "/metrics/bulk", params={"names": "gpt2,not valid/ /id"}
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert "gpt2" in data["metrics"]
+    assert "not valid/ /id" in data["errors"]
 
 
 # ── Validation errors reach the frontend as readable 400s ─────────────────────
