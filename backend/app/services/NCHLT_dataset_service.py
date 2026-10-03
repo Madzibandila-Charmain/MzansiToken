@@ -43,8 +43,15 @@ def load_nchlt_data(dir: str, lowercase=False, delimeter="_") -> dict[str, list[
 
     # Check if path exists
     if not dir.exists():
+        # The full path only goes to the server's own console. mbi_router
+        # turns a FileNotFoundError straight into a 500 response, and a
+        # user has no use for - and should never see - this server's own
+        # filesystem layout.
+        print(f"NCHLT data directory not found: {dir}")
+
         raise FileNotFoundError(
-            f"Data directory '{dir} not found."
+            "The NCHLT dataset is not available on this server. "
+            "Morphology metrics cannot be computed right now."
         )
 
     corpus = {}
