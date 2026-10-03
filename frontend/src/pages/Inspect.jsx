@@ -16,6 +16,7 @@ import {
     getMBI,
     getTokenizerInfo,
     friendlyError,
+    isConnectivityError,
 } from "../api/client";
 
 import { useAppState } from "../context/useAppState";
@@ -208,13 +209,12 @@ function Inspect() {
     */
     /*
         The effect below reads source/selectedLanguages/language/
-        tokenizer in its `else` branch and calls loadMbiMetrics in its
-        `if` branch, which is why exhaustive-deps wanted all five
-        listed - but this effect means to run once per mount (or once
-        more, right after inspectInitialised itself flips true), not
-        every time the user picks a different language or tokenizer.
-        Listing them for real would re-run the whole thing - including
-        the GET /options call - on every change.
+        tokenizer in its `else` branch, which is why exhaustive-deps
+        wanted all four listed - but this effect means to run once per
+        mount (or once more, right after inspectInitialised itself
+        flips true), not every time the user picks a different language
+        or tokenizer. Listing them for real would re-run the whole
+        thing - including the GET /options call - on every change.
 
         latestRef holds the current render's values without being a
         dependency itself: reading ref.current is not a reactive read,
@@ -228,8 +228,7 @@ function Inspect() {
         source,
         selectedLanguages,
         language,
-        tokenizer,
-        loadMbiMetrics
+        tokenizer
     });
 
     useEffect(() => {
@@ -237,8 +236,7 @@ function Inspect() {
             source,
             selectedLanguages,
             language,
-            tokenizer,
-            loadMbiMetrics
+            tokenizer
         };
     });
 
@@ -384,14 +382,31 @@ function Inspect() {
                                                 defaultMbiResult
                                                     .metrics
                                                     .total_gold_boundaries ?? 0
-                                        }
+                                        },
+
+                                        mbiFailed: false
                                     }
                                 })
                             );
 
-                        }
-                        catch {
+                            /* A dataset problem is server-side news, the
+                               same as a gated model or an unreachable
+                               backend - it belongs in the one shared
+                               status line under the tokenizer search,
+                               not a second box of its own. */
+                            setMbiError("");
 
+                            setMbiUnavailable("");
+
+                        }
+                        catch (err) {
+
+                            /* mbi stays null either way - "not fetched
+                               yet" and "fetch failed" used to look
+                               identical, and MetricCards turned a null
+                               mbi into a plain 0.0% / 0 of 0, which reads
+                               as a real (and alarming) measurement.
+                               mbiFailed tells the card the two apart. */
                             setLanguageData(
                                 (previousData) => ({
                                     ...previousData,
@@ -401,17 +416,42 @@ function Inspect() {
                                             defaultLanguage
                                         ],
 
-                                        mbi: null
+                                        mbi: null,
+
+                                        mbiFailed: true
                                     }
                                 })
                             );
+
+                            if (
+                                err.message?.includes(
+                                    "Unsupported language"
+                                )
+                            ) {
+
+                                setMbiUnavailable(
+                                    `${defaultLanguage} does not have MBI metrics.`
+                                );
+
+                            }
+                            else {
+
+                                setMbiError(
+                                    friendlyError(err) ||
+                                    "Morphology metrics could not be loaded."
+                                );
+
+                            }
+
                         }
                     }
+                    else {
 
-                    await latestRef.current.loadMbiMetrics(
-                        defaultLanguage,
-                        defaultTokenizer
-                    );
+                        setMbiError("");
+
+                        setMbiUnavailable("");
+
+                    }
 
                     setInspectInitialised(true);
 
@@ -438,7 +478,8 @@ function Inspect() {
             catch (err) {
 
                 setError(
-                    err.message
+                    friendlyError(err) ||
+                    "Could not load the backend options."
                 );
 
             }
@@ -461,67 +502,6 @@ function Inspect() {
 
     function hasMbiMetrics(selectedLanguage) {
         return selectedLanguage !== "English";
-    }
-
-    async function loadMbiMetrics(
-        selectedLanguage = language,
-        selectedTokenizer = tokenizer
-    ) {
-
-        if (
-            !hasMbiMetrics(
-                selectedLanguage
-            )
-        ) {
-
-            setMbiError("");
-
-            setMbiUnavailable("");
-
-            return;
-        }
-
-        try {
-
-            setMbiError("");
-
-            setMbiUnavailable("");
-
-            /*
-                Called for what it proves, not what it returns: a failure
-                here is what sets mbiError or mbiUnavailable below. The
-                numbers on screen come from languageData.
-            */
-            await getMBI(
-                selectedTokenizer,
-                selectedLanguage
-            );
-
-        }
-        catch (err) {
-
-            if (
-                err.message?.includes(
-                    "Unsupported language"
-                )
-            ) {
-
-                setMbiUnavailable(
-                    `${selectedLanguage} does not have MBI metrics.`
-                );
-
-                return;
-
-            }
-
-            setMbiError(
-                err.message
-            );
-
-            throw err;
-
-        }
-
     }
 
     //The second useEffect
@@ -609,7 +589,8 @@ function Inspect() {
                 catch (err) {
 
                     setError(
-                        err.message
+                        friendlyError(err) ||
+                        "Could not tokenize the text."
                     );
 
                 }
@@ -661,6 +642,8 @@ function Inspect() {
             `Loading ${newLanguage}...`
         );
 
+        setError("");
+
         try {
 
             const result =
@@ -670,6 +653,9 @@ function Inspect() {
                 );
 
             let mbiResult = null;
+            let mbiFetchFailed = false;
+            let mbiLanguageUnsupported = false;
+            let mbiErrorDetail = "";
 
             if (
                 hasMbiMetrics(
@@ -686,9 +672,32 @@ function Inspect() {
                         );
 
                 }
-                catch {
+                catch (mbiErr) {
 
+                    /* Not re-thrown on purpose: a flaky morphology score
+                       should not stop the tokenizer from being applied.
+                       mbiFetchFailed still records it, so the card can
+                       say "could not load" instead of a bare 0.0%. */
                     mbiResult = null;
+
+                    if (
+                        mbiErr.message?.includes(
+                            "Unsupported language"
+                        )
+                    ) {
+
+                        mbiLanguageUnsupported = true;
+
+                    }
+                    else {
+
+                        mbiFetchFailed = true;
+
+                        mbiErrorDetail =
+                            friendlyError(mbiErr) ||
+                            "Morphology metrics could not be loaded.";
+
+                    }
 
                 }
 
@@ -745,7 +754,10 @@ function Inspect() {
                             newMetrics,
 
                         mbi:
-                            newMbi
+                            newMbi,
+
+                        mbiFailed:
+                            mbiFetchFailed
                     }
                 })
             );
@@ -775,24 +787,28 @@ function Inspect() {
                 setMbiUnavailable("");
 
             }
+            else if (mbiFetchFailed) {
+
+                /* A dataset problem is server-side news, the same as a
+                   gated model or an unreachable backend - it belongs in
+                   the one shared status line under the tokenizer
+                   search, not a note of its own further down the
+                   page. */
+                setMbiError(mbiErrorDetail);
+
+                setMbiUnavailable("");
+
+            }
+            else if (mbiLanguageUnsupported || hasMbiMetrics(newLanguage)) {
+
+                setMbiUnavailable(
+                    `${newLanguage} does not have MBI metrics.`
+                );
+
+            }
             else {
 
-                if (
-                    hasMbiMetrics(
-                        newLanguage
-                    )
-                ) {
-
-                    setMbiUnavailable(
-                        `${newLanguage} does not have MBI metrics.`
-                    );
-
-                }
-                else {
-
-                    setMbiUnavailable("");
-
-                }
+                setMbiUnavailable("");
 
             }
 
@@ -810,12 +826,28 @@ function Inspect() {
                 err
             );
 
-            const detail =
-                friendlyError(err) ||
-                "Could not load the language corpus.";
+            if (isConnectivityError(err)) {
 
-            setUploadStatus(detail);
-            setUploadFailed(true);
+                /* Can't reach it at all is page-level news - it belongs
+                   in the one shared error slot under the tokenizer
+                   picker, not repeated here too. Clear the "Loading..."
+                   line instead of echoing the same message a second
+                   time. */
+                setError(friendlyError(err));
+                setUploadStatus("");
+                setUploadFailed(false);
+
+            }
+            else {
+
+                const detail =
+                    friendlyError(err) ||
+                    "Could not load the language corpus.";
+
+                setUploadStatus(detail);
+                setUploadFailed(true);
+
+            }
 
         }
         finally {
@@ -1109,14 +1141,25 @@ function Inspect() {
                 err
             );
 
-            const detail =
-                friendlyError(err) ||
-                "Could not process the uploaded corpus.";
+            if (isConnectivityError(err)) {
 
-            /* Turns the line red. Without it the status stayed green and
-               still claimed the file was loading. */
-            setUploadStatus(detail);
-            setUploadFailed(true);
+                setError(friendlyError(err));
+                setUploadStatus("");
+                setUploadFailed(false);
+
+            }
+            else {
+
+                const detail =
+                    friendlyError(err) ||
+                    "Could not process the uploaded corpus.";
+
+                /* Turns the line red. Without it the status stayed
+                   green and still claimed the file was loading. */
+                setUploadStatus(detail);
+                setUploadFailed(true);
+
+            }
 
         }
         finally {
@@ -1266,6 +1309,16 @@ function Inspect() {
 
                 const updatedLanguageData = {};
 
+                /* Set from whichever selected language is the one on
+                   screen right now, for the status line after the loop -
+                   the other selected language (up to two can be picked)
+                   keeps its own result in updatedLanguageData either
+                   way, this is only about what the shared status line
+                   reports. */
+                let activeMbiFetchFailed = false;
+                let activeMbiLanguageUnsupported = false;
+                let activeMbiErrorDetail = "";
+
                 /*
                     Process each selected language separately.
                 */
@@ -1287,6 +1340,7 @@ function Inspect() {
                     */
 
                     let mbiResult = null;
+                    let mbiFetchFailed = false;
 
                     if (
                         hasMbiMetrics(
@@ -1303,14 +1357,43 @@ function Inspect() {
                                 );
 
                         }
-                        catch {
+                        catch (mbiErr) {
 
                             /*
                                 MBI failure should not prevent
                                 the tokenizer from being applied.
+                                mbiFetchFailed still records it, so the
+                                card can say "could not load" rather than
+                                a plain 0.0% that reads as a real score.
                             */
 
                             mbiResult = null;
+
+                            const languageUnsupported =
+                                mbiErr.message?.includes(
+                                    "Unsupported language"
+                                );
+
+                            if (!languageUnsupported) {
+                                mbiFetchFailed = true;
+                            }
+
+                            if (selectedLanguage === language) {
+
+                                activeMbiLanguageUnsupported =
+                                    languageUnsupported;
+
+                                if (!languageUnsupported) {
+
+                                    activeMbiFetchFailed = true;
+
+                                    activeMbiErrorDetail =
+                                        friendlyError(mbiErr) ||
+                                        "Morphology metrics could not be loaded.";
+
+                                }
+
+                            }
 
                         }
                     }
@@ -1374,7 +1457,10 @@ function Inspect() {
                                             ?.total_gold_boundaries ?? 0
 
                                 }
-                                : null
+                                : null,
+
+                        mbiFailed:
+                            mbiFetchFailed
 
                     };
 
@@ -1421,26 +1507,33 @@ function Inspect() {
                             language
                         ].mbi;
 
-                    if (
-                        hasMbiMetrics(
-                            language
-                        )
+                    if (activeMbi) {
+
+                        setMbiError("");
+
+                        setMbiUnavailable("");
+
+                    }
+                    else if (activeMbiFetchFailed) {
+
+                        /* A dataset problem is server-side news, the
+                           same as a gated model or an unreachable
+                           backend - it belongs in the one shared status
+                           line under the tokenizer search, not a note
+                           of its own further down the page. */
+                        setMbiError(activeMbiErrorDetail);
+
+                        setMbiUnavailable("");
+
+                    }
+                    else if (
+                        activeMbiLanguageUnsupported ||
+                        hasMbiMetrics(language)
                     ) {
 
-                        if (activeMbi) {
-
-                            setMbiError("");
-
-                            setMbiUnavailable("");
-
-                        }
-                        else {
-
-                            setMbiUnavailable(
-                                `${language} does not have MBI metrics.`
-                            );
-
-                        }
+                        setMbiUnavailable(
+                            `${language} does not have MBI metrics.`
+                        );
 
                     }
                     else {
@@ -1564,19 +1657,22 @@ function Inspect() {
                     result.metrics.token_premium ?? null
             };
 
-            /* Restore MBI for the default language. */ 
-            let defaultMbi = null; 
-            
-            if ( hasMbiMetrics( language ) ) { 
-                try { 
-                    const defaultMbiResult = 
-                    await getMBI( tokenizer, language ); 
-                    
-                    defaultMbi = { 
-                        precision: defaultMbiResult.metrics.precision ?? 0, 
-                        
-                        recall: defaultMbiResult.metrics.recall ?? 0, 
-                        
+            /* Restore MBI for the default language. */
+            let defaultMbi = null;
+            let defaultMbiFailed = false;
+            let defaultMbiLanguageUnsupported = false;
+            let defaultMbiErrorDetail = "";
+
+            if ( hasMbiMetrics( language ) ) {
+                try {
+                    const defaultMbiResult =
+                    await getMBI( tokenizer, language );
+
+                    defaultMbi = {
+                        precision: defaultMbiResult.metrics.precision ?? 0,
+
+                        recall: defaultMbiResult.metrics.recall ?? 0,
+
                         f1: defaultMbiResult.metrics.f1 ?? 0,
 
                         aligned_boundaries:
@@ -1584,11 +1680,34 @@ function Inspect() {
 
                         total_gold_boundaries:
                             defaultMbiResult.metrics.total_gold_boundaries ?? 0
-                    }; 
-                } 
-                catch { 
-                    defaultMbi = null; 
-                } 
+                    };
+                }
+                catch (mbiErr) {
+                    /* Restoring the default corpus should not fail over
+                       a flaky morphology score. defaultMbiFailed still
+                       records it so the card says "could not load"
+                       rather than a plain 0.0%. */
+                    defaultMbi = null;
+
+                    if (
+                        mbiErr.message?.includes(
+                            "Unsupported language"
+                        )
+                    ) {
+
+                        defaultMbiLanguageUnsupported = true;
+
+                    }
+                    else {
+
+                        defaultMbiFailed = true;
+
+                        defaultMbiErrorDetail =
+                            friendlyError(mbiErr) ||
+                            "Morphology metrics could not be loaded.";
+
+                    }
+                }
             }
 
             setFileName(
@@ -1625,7 +1744,9 @@ function Inspect() {
                     metrics:
                         defaultMetrics,
 
-                    mbi: defaultMbi
+                    mbi: defaultMbi,
+
+                    mbiFailed: defaultMbiFailed
                 }
             }));
 
@@ -1642,25 +1763,40 @@ function Inspect() {
             );
 
 
-            /* Update the MBI display. */ 
-            if (defaultMbi) { 
- 
-                
-                setMbiError(""); 
-                
-                setMbiUnavailable(""); 
-            } 
-            else { 
- 
-                
-                if ( hasMbiMetrics( language ) ) { 
-                    setMbiUnavailable( 
-                        `${language} does not have MBI metrics.` 
-                    ); 
-                } 
-                else { 
-                    setMbiUnavailable(""); 
-                } 
+            /* Update the MBI display. */
+            if (defaultMbi) {
+
+                setMbiError("");
+
+                setMbiUnavailable("");
+
+            }
+            else if (defaultMbiFailed) {
+
+                /* A dataset problem is server-side news, the same as a
+                   gated model or an unreachable backend - it belongs in
+                   the one shared status line under the tokenizer
+                   search, not a note of its own further down the
+                   page. */
+                setMbiError(defaultMbiErrorDetail);
+
+                setMbiUnavailable("");
+
+            }
+            else if (
+                defaultMbiLanguageUnsupported ||
+                hasMbiMetrics(language)
+            ) {
+
+                setMbiUnavailable(
+                    `${language} does not have MBI metrics.`
+                );
+
+            }
+            else {
+
+                setMbiUnavailable("");
+
             }
 
             /*
@@ -1686,12 +1822,23 @@ function Inspect() {
         }
         catch (err) {
 
-            const detail =
-                friendlyError(err) ||
-                "Could not load the built-in corpus.";
+            if (isConnectivityError(err)) {
 
-            setUploadStatus(detail);
-            setUploadFailed(true);
+                setError(friendlyError(err));
+                setUploadStatus("");
+                setUploadFailed(false);
+
+            }
+            else {
+
+                const detail =
+                    friendlyError(err) ||
+                    "Could not load the built-in corpus.";
+
+                setUploadStatus(detail);
+                setUploadFailed(true);
+
+            }
 
         }
         finally {
@@ -1857,14 +2004,24 @@ function Inspect() {
                         )}
 
                         {/*
-                            Page-level failures: the first load, and
-                            tokenizing typed text. Both set `error`.
-                            Under the tokenizer search and pills - the
-                            same spot the tokenizer's own status uses.
+                            Page-level failures: the first load, tokenizing
+                            typed text, and morphology metrics that failed
+                            or do not apply to this language. All of them
+                            live here, under the tokenizer search and pills
+                            - the same spot the tokenizer's own status uses
+                            - instead of each keeping its own separate box
+                            further down the page.
                         */}
-                        {error && (
+                        {(error || mbiUnavailable || mbiError) && (
 
-                            <StatusLine state="error" text={error} />
+                            <StatusLine
+                                state="error"
+                                text={
+                                    error ||
+                                    mbiUnavailable ||
+                                    `Morphology metrics could not be loaded: ${mbiError}`
+                                }
+                            />
 
                         )}
 
@@ -2204,6 +2361,7 @@ function Inspect() {
                                         <MetricCards
                                             metrics={data.metrics}
                                             mbi={data.mbi}
+                                            mbiFailed={data.mbiFailed}
                                             showMbi={hasMbiMetrics(
                                                 selectedLanguage
                                             )}
@@ -2222,23 +2380,9 @@ function Inspect() {
 
                 </div>
 
-                {mbiUnavailable && (
-
-                    <StatusLine
-                        state="error"
-                        text={mbiUnavailable}
-                    />
-
-                )}
-
-                {mbiError && (
-
-                    <StatusLine
-                        state="error"
-                        text={mbiError}
-                    />
-
-                )}
+                {/* mbiUnavailable and mbiError now surface in the one
+                    page-level status line under the tokenizer picker,
+                    alongside `error` - not repeated here. */}
 
             </section>
             <MetricsChart tokenizer={tokenizer} />
