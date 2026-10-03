@@ -112,17 +112,14 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
 
     }, [tokenizerA, tokenizerB]);
 
+    /*
+        Compare already shows this exact failure at the top of the page
+        (same friendlyError text) the moment the backend is unreachable -
+        this used to repeat it a second time down here. Rendering nothing
+        leaves that one message as the only place it appears.
+    */
     if (error && !loading) {
-
-        return (
-            <section className="compare-charts">
-                <div className="selection-status is-error">
-                    <span className="status-dot"></span>
-                    <span>{error}</span>
-                </div>
-            </section>
-        );
-
+        return null;
     }
 
     if (loading && !pair) {
