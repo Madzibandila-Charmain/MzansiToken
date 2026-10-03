@@ -39,9 +39,11 @@ def load_flores(data_dir: str) -> dict[str, list[str]]:
 
     # Check that the directory exists before proceeding
     if not data_dir.exists():
+        print(f"FLORES data directory not found: {data_dir}")
+
         raise FileNotFoundError(
-            f"Data directory '{data_dir}' not found. "
-            f"Check the path and make sure FLORES is downloaded."
+            "The FLORES dataset is not available on this server. "
+            "Tokenization metrics cannot be computed right now."
         )
 
     corpus = {}  # Will hold language -> list of sentences
