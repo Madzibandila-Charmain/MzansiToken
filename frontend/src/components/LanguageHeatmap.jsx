@@ -140,14 +140,51 @@ function LanguageHeatmap({
                                     const value = row.cells?.[language];
                                     const shade = step(value);
 
-                                    /* Still on its way, or it failed. */
-                                    if (!shade) {
+                                    if (shade) {
                                         return (
                                             <td
                                                 key={language}
-                                                className="rank-matrix-cell is-empty"
+                                                className={
+                                                    "rank-matrix-cell"
+                                                    + (language === BASELINE
+                                                        ? " is-baseline"
+                                                        : "")
+                                                }
+                                                style={{
+                                                    background: shade.fill,
+                                                    color: shade.ink
+                                                }}
+                                                title={
+                                                    `${row.name} on ${language}: `
+                                                    + `${value.toFixed(2)} times `
+                                                    + "the tokens it spends on "
+                                                    + "the same text in English"
+                                                }
                                             >
-                                                &middot;
+                                                {value.toFixed(2)}
+                                            </td>
+                                        );
+                                    }
+
+                                    /* No value yet - either still on its
+                                       way, or this tokenizer's row failed
+                                       outright. Those used to look
+                                       identical (a quiet dot); row.error
+                                       tells them apart, so a failed
+                                       tokenizer says so instead of
+                                       reading as "still measuring"
+                                       forever. */
+                                    if (row.error) {
+                                        return (
+                                            <td
+                                                key={language}
+                                                className="rank-matrix-cell is-failed"
+                                                title={
+                                                    `${row.name}: `
+                                                    + row.error
+                                                }
+                                            >
+                                                !
                                             </td>
                                         );
                                     }
@@ -155,32 +192,25 @@ function LanguageHeatmap({
                                     return (
                                         <td
                                             key={language}
-                                            className={
-                                                "rank-matrix-cell"
-                                                + (language === BASELINE
-                                                    ? " is-baseline"
-                                                    : "")
-                                            }
-                                            style={{
-                                                background: shade.fill,
-                                                color: shade.ink
-                                            }}
-                                            title={
-                                                `${row.name} on ${language}: `
-                                                + `${value.toFixed(2)} times `
-                                                + "the tokens it spends on "
-                                                + "the same text in English"
-                                            }
+                                            className="rank-matrix-cell is-empty"
                                         >
-                                            {value.toFixed(2)}
+                                            &middot;
                                         </td>
                                     );
                                 })}
 
-                                <td className="rank-matrix-mean">
-                                    {Number.isFinite(row.mean)
-                                        ? `${row.mean.toFixed(2)}×`
-                                        : "·"}
+                                <td
+                                    className={
+                                        "rank-matrix-mean"
+                                        + (row.error ? " is-failed" : "")
+                                    }
+                                    title={row.error || undefined}
+                                >
+                                    {row.error
+                                        ? "Failed"
+                                        : Number.isFinite(row.mean)
+                                            ? `${row.mean.toFixed(2)}×`
+                                            : "·"}
                                 </td>
 
                             </tr>
