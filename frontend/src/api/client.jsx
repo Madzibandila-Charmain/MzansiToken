@@ -94,6 +94,30 @@ export function friendlyError(err, what = "the backend") {
     return raw || "Something went wrong.";
 }
 
+/*
+    True when a failure is specifically "could not reach the backend at
+    all" - connection refused, DNS failure, CORS before any response - as
+    opposed to the backend replying with its own error (a bad file, an
+    unsupported language, a model id it could not find). A caller uses
+    this to decide where a failure belongs: "can't reach it" is page-level
+    news that goes in the one shared error slot, while the backend's own
+    answer is specific to the control that triggered it and stays there.
+*/
+export function isConnectivityError(err) {
+
+    if (err?.name === "AbortError") {
+        return false;
+    }
+
+    if (err instanceof ApiError) {
+        return false;
+    }
+
+    const raw = String(err?.message || err);
+
+    return /failed to fetch|networkerror|load failed|fetch failed/i.test(raw);
+}
+
 
 /*
  *RESPONSE HANDLER
