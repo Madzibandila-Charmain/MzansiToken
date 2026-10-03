@@ -9,6 +9,12 @@
     row keeps the same shape instead of breaking into letters mid-way.
 */
 
+/* The full explanation lives in the page's one shared status line, next
+   to every other server-side problem (a gated model, an unreachable
+   backend). This is only the hover hint on the dashes themselves, kept
+   short since the real explanation is already on screen above. */
+const MBI_FAILED_NOTE = "Could not load - see the status above.";
+
 function figure(value, decimals = 2) {
     const number = Number(value);
 
@@ -19,9 +25,9 @@ function figure(value, decimals = 2) {
     return number.toFixed(decimals);
 }
 
-function Card({ name, value }) {
+function Card({ name, value, title }) {
     return (
-        <div className="metric-card">
+        <div className="metric-card" title={title}>
             <span className="metric-name">
                 {name}
             </span>
@@ -47,12 +53,22 @@ function Card({ name, value }) {
     showMbi - whether this language has NCHLT segmentations at all.
               English does not, so its row is left off entirely rather
               than shown as three zeros.
+
+    mbiFailed - the fetch for this language's morphology metrics failed,
+                as opposed to simply not having run yet. mbi arrives null
+                either way, and figure() used to turn that into a plain
+                0.0% / 0 of 0 - indistinguishable from a real (and very
+                bad) score. This keeps the two apart, showing a dash
+                instead. The page's shared status line explains why, in
+                the same spot every other server-side error uses - this
+                component only needs the boolean.
 */
 
 function MetricCards({
     metrics,
     mbi,
     showMbi = false,
+    mbiFailed = false,
     alignmentLabel = "Morpheme Boundary Alignment",
     alignmentAsPercentage = false
 }) {
@@ -138,22 +154,26 @@ function MetricCards({
 
                     <Card
                         name="Precision"
-                        value={figure(mbi?.precision)}
+                        value={mbiFailed ? "—" : figure(mbi?.precision)}
+                        title={mbiFailed ? MBI_FAILED_NOTE : undefined}
                     />
 
                     <Card
                         name="F1"
-                        value={figure(mbi?.f1)}
+                        value={mbiFailed ? "—" : figure(mbi?.f1)}
+                        title={mbiFailed ? MBI_FAILED_NOTE : undefined}
                     />
 
                     <Card
                         name="Recall"
-                        value={figure(mbi?.recall)}
+                        value={mbiFailed ? "—" : figure(mbi?.recall)}
+                        title={mbiFailed ? MBI_FAILED_NOTE : undefined}
                     />
 
                     <Card
                         name={alignmentLabel}
-                        value={alignmentValue}
+                        value={mbiFailed ? "—" : alignmentValue}
+                        title={mbiFailed ? MBI_FAILED_NOTE : undefined}
                     />
 
                 </div>

@@ -18,7 +18,6 @@ import { useEffect, useRef, useState } from "react";
 
 import { getMetrics, friendlyError } from "../api/client";
 
-import StatusLine from "./StatusLine";
 
 /* One shared source of truth for language colours and families, so the
    pills, the reading panels and these charts can never disagree. */
@@ -178,18 +177,16 @@ function MetricsChart({ tokenizer }) {
 
     }, [tokenizer]);
 
+    /*
+        Inspect already shows this exact failure at the top of the page
+        (same friendlyError text) the moment the backend is unreachable -
+        this used to repeat it a second time in its own boxed banner down
+        here. One tokenizer's chart failing on its own (the page load
+        itself having succeeded) is rare enough, and quiet enough, that
+        rendering nothing is the right amount of noise for it too.
+    */
     if (error && !loading) {
-
-        /*
-            Same StatusLine the rest of the page uses for a failure -
-            this used to be its own boxed banner.
-        */
-        return (
-            <section className="charts-box">
-                <StatusLine state="error" text={error} />
-            </section>
-        );
-
+        return null;
     }
 
     if (!data) {

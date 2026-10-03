@@ -18,6 +18,7 @@ import {
     compareMBI,
     getTokenizerInfo,
     friendlyError,
+    isConnectivityError,
 } from "../api/client";
 
 import { useAppState } from "../context/useAppState";
@@ -771,13 +772,24 @@ function Compare() {
                 err
             );
 
-            const detail =
-                friendlyError(err) ||
-                "Could not process the uploaded corpus.";
+            if (isConnectivityError(err)) {
 
-            setSelectionFailed(true);
+                setError(friendlyError(err));
+                setSelectionStatus("");
+                setSelectionFailed(false);
 
-            setSelectionStatus(detail);
+            }
+            else {
+
+                const detail =
+                    friendlyError(err) ||
+                    "Could not process the uploaded corpus.";
+
+                setSelectionFailed(true);
+
+                setSelectionStatus(detail);
+
+            }
 
             /* Same reason as loadDefaultCorpus: the caller has to know. */
             throw err;
@@ -891,14 +903,29 @@ function Compare() {
                 err
             );
 
-            /* What the backend said, not "Language failed". */
-            const detail =
-                friendlyError(err) ||
-                "Could not load the language corpus.";
+            if (isConnectivityError(err)) {
 
-            setSelectionFailed(true);
+                /* Can't reach it at all is page-level news - it belongs
+                   in the one shared error slot, not repeated here too
+                   (processUploadedCorpus may have already set it; this
+                   covers the loadDefaultCorpus path the same way). */
+                setError(friendlyError(err));
+                setSelectionStatus("");
+                setSelectionFailed(false);
 
-            setSelectionStatus(detail);
+            }
+            else {
+
+                /* What the backend said, not "Language failed". */
+                const detail =
+                    friendlyError(err) ||
+                    "Could not load the language corpus.";
+
+                setSelectionFailed(true);
+
+                setSelectionStatus(detail);
+
+            }
 
         } finally {
 
@@ -1245,13 +1272,24 @@ function Compare() {
                 err
             );
 
-            const detail =
-                friendlyError(err) ||
-                "Could not load the built-in corpus.";
+            if (isConnectivityError(err)) {
 
-            setSelectionFailed(true);
+                setError(friendlyError(err));
+                setSelectionStatus("");
+                setSelectionFailed(false);
 
-            setSelectionStatus(detail);
+            }
+            else {
+
+                const detail =
+                    friendlyError(err) ||
+                    "Could not load the built-in corpus.";
+
+                setSelectionFailed(true);
+
+                setSelectionStatus(detail);
+
+            }
 
         } finally {
 
