@@ -27,6 +27,25 @@ const STORAGE_KEYS = {
     compareTokenizerOne: "compareTokenizerOne",
     compareTokenizerTwo: "compareTokenizerTwo",
     compareMetrics: "compareMetrics",
+
+    /*
+        Rank used to hold its board in its own local state, so leaving the
+        page for Compare or Inspect and coming back unmounted it and lost
+        everything - the restore-or-measure flow ran again from scratch
+        even though nothing had actually changed. These bring it in line
+        with Inspect and Compare: the data lives here instead, survives
+        navigating away, and is written to localStorage so a refresh does
+        not cost a full remeasure of every tokenizer the user added either.
+    */
+    rankInitialised: "rankInitialised",
+    rankRows: "rankRows",
+    rankWeights: "rankWeights",
+    rankFloresLanguages: "rankFloresLanguages",
+    rankMatrix: "rankMatrix",
+    rankSortKey: "rankSortKey",
+    rankBestFirst: "rankBestFirst",
+    rankFilter: "rankFilter",
+    rankShowAllMetrics: "rankShowAllMetrics",
 };
 
 /*
@@ -65,6 +84,11 @@ function writeStored(key, value) {
 const isText = (value) => typeof value === "string";
 const isTextList = (value) =>
     Array.isArray(value) && value.every((item) => typeof item === "string");
+const isBoolean = (value) => typeof value === "boolean";
+const isArray = (value) => Array.isArray(value);
+const isPlainObject = (value) =>
+    value !== null && typeof value === "object" && !Array.isArray(value);
+const isWeights = (value) => value === null || isPlainObject(value);
 
 export function AppStateProvider({ children }) {
 
@@ -189,6 +213,95 @@ useEffect(() => {
 }, [compareMetrics]);
 
 
+// ---------------
+// RANK STATE
+// ---------------
+
+// Prevent Rank from re-running restore-or-measure on every mount
+
+const [rankInitialised, setRankInitialised] = useState(
+    () => readStored(STORAGE_KEYS.rankInitialised, false, isBoolean)
+);
+
+// The board itself
+
+const [rankRows, setRankRows] = useState(
+    () => readStored(STORAGE_KEYS.rankRows, [], isArray)
+);
+
+// The scoring formula's weights, for the "how this is scored" sentence
+
+const [rankWeights, setRankWeights] = useState(
+    () => readStored(STORAGE_KEYS.rankWeights, null, isWeights)
+);
+
+// Every FLORES language, for the heatmap's columns
+
+const [rankFloresLanguages, setRankFloresLanguages] = useState(
+    () => readStored(STORAGE_KEYS.rankFloresLanguages, [], isArray)
+);
+
+// name -> { cells: { language: premium }, mean }, for the heatmap
+
+const [rankMatrix, setRankMatrix] = useState(
+    () => readStored(STORAGE_KEYS.rankMatrix, {}, isPlainObject)
+);
+
+// Sort and filter controls above the board
+
+const [rankSortKey, setRankSortKey] = useState(
+    () => readStored(STORAGE_KEYS.rankSortKey, "overall_score", isText)
+);
+
+const [rankBestFirst, setRankBestFirst] = useState(
+    () => readStored(STORAGE_KEYS.rankBestFirst, true, isBoolean)
+);
+
+const [rankFilter, setRankFilter] = useState(
+    () => readStored(STORAGE_KEYS.rankFilter, "", isText)
+);
+
+const [rankShowAllMetrics, setRankShowAllMetrics] = useState(
+    () => readStored(STORAGE_KEYS.rankShowAllMetrics, false, isBoolean)
+);
+
+useEffect(() => {
+    writeStored(STORAGE_KEYS.rankInitialised, rankInitialised);
+}, [rankInitialised]);
+
+useEffect(() => {
+    writeStored(STORAGE_KEYS.rankRows, rankRows);
+}, [rankRows]);
+
+useEffect(() => {
+    writeStored(STORAGE_KEYS.rankWeights, rankWeights);
+}, [rankWeights]);
+
+useEffect(() => {
+    writeStored(STORAGE_KEYS.rankFloresLanguages, rankFloresLanguages);
+}, [rankFloresLanguages]);
+
+useEffect(() => {
+    writeStored(STORAGE_KEYS.rankMatrix, rankMatrix);
+}, [rankMatrix]);
+
+useEffect(() => {
+    writeStored(STORAGE_KEYS.rankSortKey, rankSortKey);
+}, [rankSortKey]);
+
+useEffect(() => {
+    writeStored(STORAGE_KEYS.rankBestFirst, rankBestFirst);
+}, [rankBestFirst]);
+
+useEffect(() => {
+    writeStored(STORAGE_KEYS.rankFilter, rankFilter);
+}, [rankFilter]);
+
+useEffect(() => {
+    writeStored(STORAGE_KEYS.rankShowAllMetrics, rankShowAllMetrics);
+}, [rankShowAllMetrics]);
+
+
 return (
 
     <AppStateContext.Provider
@@ -261,7 +374,39 @@ return (
             setCompareMetrics,
 
             compareInitialised,
-            setCompareInitialised
+            setCompareInitialised,
+
+
+            // -------------------------------------------------
+            // RANK
+            // -------------------------------------------------
+
+            rankInitialised,
+            setRankInitialised,
+
+            rankRows,
+            setRankRows,
+
+            rankWeights,
+            setRankWeights,
+
+            rankFloresLanguages,
+            setRankFloresLanguages,
+
+            rankMatrix,
+            setRankMatrix,
+
+            rankSortKey,
+            setRankSortKey,
+
+            rankBestFirst,
+            setRankBestFirst,
+
+            rankFilter,
+            setRankFilter,
+
+            rankShowAllMetrics,
+            setRankShowAllMetrics
 
         }}
     >
