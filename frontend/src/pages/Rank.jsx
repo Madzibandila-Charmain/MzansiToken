@@ -22,6 +22,8 @@ import {
     getTokenizerInfo,
 } from "../api/client";
 
+import { useAppState } from "../context/useAppState";
+
 import LeaderboardTable from "../components/LeaderboardTable";
 
 import LanguageHeatmap from "../components/LanguageHeatmap";
@@ -208,16 +210,44 @@ function describeDefaults(restored, measured) {
 
 function Rank() {
 
-    const [rows, setRows] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    /*
+        The board, the heatmap grid, the scoring weights and the sort/
+        filter controls all used to live in local state here, so leaving
+        Rank for another page unmounted the component and took all of it
+        with it - coming back meant remounting from zero and running the
+        whole restore-or-measure flow again, even though nothing about
+        the board had actually changed. These now live in AppStateContext,
+        the same way Inspect and Compare's selections already do, so they
+        survive navigating away and a page refresh - only the transient,
+        in-progress-right-now state below (loading flags, add/remove
+        status lines) stays local, because those are fine to reset.
+    */
+    const {
+        rankInitialised,
+        setRankInitialised,
+        rankRows: rows,
+        setRankRows: setRows,
+        rankWeights: weights,
+        setRankWeights: setWeights,
+        rankSortKey: sortKey,
+        setRankSortKey: setSortKey,
+        rankBestFirst: bestFirst,
+        setRankBestFirst: setBestFirst,
+        rankFilter: filter,
+        setRankFilter: setFilter,
+        rankShowAllMetrics: showAllMetrics,
+        setRankShowAllMetrics: setShowAllMetrics,
+        rankFloresLanguages: floresLanguages,
+        setRankFloresLanguages: setFloresLanguages,
+        rankMatrix: matrix,
+        setRankMatrix: setMatrix,
+    } = useAppState();
+
+    /* True only on a genuinely first load - a remount with the board
+       already restored from context should show it immediately rather
+       than flashing the loading state it does not need. */
+    const [isLoading, setIsLoading] = useState(() => !rankInitialised);
     const [errorMessage, setErrorMessage] = useState("");
-
-    const [weights, setWeights] = useState(null);
-
-    const [sortKey, setSortKey] = useState("overall_score");
-    const [bestFirst, setBestFirst] = useState(true);
-    const [filter, setFilter] = useState("");
-    const [showAllMetrics, setShowAllMetrics] = useState(false);
 
     const [adding, setAdding] = useState(false);
     const [addStatus, setAddStatus] = useState("");
@@ -227,16 +257,20 @@ function Rank() {
 
     const [removingId, setRemovingId] = useState(null);
 
-    /* Per-language premiums for whoever is top of the board. */
+    /* Per-tokenizer reasons the heatmap grid below could not read a row's
+       metrics - keyed by tokenizer name, same key `matrix` uses. Local
+       and not persisted: it is a live reflection of the most recent
+       fetch, and a stale error surviving a reload after the real problem
+       is fixed would be worse than no error at all. */
+    const [matrixErrors, setMatrixErrors] = useState({});
+
+    /* Per-language premiums for whoever is top of the board. Left local
+       rather than lifted with the rest: it is keyed off the leader's name
+       and re-reads a cached, near-instant endpoint, so it is cheap to
+       refetch on every mount and that keeps it honestly fresh rather than
+       trusting a stale copy. */
     const [breakdown, setBreakdown] = useState([]);
 
-    /* Every FLORES language, in the order the backend lists them, so the
-       grid's columns match the corpus rather than a list typed in here. */
-    const [floresLanguages, setFloresLanguages] = useState([]);
-
-    /* name -> { cells: { language: premium }, mean }. Filled one tokenizer
-       at a time so the grid draws as the answers arrive. */
-    const [matrix, setMatrix] = useState({});
     /* Which leaderName `breakdown` currently reflects - not the same
        thing as `leaderName` itself while a fetch for a new leader is
        still in flight. breakdownLoading is derived from comparing the
@@ -271,7 +305,7 @@ function Rank() {
         );
 
         setRows(Array.isArray(data) ? data : []);
-    }, []);
+    }, [setRows]);
 
     /* Same reasoning as loadLeaderboard above - wrapped so the mount
        effect further down can depend on it honestly instead of lying
@@ -383,6 +417,16 @@ function Rank() {
 
     useEffect(() => {
 
+        /*
+            Already restored or measured on an earlier mount - rows,
+            weights, the heatmap and the sort/filter controls are all
+            sitting in context already. Nothing here needs to run again;
+            the board below just renders what is already there.
+        */
+        if (rankInitialised) {
+            return;
+        }
+
         const controller = new AbortController();
 
         async function initialiseRank() {
@@ -394,9 +438,9 @@ function Rank() {
 
                 const options = await getOptions(controller.signal);
 
-                const floresLanguages = options.languages || [];
+                const optionsLanguages = options.languages || [];
 
-                setFloresLanguages(floresLanguages);
+                setFloresLanguages(optionsLanguages);
 
                 try {
 
@@ -414,6 +458,10 @@ function Rank() {
                 }
 
                 await initialiseDefaultLeaderboard(controller.signal);
+
+                if (!controller.signal.aborted) {
+                    setRankInitialised(true);
+                }
 
             }
             catch (error) {
@@ -442,7 +490,7 @@ function Rank() {
 
         return () => controller.abort();
 
-    }, [initialiseDefaultLeaderboard]);
+    }, [initialiseDefaultLeaderboard, rankInitialised, setFloresLanguages, setWeights, setRankInitialised]);
 
     async function handleAdd(requested) {
         const name = String(requested ?? filter).trim();
@@ -831,6 +879,7 @@ function Rank() {
                 );
 
                 const nextEntries = {};
+                const nextErrors = {};
 
                 for (const name of names) {
 
@@ -839,8 +888,15 @@ function Rank() {
                     if (!perLanguage) {
                         /* Reported in `errors` by the backend, or simply
                            missing - either way this row failed, not the
-                           whole grid. */
+                           whole grid. Keep the reason so the grid can
+                           show it instead of a blank row with no
+                           explanation. */
                         nextEntries[name] = { cells: {}, mean: NaN };
+
+                        if (errors?.[name]) {
+                            nextErrors[name] = errors[name];
+                        }
+
                         continue;
                     }
 
@@ -879,6 +935,23 @@ function Rank() {
                     ...nextEntries,
                 }));
 
+                /* Clear this round's names first, then apply this round's
+                   errors - so a tokenizer that failed last time and loads
+                   fine now drops its old reason instead of carrying it
+                   forever. Still logged too, for anyone with the console
+                   open mid-development. */
+                setMatrixErrors((previous) => {
+
+                    const updated = { ...previous };
+
+                    for (const name of names) {
+                        delete updated[name];
+                    }
+
+                    return { ...updated, ...nextErrors };
+
+                });
+
                 if (errors && Object.keys(errors).length > 0) {
                     /* One tokenizer failing costs one row, not the grid. */
                     console.warn(
@@ -909,7 +982,7 @@ function Rank() {
 
         return () => controller.abort();
 
-    }, [boardNames]);
+    }, [boardNames, setMatrix]);
 
     /* The grid's rows, in the board's own order - two different orders on
        one page would only invite the reader to reconcile them. */
@@ -921,8 +994,9 @@ function Rank() {
             name: String(row.name).split("/").pop(),
             cells: matrix[row.name]?.cells || null,
             mean: matrix[row.name]?.mean,
+            error: matrixErrors[row.name] || null,
         }))
-    ), [visible, matrix]);
+    ), [visible, matrix, matrixErrors]);
 
     const matrixLoaded = useMemo(() => (
         visible.filter((row) => matrix[row.name]).length

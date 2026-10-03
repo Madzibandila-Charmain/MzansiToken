@@ -1790,11 +1790,23 @@
     border-radius: 6px;
 }
 
-/* Not measured yet, or it failed. Nothing is claimed either way. */
+/* Not measured yet. Nothing is claimed either way. */
 .rank-matrix-cell.is-empty {
     color: oklch(0.72 0.02 252);
 
     background: oklch(0.96 0.008 242);
+}
+
+/* Measured, and it failed - #a33 is the same red the rest of the app
+   uses for an error (see .selection-status.is-error), so a failed row
+   reads as a failure rather than another shade of "not measured yet". */
+.rank-matrix-cell.is-failed {
+    color: #a33;
+    font-weight: 700;
+
+    background: oklch(0.96 0.02 25);
+
+    cursor: help;
 }
 
 .rank-matrix-mean {
@@ -1805,6 +1817,12 @@
     text-align: right;
 
     color: oklch(0.32 0.03 252);
+}
+
+.rank-matrix-mean.is-failed {
+    color: #a33;
+
+    cursor: help;
 }
 
 .rank-matrix-foot {
