@@ -44,22 +44,34 @@ def load_tokenizer(model_name: str) -> PreTrainedTokenizer | PreTrainedTokenizer
     try:
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=False)
 
-    except OSError as e:
-        # Covers 2 cases: Model name exist on Hugging face
-        #                 Model exists but is gated (requires HF login and accepted terms)
+    except Exception as e:
+        # A gated model can surface through more than one exception type -
+        # usually an OSError straight from the HTTP layer, but sometimes a
+        # different error raised further down the loading chain (a failed
+        # conversion step, for example) that happens to carry the same
+        # 401/403/gated wording. Checking the message text first, before
+        # looking at the exception's type, means a gated model is still
+        # recognised wherever the library actually raises it - this used
+        # to only be checked inside an "except OSError" branch, so any
+        # other exception type skipped the check and fell straight to
+        # the generic message below even when the real cause was gating.
         error_str = str(e).lower()
         if "401" in error_str or "403" in error_str or "gated" in error_str or "access" in error_str:
             raise ValueError(
-                f"Model '{model_name}' is a gated model on Hugging Face and isn't available through this tool."
+                f"Model '{model_name}' is a gated model on Hugging Face and isn't available through this tool. "
                 f"Try one of the listed tokenizers, or a different public model."
             )
-    
-        raise ValueError(
-            f"Model '{model_name}' not found on Hugging Face. "
-            f"Check the model name at https://huggingface.co/models"
-        )
 
-    except Exception as e:
+        # OSError here covers the ordinary "model name does not exist"
+        # case. Everything else - a missing optional dependency like
+        # protobuf, a malformed repo, and so on - falls through to the
+        # generic message below, which still shows the real error.
+        if isinstance(e, OSError):
+            raise ValueError(
+                f"Model '{model_name}' not found on Hugging Face. "
+                f"Check the model name at https://huggingface.co/models"
+            )
+
         raise ValueError(f"Failed to load tokenizer '{model_name}': {e}")
 
     # 3. Validate the returned object is actually a tokenizer

@@ -325,6 +325,34 @@ def test_load_tokenizer_gated_model_raises_specific_error():
             load_tokenizer("google/gemma-2b")
 
 
+def test_load_tokenizer_gated_model_raises_specific_error_even_when_not_an_oserror():
+    # The gated check used to live only inside the OSError branch - a
+    # gated-looking failure raised as a different exception type, as it
+    # genuinely can be further down the loading chain, fell through to
+    # the generic "Failed to load tokenizer" message instead of this
+    # one. Same scenario as the test above, through a ValueError.
+    gated_error = ValueError("403 Client Error: Forbidden. Cannot access gated repo for url ...")
+ 
+    with patch("app.services.tokenizer.AutoTokenizer.from_pretrained", side_effect=gated_error):
+        with pytest.raises(ValueError, match="gated model"):
+            load_tokenizer("google/gemma-2b")
+
+
+def test_load_tokenizer_other_failure_falls_through_to_generic_message():
+    # Not every non-OSError failure is gating - a missing optional
+    # dependency (protobuf, for the SentencePiece-to-fast conversion,
+    # was the real one that surfaced this) should still reach the
+    # generic message with the real error attached, not be mistaken
+    # for a gated model just because it is not an OSError.
+    conversion_error = ValueError(
+        "SentencePieceExtractor requires the protobuf library but it was not found"
+    )
+ 
+    with patch("app.services.tokenizer.AutoTokenizer.from_pretrained", side_effect=conversion_error):
+        with pytest.raises(ValueError, match="Failed to load tokenizer"):
+            load_tokenizer("castorini/afriberta_base")
+
+
 def test_load_tokenizer_genuinely_missing_model_raises_not_found_error():
     not_found_error = OSError("404 Client Error: Repository Not Found for url ...")
  

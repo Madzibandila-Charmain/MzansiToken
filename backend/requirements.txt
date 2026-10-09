@@ -14,6 +14,10 @@ lxml==6.1.3                # we walk word/document.xml ourselves - see corpus_ex
 transformers==5.15.0
 sentencepiece==0.2.2       # needed by any model that ships a SentencePiece file
                            # instead of a fast tokenizer.json: NLLB, XLM-R, Mistral
+protobuf==7.36.2           # needed to convert a raw SentencePiece .model file into
+                           # a fast tokenizer when the repo has no tokenizer.json of
+                           # its own to load instead - castorini/afriberta_base is
+                           # one of the four Rank starters and needs this to load
 
 # Testing only
 pytest==9.1.1
