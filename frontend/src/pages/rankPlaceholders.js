@@ -14,15 +14,23 @@
     Davlan/afro-xlmr-base are the same architecture before and after
     adaptation to African languages, so the two sit next to each
     other on purpose - the gap between them is what that adaptation
-    buys. castorini/afriberta_base is a second, independently-built
-    African model, so the board is not just one adapted/unadapted
-    pair plus unrelated noise.
+    buys. facebook/nllb-200-distilled-600M is a second, independently
+    built model that was trained for all seven of these languages from
+    the start - FLORES-200, the corpus this whole site measures on, is
+    its own evaluation set - so the board is not just one adapted/
+    unadapted pair plus unrelated noise.
+
+    That slot used to be castorini/afriberta_base, which no longer loads
+    with current transformers: its repository ships a binary
+    SentencePiece file that the loader ends up parsing as a text
+    vocabulary ("Error parsing line b'\x0c'"), so it failed on every
+    fresh setup and left the board one short.
 */
 export const INITIAL_TOKENIZERS = [
     "gpt2",
     "xlm-roberta-base",
     "Davlan/afro-xlmr-base",
-    "castorini/afriberta_base",
+    "facebook/nllb-200-distilled-600M",
 ];
 
 /*

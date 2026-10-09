@@ -31,6 +31,7 @@
     is cleared before every test for the same reason Compare's test does.
 */
 
+import { StrictMode } from "react";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
@@ -244,6 +245,64 @@ describe("Rank - initial load", () => {
             "gpt2",
             expect.anything()
         );
+    });
+
+    it("still seeds the starters under StrictMode, where the first mount is aborted straight away", async () => {
+
+        /*
+            main.jsx renders the app inside <StrictMode>, which in
+            development mounts every page, unmounts it and mounts it
+            again. The first run's requests are aborted almost at once.
+            Rank used to let that aborted run carry on, mark the seeding
+            check as done, and die - so the real second run skipped
+            seeding and the page sat on "Checking for saved
+            measurements..." forever with an empty board.
+
+            The mocks here honour the abort signal the way a real fetch
+            does - after a tick, not synchronously - because a mock that
+            ignores the signal lets the aborted run finish its work and
+            hides the bug completely.
+        */
+        const abortable = (result) => async (...args) => {
+            const signal = args[args.length - 1];
+            await Promise.resolve();
+            if (signal?.aborted) {
+                throw new DOMException("The operation was aborted.", "AbortError");
+            }
+            return result(...args);
+        };
+
+        getLeaderboard.mockImplementation(abortable(() => board));
+
+        getSavedLeaderboardEntry.mockImplementation(abortable((name) => {
+            if (name === "gpt2") {
+                throw new ApiError("Not found", 404, null);
+            }
+            return makeSavedEntry();
+        }));
+
+        render(
+            <StrictMode>
+                <AppStateProvider>
+                    <Rank />
+                </AppStateProvider>
+            </StrictMode>
+        );
+
+        /* Nothing can be added until the defaults are done... */
+        expect(screen.getByLabelText("Find a tokenizer")).toBeDisabled();
+
+        expect(
+            await screen.findByText("Leaderboard ready — restored 3 and measured 1.")
+        ).toBeInTheDocument();
+
+        /* ...and the lock lifts once they are. */
+        expect(screen.getByLabelText("Find a tokenizer")).toBeEnabled();
+
+        /* Exactly once each - the aborted first run must not have done
+           any of this work, and the real run must not have done it twice. */
+        expect(restoreLeaderboardEntry).toHaveBeenCalledTimes(3);
+        expect(createOrUpdateLeaderboardEntry).toHaveBeenCalledTimes(1);
     });
 
     it("shows a failed initial load as an error, without crashing the page", async () => {

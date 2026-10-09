@@ -185,7 +185,7 @@ function hasCompleteLeaderboardMetrics(saved) {
 }
 
 /* "restored 3" / "restored 2 and measured 1" / with a failure appended,
-   "... 1 did not load: castorini/afriberta_base (detail)." */
+   "... 1 did not load: some/model (detail)." */
 function describeDefaults(restored, measured, failed = []) {
 
     const parts = [];
@@ -256,6 +256,22 @@ function Rank() {
     const [errorMessage, setErrorMessage] = useState("");
 
     const [adding, setAdding] = useState(false);
+
+    /* True from the moment Rank mounts until its first load has completely
+       finished - reading the board and, on an empty one, checking for
+       saved measurements and restoring or measuring the four defaults.
+       The search box, the Add button and Remove are all locked for that
+       whole time, so the defaults always finish first and a manual add
+       can only ever come after them.
+
+       It used to start false and only switch on once measuring actually
+       began, which left a gap - while the board was being read and
+       while "Checking for saved measurements..." was on screen - where a
+       tokenizer could be typed and added underneath the setup. The two
+       then interleaved: whichever call's setAddStatus/loadLeaderboard
+       landed last won, so a manual add looked like it "stopped" the
+       defaults, which then "continued" and overwrote its status line. */
+    const [bootstrapping, setBootstrapping] = useState(true);
     const [addStatus, setAddStatus] = useState("");
     const [addFailed, setAddFailed] = useState(false);
     const [addPartial, setAddPartial] = useState(false);
@@ -289,6 +305,13 @@ function Rank() {
         of them should write state into a component that is gone.
     */
     const addControllerRef = useRef(null);
+
+    /* What this browser remembered about Rank when the page mounted.
+       Read through a ref rather than listed as a dependency of the
+       mount effect below: that effect sets rankInitialised itself when
+       it finishes, so depending on it made the effect run a second time
+       - abort the first run, start over - for no reason at all. */
+    const initialisedAtMountRef = useRef(rankInitialised);
 
     useEffect(() => {
 
@@ -329,42 +352,19 @@ function Rank() {
        with an empty array. hasCompleteLeaderboardMetrics and
        describeDefaults are not listed: they moved to module scope
        above, so their identity never changes at all. */
-    const initialiseDefaultLeaderboard = useCallback(async function initialiseDefaultLeaderboard(signal) {
+    const initialiseDefaultLeaderboard = useCallback(async function initialiseDefaultLeaderboard(savedEntries, signal) {
         /*
             These are the tokenizers that make up the default Rank board.
             If a tokenizer was measured before, restore its saved measurement.
             Otherwise, measure it through the normal real-data pipeline.
+
+            savedEntries is fetched by the caller (initialiseRank), not
+            here - it already has to run that same lookup to decide
+            whether this function should even be called at all, and
+            fetching the same four rows twice for one decision would be
+            wasteful.
         */
         const total = INITIAL_TOKENIZERS.length;
-
-        /*
-            The saved-entry lookups are cheap database reads, so they go out
-            together and three sequential round trips become one wait. The
-            measurements below stay one at a time: each one tokenizes the
-            whole corpus in eight languages, and firing them at once would
-            hold the API open for everything else - the same reason the
-            per-language grid reads one tokenizer at a time.
-        */
-        setAddStatus("Checking for saved measurements...");
-
-        const savedEntries = await Promise.all(
-            INITIAL_TOKENIZERS.map(async (name) => {
-
-                try {
-                    return await getSavedLeaderboardEntry(name, signal);
-                }
-                catch (error) {
-
-                    /* No saved measurement is an ordinary answer, not a
-                       failure: it just means this one has to be measured. */
-                    if (error.status !== 404) {
-                        throw error;
-                    }
-
-                    return null;
-                }
-            })
-        );
 
         let restored = 0;
         let measured = 0;
@@ -485,6 +485,20 @@ function Rank() {
 
         const controller = new AbortController();
 
+        /*
+            Every await below is followed by an aborted check, and that is
+            load-bearing. React's StrictMode (main.jsx) mounts this page,
+            unmounts it and mounts it again in development, so the first
+            run's controller is aborted almost immediately - but the async
+            function it started keeps going unless it stops itself. It used
+            to keep going: its aborted requests were caught and swallowed,
+            it carried on into the seeding check as if the board were
+            empty, marked that check as done, and died there. The real
+            second run then saw "already checked" and skipped seeding, and
+            the page sat on "Checking for saved measurements..." forever.
+            An aborted run now returns at its first await and touches
+            nothing.
+        */
         async function initialiseRank() {
 
             setErrorMessage("");
@@ -496,18 +510,17 @@ function Rank() {
                 from the database that was already sitting there, not a
                 guess about whether this particular browser remembers
                 finishing setup before. A revisit that already has the
-                board in context (rankInitialised already true) still
-                gets this same read, quietly replacing it with whatever
-                is current rather than trusting a copy that could be
-                stale - the one case that is worth the extra round trip
-                is someone editing the same leaderboard from a second
-                tab or machine.
+                board in context still gets this same read, quietly
+                replacing it with whatever is current rather than trusting
+                a copy that could be stale.
             */
             let currentRows = [];
+            let boardRead = false;
 
             try {
 
                 currentRows = await loadLeaderboard(controller.signal);
+                boardRead = true;
 
             }
             catch (error) {
@@ -523,30 +536,47 @@ function Rank() {
 
             }
 
+            if (controller.signal.aborted) {
+                return;
+            }
+
             /* Whatever the database had to say, say it now - a revisit
                already showing the board from context never needed the
                spinner in the first place, and a genuine first load has
                real rows (or a real error) to show instead of one. */
-            if (!controller.signal.aborted) {
-                setIsLoading(false);
-            }
+            setIsLoading(false);
 
             /*
-                The one-time setup below - checking and seeding the four
-                default tokenizers - has already run on this browser
-                before. The read above is the whole story this time.
+                Refetching /options and /leaderboard/scoring (the language
+                list and the score-weight sentence) on every single visit
+                would be wasted work once this browser already has them -
+                they barely ever change.
             */
-            if (rankInitialised) {
-                return;
-            }
+            if (!initialisedAtMountRef.current) {
 
-            try {
+                try {
 
-                const options = await getOptions(controller.signal);
+                    const options = await getOptions(controller.signal);
 
-                const optionsLanguages = options.languages || [];
+                    setFloresLanguages(options.languages || []);
 
-                setFloresLanguages(optionsLanguages);
+                }
+                catch (error) {
+
+                    if (error.name !== "AbortError") {
+
+                        setErrorMessage(
+                            friendlyError(error) ||
+                            "Could not load the leaderboard."
+                        );
+
+                    }
+
+                }
+
+                if (controller.signal.aborted) {
+                    return;
+                }
 
                 try {
 
@@ -563,38 +593,112 @@ function Rank() {
                     }
                 }
 
-                /*
-                    Only ever seed the defaults onto a board that is
-                    genuinely empty in the database - never just because
-                    this browser has not finished its one-time setup yet.
-                    Checking currentRows (what the database just said)
-                    rather than rankInitialised (what this browser
-                    remembers) means a user who removed every tokenizer
-                    on purpose gets the empty board they chose back, not
-                    the defaults reappearing underneath them - and means
-                    the same check is correct the very first time this
-                    ever runs in any browser, not just this one.
-                */
-                if (currentRows.length === 0) {
-                    await initialiseDefaultLeaderboard(controller.signal);
-                }
-
-                if (!controller.signal.aborted) {
-                    setRankInitialised(true);
+                if (controller.signal.aborted) {
+                    return;
                 }
 
             }
-            catch (error) {
 
-                if (error.name !== "AbortError") {
+            /*
+                Whether to seed the defaults is decided from what the
+                database itself says, never from what this browser
+                remembers. Only an empty board is a candidate - and only
+                when the board was actually read: a backend that could not
+                be reached says nothing about whether the board is empty.
 
-                    setErrorMessage(
-                        friendlyError(error) ||
-                        "Could not load the leaderboard."
+                An empty board is then one of two things. A deliberately
+                emptied board - the user removed every tokenizer on
+                purpose - still has all four defaults saved in the
+                database, just inactive, and stays empty. A genuinely
+                reset backend - a deleted data folder, a fresh clone, a
+                teammate's first run - is missing at least one of them,
+                and gets seeded.
+            */
+            if (boardRead && currentRows.length === 0) {
+
+                try {
+
+                    setAddStatus("Checking for saved measurements...");
+
+                    /*
+                        Cheap database reads, so they go out together and
+                        four sequential round trips become one wait.
+                    */
+                    const savedEntries = await Promise.all(
+                        INITIAL_TOKENIZERS.map(async (name) => {
+
+                            try {
+                                return await getSavedLeaderboardEntry(
+                                    name,
+                                    controller.signal
+                                );
+                            }
+                            catch (error) {
+
+                                /* No saved measurement is an ordinary
+                                   answer, not a failure: it just means
+                                   this one has never been measured. */
+                                if (error.status !== 404) {
+                                    throw error;
+                                }
+
+                                return null;
+                            }
+                        })
                     );
-                    setAddStatus("");
-                }
 
+                    if (controller.signal.aborted) {
+                        return;
+                    }
+
+                    /*
+                        every(), not some(). "The user removed every
+                        tokenizer on purpose" means all four were once
+                        active and all four got taken off - which only
+                        holds if EVERY one of them already has a saved
+                        record. Three saved and one never measured is
+                        the ordinary restore-three/measure-one case.
+                    */
+                    const allDefaultsAlreadySaved = savedEntries.every(
+                        (entry) => entry !== null
+                    );
+
+                    if (!allDefaultsAlreadySaved) {
+
+                        await initialiseDefaultLeaderboard(
+                            savedEntries,
+                            controller.signal
+                        );
+                    }
+                    else {
+                        /* Every default already has a saved record - this
+                           is a board the user emptied on purpose, not a
+                           reset backend. Respect it and stay empty. */
+                        setAddStatus("");
+                    }
+
+                }
+                catch (error) {
+
+                    if (error.name !== "AbortError" && !controller.signal.aborted) {
+
+                        setErrorMessage(
+                            friendlyError(error) ||
+                            "Could not load the leaderboard."
+                        );
+                        setAddStatus("");
+                    }
+
+                }
+            }
+
+            if (!controller.signal.aborted) {
+                setRankInitialised(true);
+
+                /* Every path above that does not end in an abort lands
+                   here - success, a failed default, an unreachable
+                   backend - so this is the one place the lock lifts. */
+                setBootstrapping(false);
             }
 
         }
@@ -603,12 +707,12 @@ function Rank() {
 
         return () => controller.abort();
 
-    }, [initialiseDefaultLeaderboard, loadLeaderboard, rankInitialised, setFloresLanguages, setWeights, setRankInitialised]);
+    }, [initialiseDefaultLeaderboard, loadLeaderboard, setFloresLanguages, setWeights, setRankInitialised]);
 
     async function handleAdd(requested) {
         const name = String(requested ?? filter).trim();
 
-        if (!name || adding) {
+        if (!name || adding || bootstrapping) {
             return;
         }
 
@@ -758,7 +862,7 @@ function Rank() {
             return;
         }
 
-        if (removingId != null || adding) {
+        if (removingId != null || adding || bootstrapping) {
             return;
         }
 
@@ -1220,7 +1324,7 @@ function Rank() {
                             }}
                             placeholder="Find a tokenizer..."
                             aria-label="Find a tokenizer"
-                            disabled={adding}
+                            disabled={adding || bootstrapping}
                         />
 
                     </div>
@@ -1232,6 +1336,7 @@ function Rank() {
                         disabled={
                             busy ||
                             isLoading ||
+                            bootstrapping ||
                             !filter.trim()
                         }
                     >
@@ -1246,7 +1351,7 @@ function Rank() {
                         className={`selection-status ${
                             addFailed
                                 ? "is-error"
-                                : (busy || isLoading)
+                                : (busy || isLoading || bootstrapping)
                                     ? "is-loading"
                                     : addPartial
                                         ? "is-partial"
@@ -1259,7 +1364,7 @@ function Rank() {
                             no spinner beside "Restoring...", so the line
                             looked finished the whole time it was working.
                         */}
-                        {(busy || isLoading)
+                        {(busy || isLoading || bootstrapping)
                             ? <span className="spinner"></span>
                             : <span className="status-dot"></span>}
                         <StatusMessage
@@ -1504,7 +1609,7 @@ function Rank() {
                     errorMessage={errorMessage}
                     onRemove={handleRemove}
                     removingId={removingId}
-                    disabled={adding}
+                    disabled={adding || bootstrapping}
                     showAllMetrics={showAllMetrics}
                     colourFor={identityColour}
                     initialsFor={initials}
