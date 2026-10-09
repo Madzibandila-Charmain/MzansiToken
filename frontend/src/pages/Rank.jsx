@@ -304,7 +304,18 @@ function Rank() {
             signal
         );
 
-        setRows(Array.isArray(data) ? data : []);
+        const list = Array.isArray(data) ? data : [];
+
+        setRows(list);
+
+        /*
+            Returned as well as stored: the mount effect below needs to
+            know whether the board came back empty the moment this
+            resolves, and reading the `rows` state right after calling
+            this would still see the value from before the update -
+            React batches it instead of applying it synchronously.
+        */
+        return list;
     }, [setRows]);
 
     /* Same reasoning as loadLeaderboard above - wrapped so the mount
@@ -360,7 +371,16 @@ function Rank() {
 
             /*
                 The tokenizer already has a measurement in the database.
-                Reactivate it without running the expensive measurement again.
+                Reactivate it without running the expensive measurement
+                again - restoreLeaderboardEntry (POST .../restore) just
+                flips the row back to active, the same call handleAdd
+                below already uses for the identical situation.
+                createOrUpdateLeaderboardEntry was being called here
+                instead, which re-runs the full FLORES + NCHLT
+                measurement regardless of there being a saved result
+                already sitting in the database - "Restoring" was
+                claiming to skip the expensive path while actually
+                paying for it every time.
             */
             if (hasCompleteLeaderboardMetrics(saved)) {
 
@@ -368,7 +388,7 @@ function Rank() {
                     `Restoring ${name} (${position})...`
                 );
 
-                await createOrUpdateLeaderboardEntry(
+                await restoreLeaderboardEntry(
                     name,
                     signal
                 );
@@ -417,22 +437,62 @@ function Rank() {
 
     useEffect(() => {
 
-        /*
-            Already restored or measured on an earlier mount - rows,
-            weights, the heatmap and the sort/filter controls are all
-            sitting in context already. Nothing here needs to run again;
-            the board below just renders what is already there.
-        */
-        if (rankInitialised) {
-            return;
-        }
-
         const controller = new AbortController();
 
         async function initialiseRank() {
 
-            setIsLoading(true);
             setErrorMessage("");
+
+            /*
+                One cheap database read, first, on every mount - restored
+                or not. This is what makes closing the site and reopening
+                it show the previous board right away: a read straight
+                from the database that was already sitting there, not a
+                guess about whether this particular browser remembers
+                finishing setup before. A revisit that already has the
+                board in context (rankInitialised already true) still
+                gets this same read, quietly replacing it with whatever
+                is current rather than trusting a copy that could be
+                stale - the one case that is worth the extra round trip
+                is someone editing the same leaderboard from a second
+                tab or machine.
+            */
+            let currentRows = [];
+
+            try {
+
+                currentRows = await loadLeaderboard(controller.signal);
+
+            }
+            catch (error) {
+
+                if (error.name !== "AbortError") {
+
+                    setErrorMessage(
+                        friendlyError(error) ||
+                        "Could not load the leaderboard."
+                    );
+
+                }
+
+            }
+
+            /* Whatever the database had to say, say it now - a revisit
+               already showing the board from context never needed the
+               spinner in the first place, and a genuine first load has
+               real rows (or a real error) to show instead of one. */
+            if (!controller.signal.aborted) {
+                setIsLoading(false);
+            }
+
+            /*
+                The one-time setup below - checking and seeding the four
+                default tokenizers - has already run on this browser
+                before. The read above is the whole story this time.
+            */
+            if (rankInitialised) {
+                return;
+            }
 
             try {
 
@@ -457,7 +517,21 @@ function Rank() {
                     }
                 }
 
-                await initialiseDefaultLeaderboard(controller.signal);
+                /*
+                    Only ever seed the defaults onto a board that is
+                    genuinely empty in the database - never just because
+                    this browser has not finished its one-time setup yet.
+                    Checking currentRows (what the database just said)
+                    rather than rankInitialised (what this browser
+                    remembers) means a user who removed every tokenizer
+                    on purpose gets the empty board they chose back, not
+                    the defaults reappearing underneath them - and means
+                    the same check is correct the very first time this
+                    ever runs in any browser, not just this one.
+                */
+                if (currentRows.length === 0) {
+                    await initialiseDefaultLeaderboard(controller.signal);
+                }
 
                 if (!controller.signal.aborted) {
                     setRankInitialised(true);
@@ -476,21 +550,14 @@ function Rank() {
                 }
 
             }
-            finally {
-                /* An aborted run (StrictMode mounts twice in dev) must not
-                   end the loading state the live run still owns - it made
-                   the sample board flash up before the real one. */
-                if (!controller.signal.aborted) {
-                    setIsLoading(false);
-                }
-            }
+
         }
 
         initialiseRank();
 
         return () => controller.abort();
 
-    }, [initialiseDefaultLeaderboard, rankInitialised, setFloresLanguages, setWeights, setRankInitialised]);
+    }, [initialiseDefaultLeaderboard, loadLeaderboard, rankInitialised, setFloresLanguages, setWeights, setRankInitialised]);
 
     async function handleAdd(requested) {
         const name = String(requested ?? filter).trim();

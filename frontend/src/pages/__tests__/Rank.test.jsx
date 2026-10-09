@@ -1,6 +1,34 @@
 /*
     Rank.test.jsx
     Author: Mukovhe Ranwashe
+
+    Rank.jsx is 1400+ lines of async orchestration (restore-or-measure
+    the four starter tokenizers, reload the board, fetch the leader's
+    per-language breakdown, fetch the whole-board heatmap) around one
+    real backend. None of that had a test before this file - this
+    covers the paths most likely to break silently: the initial load
+    (success and failure), adding a tokenizer (new, restored, partial,
+    and failed), removing one, and the sort/filter controls.
+
+    Every row name on this page is rendered in up to three places at
+    once - the leaderboard table, the "Close at the top" spotlight
+    list, and the per-language heatmap - so a plain screen.getByText
+    on a tokenizer name is ambiguous the moment there is more than one
+    row. Assertions about what the TABLE shows go through
+    leaderboardRows(), scoped to the ".rank-board" section; assertions
+    about the leader go through the ".rank-leader-name" heading.
+
+    The whole api/client module is mocked - every function Rank.jsx
+    imports from it - except friendlyError and ApiError, which are
+    kept real so the error-message assertions exercise the actual
+    error-formatting logic rather than a stub standing in for it.
+
+    Rank reads and writes its board, weights and sort/filter controls
+    through AppStateContext now, not local state - the same place
+    Compare already keeps its selections - so it is rendered inside the
+    real AppStateProvider here too. Those values persist to localStorage
+    (so a refresh does not cost a remeasure of everything either), which
+    is cleared before every test for the same reason Compare's test does.
 */
 
 import { render, screen, within } from "@testing-library/react";
@@ -8,7 +36,7 @@ import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
 import Rank from "../Rank";
-import { AppStateProvider } from "../../context/appStateContext.js";
+import { AppStateProvider } from "../../context/AppStateContext";
 
 vi.mock("../../api/client", async (importOriginal) => {
     const actual = await importOriginal();
@@ -138,8 +166,16 @@ beforeEach(() => {
 
 describe("Rank - initial load", () => {
 
-    it("restores the starter board and shows the current leader", async () => {
+    it("shows an already-persisted board immediately, without re-running the starter bootstrap", async () => {
 
+        /*
+            The database already has a real board on the very first
+            read - the common case for every restart after the first
+            one. The starter bootstrap (checking and restoring/measuring
+            the four defaults) exists only to seed an empty board, so it
+            must not run at all here - not even to quietly restore
+            tokenizers that aren't even among the four defaults.
+        */
         setBoard([
             makeRow({ id: 1, name: "openai/gpt-4o", overall_score: 91.2 }),
             makeRow({ id: 2, name: "google/byt5-small", overall_score: 71.2 }),
@@ -157,18 +193,25 @@ describe("Rank - initial load", () => {
             document.querySelector(".rank-board-count").textContent
         ).toMatch(/02\s*tokenizers.*sorted by/i);
 
-        /* describeDefaults("restored 4", "") - all four starters were
-           already-measured, so every one of them restored and none
-           had to be measured from scratch. */
+        /* No "Leaderboard ready - restored ..." line, because nothing
+           needed restoring - the board shown is exactly what the
+           database already had, nothing added underneath it. */
         expect(
-            await screen.findByText("Leaderboard ready — restored 4.")
-        ).toBeInTheDocument();
+            screen.queryByText(/Leaderboard ready/i)
+        ).not.toBeInTheDocument();
 
+        expect(getSavedLeaderboardEntry).not.toHaveBeenCalled();
         expect(getTokenizerInfo).not.toHaveBeenCalled();
+        expect(restoreLeaderboardEntry).not.toHaveBeenCalled();
+        expect(createOrUpdateLeaderboardEntry).not.toHaveBeenCalled();
     });
 
-    it("measures a starter tokenizer that has never been saved before", async () => {
+    it("seeds the four starter tokenizers only when the database leaderboard is genuinely empty", async () => {
 
+        /* board stays at its beforeEach default of [] - a first-ever
+           run, nothing saved anywhere yet. gpt2 has never been
+           measured; the other three starters already have a complete
+           saved entry (the default getSavedLeaderboardEntry mock). */
         getSavedLeaderboardEntry.mockImplementation(async (name) => {
             if (name === "gpt2") {
                 throw new ApiError("Not found", 404, null);
@@ -176,19 +219,28 @@ describe("Rank - initial load", () => {
             return makeSavedEntry();
         });
 
-        setBoard([makeRow()]);
-
         renderRank();
 
         expect(
             await screen.findByText("Leaderboard ready — restored 3 and measured 1.")
         ).toBeInTheDocument();
 
+        /* The three already-measured starters must be restored - a
+           cheap reactivation - never sent through the expensive
+           measure-from-scratch call. */
+        expect(restoreLeaderboardEntry).toHaveBeenCalledTimes(3);
+
         /* gpt2 is the one starter with no saved entry, so it is the
            only one that should have gone through the slow, real
-           tokenizer-info check. */
+           tokenizer-info check and the one call that actually
+           measures rather than restores. */
         expect(getTokenizerInfo).toHaveBeenCalledTimes(1);
         expect(getTokenizerInfo).toHaveBeenCalledWith(
+            "gpt2",
+            expect.anything()
+        );
+        expect(createOrUpdateLeaderboardEntry).toHaveBeenCalledTimes(1);
+        expect(createOrUpdateLeaderboardEntry).toHaveBeenCalledWith(
             "gpt2",
             expect.anything()
         );

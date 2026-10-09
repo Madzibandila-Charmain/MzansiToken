@@ -16,4 +16,7 @@ env/
 
 # Generated at runtime, not source
 backend/data/backups/
+backend/data/*.db
+backend/data/*.db-wal
+backend/data/*.db-shm
 .pytest_cache/
