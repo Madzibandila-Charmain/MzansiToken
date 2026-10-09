@@ -5,6 +5,12 @@ leaderboard_service.py - All services required for leaderboard persistance
 
 from db import ALLOWED_SORT_COLUMNS, METRIC_COLUMN_MAP, get_connection, perform_backup
 
+# How many tokenizers can be active on the leaderboard at once - one named
+# constant, checked in the three places below, instead of the literal 10
+# repeated at each one. A repeated literal is exactly the kind of thing
+# that is easy to change in two places and miss the third.
+MAX_ACTIVE_TOKENIZERS = 15
+
 # ---------------------------------------------------------------------------
 # Write operations
 # ---------------------------------------------------------------------------
@@ -63,9 +69,10 @@ def upsert_tokenizer(name: str, metrics: dict) -> int:
                 "SELECT COUNT(*) FROM tokenizers WHERE active = 1;"
             ).fetchone()[0]
 
-            if active_count >= 10:
+            if active_count >= MAX_ACTIVE_TOKENIZERS:
                 raise ValueError(
-                    "The leaderboard already has 10 active tokenizers."
+                    f"The leaderboard already has {MAX_ACTIVE_TOKENIZERS} "
+                    f"active tokenizers."
                 )
 
             conn.execute(
@@ -84,9 +91,10 @@ def upsert_tokenizer(name: str, metrics: dict) -> int:
             "SELECT COUNT(*) FROM tokenizers WHERE active = 1;"
         ).fetchone()[0]
 
-        if active_count >= 10:
+        if active_count >= MAX_ACTIVE_TOKENIZERS:
             raise ValueError(
-                "The leaderboard already has 10 active tokenizers."
+                f"The leaderboard already has {MAX_ACTIVE_TOKENIZERS} "
+                f"active tokenizers."
             )
 
     return add_tokenizer(name, metrics)
@@ -151,9 +159,10 @@ def restore_tokenizer(name: str) -> dict:
             "SELECT COUNT(*) FROM tokenizers WHERE active = 1;"
         ).fetchone()[0]
 
-        if active_count >= 10:
+        if active_count >= MAX_ACTIVE_TOKENIZERS:
             raise ValueError(
-                "The leaderboard already has 10 active tokenizers."
+                f"The leaderboard already has {MAX_ACTIVE_TOKENIZERS} "
+                f"active tokenizers."
             )
 
         conn.execute(
