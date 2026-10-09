@@ -10,15 +10,19 @@
     These are model names only. Their metrics must always come from the
     real MzansiToken measurement pipeline.
 
-    The first three are the original models intended for the initial
-    leaderboard. The remaining three are additional candidates that can
-    be measured and compared using the same scoring formula.
+    gpt2 is a plain English baseline. xlm-roberta-base and
+    Davlan/afro-xlmr-base are the same architecture before and after
+    adaptation to African languages, so the two sit next to each
+    other on purpose - the gap between them is what that adaptation
+    buys. castorini/afriberta_base is a second, independently-built
+    African model, so the board is not just one adapted/unadapted
+    pair plus unrelated noise.
 */
 export const INITIAL_TOKENIZERS = [
     "gpt2",
-    "bert-base-uncased",
     "xlm-roberta-base",
-    "openai-community/gpt2-large",
+    "Davlan/afro-xlmr-base",
+    "castorini/afriberta_base",
 ];
 
 /*
