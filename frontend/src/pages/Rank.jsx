@@ -127,10 +127,6 @@ function vendor(name) {
     return parts.length > 1 ? parts[0] : "Hugging Face";
 }
 
-/*
-    A language with no NCHLT segmentations is not a failure - it is a
-    language the dataset does not cover. Told apart by the backend's own
-    wording, which mbi_router keeps stable for exactly this reason.
 /* Small line icons, inline so the page needs no icon library. */
 const IconEfficiency = (
     <svg viewBox="0 0 24 24" aria-hidden="true">
