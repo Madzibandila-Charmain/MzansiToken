@@ -21,13 +21,17 @@ MAX_MODEL_NAME_LENGTH = 96
 REPO_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)?$")
 
 # Tokenizers offered in the dropdowns — curated and verified to load without a Hugging Face login via check_tokenizers.py.
-# Davlan/afro-xlmr-base and castorini/afriberta_base were added to Rank's
-# starters to showcase African-language tokenizers specifically, but this
-# list (what populates the Compare/Inspect dropdown pills, via /options)
-# was never updated alongside it - so neither one showed up anywhere a
-# user could discover them by browsing instead of already knowing the
-# exact Hugging Face name to type. Both load without a login - verified
-# the same way as the rest of this list, and already relied on by Rank.
+# Davlan/afro-xlmr-base was added to Rank's starters to showcase an
+# African-language tokenizer specifically, but this list (what populates
+# Inspect's tokenizer pills, via /options) was never updated
+# alongside it - so it never showed up anywhere a user could discover it
+# by browsing instead of already knowing the exact name to type.
+# castorini/afriberta_base was added here at the same time and has been
+# taken back out: it does not load with current transformers (its
+# repository's SentencePiece file gets parsed as a text vocabulary), so
+# its pill crashed Inspect the moment anyone clicked it. Its place goes
+# to google/gemma-4-12B-it, the tokenizer Compare already opens with -
+# ungated, and already loading in front of every Compare visitor.
 SUPPORTED_TOKENIZERS = [
     "gpt2",
     "openai-community/gpt2-large",
@@ -39,7 +43,7 @@ SUPPORTED_TOKENIZERS = [
     "facebook/nllb-200-distilled-600M",
     "tiiuae/falcon-7b",
     "Davlan/afro-xlmr-base",
-    "castorini/afriberta_base",
+    "google/gemma-4-12B-it",
 ]
 
 
