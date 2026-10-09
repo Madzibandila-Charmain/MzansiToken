@@ -4,6 +4,7 @@ db.py - Persistance layer for the tokenizer leaderboard
 """
 import os
 import sqlite3
+import threading
 from pathlib import Path
 from contextlib import contextmanager
 import time
@@ -69,23 +70,50 @@ CREATE TABLE IF NOT EXISTS metrics (
 
 
 # Database backup functionality
-def perform_backup() -> Path:
-    BACKUP_DIR.mkdir(exist_ok=True, mode=0o700)
- 
-    timestamp = time.strftime("%Y%m%d-%H%M%S")
-    backup_path = BACKUP_DIR / f"leaderboard-{timestamp}.db"
- 
-    source = sqlite3.connect(DB_PATH)
-    dest = sqlite3.connect(backup_path)
-    try:
-        source.backup(dest)  # atomic, WAL-aware online backup
-    finally:
-        dest.close()
-        source.close()
- 
-    backup_path.chmod(0o600)
-    _rotate_old_backups()
-    return backup_path
+#
+# Every leaderboard write (add, remove, restore, a metrics update) used to
+# call this inline and wait for it - a full-file sqlite3 .backup() (a
+# page-by-page copy of the WHOLE database, not a diff of what changed)
+# plus a directory rescan in _rotate_old_backups, on every single write,
+# even a bare active-flag toggle that touched one column. At today's board
+# size that copy is sub-millisecond and invisible, but it was still paid
+# by the caller before they got a response, it scaled with the database's
+# total size rather than the size of the change, and a failure in here
+# (disk full, a permissions problem) used to raise straight out of
+# add_tokenizer/update_metrics/etc. and turn an already-committed,
+# already-successful write into a 500 for the user. Running the real work
+# on a background thread fixes both: the write returns immediately, and a
+# backup failure can no longer take an otherwise-successful write down
+# with it. _backup_lock serialises the actual copy-and-rotate step so two
+# near-simultaneous writes cannot race each other inside the backups
+# folder.
+_backup_lock = threading.Lock()
+
+
+def perform_backup() -> None:
+    """Queue a backup to run in the background; returns immediately."""
+    threading.Thread(target=_perform_backup_now, daemon=True).start()
+
+
+def _perform_backup_now() -> Path:
+    """The actual backup-and-rotate work, done off the request thread."""
+    with _backup_lock:
+        BACKUP_DIR.mkdir(exist_ok=True, mode=0o700)
+
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        backup_path = BACKUP_DIR / f"leaderboard-{timestamp}.db"
+
+        source = sqlite3.connect(DB_PATH)
+        dest = sqlite3.connect(backup_path)
+        try:
+            source.backup(dest)  # atomic, WAL-aware online backup
+        finally:
+            dest.close()
+            source.close()
+
+        backup_path.chmod(0o600)
+        _rotate_old_backups()
+        return backup_path
 
 def _rotate_old_backups() -> None:
     backups = sorted(BACKUP_DIR.glob("leaderboard-*.db"), key=lambda p: p.stat().st_mtime)
