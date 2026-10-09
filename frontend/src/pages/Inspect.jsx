@@ -524,6 +524,21 @@ function Inspect() {
 
         }
 
+        /*
+            These sentence calls used to go out one at a time, awaited in
+            a loop - a short paragraph meant a dozen separate round trips
+            to the SAME already-loaded tokenizer before anything on
+            screen updated, and nothing here could be cancelled, so an
+            older, slower request landing after a newer (shorter) edit
+            could overwrite it with stale tokens. Promise.all is safe
+            here in a way it would not be for Rank's board: every
+            sentence hits the one tokenizer this page already loaded,
+            never several different ones that might still need
+            downloading. The AbortController gives the cleanup below
+            something real to cancel, the same pattern Rank uses.
+        */
+        const controller = new AbortController();
+
         const timeoutId = setTimeout(
             async () => {
 
@@ -541,26 +556,23 @@ function Inspect() {
                                 sentence.length > 0
                         );
 
-                    const tokenizedSentences = [];
-
-                    for (
-                        const sentence
-                        of sentences
-                    ) {
-
-                        const sentenceResult =
-                            await tokenizeText(
+                    const tokenizedSentences = await Promise.all(
+                        sentences.map((sentence) =>
+                            tokenizeText(
                                 sentence,
                                 language,
-                                tokenizer
-                            );
-
-                        tokenizedSentences.push(
-                            formatTokenizedText(
-                                sentenceResult.tokenized_text
+                                tokenizer,
+                                controller.signal
+                            ).then((sentenceResult) =>
+                                formatTokenizedText(
+                                    sentenceResult.tokenized_text
+                                )
                             )
-                        );
+                        )
+                    );
 
+                    if (controller.signal.aborted) {
+                        return;
                     }
 
                     setTypedTokenizedText(
@@ -571,8 +583,13 @@ function Inspect() {
                         await tokenizeText(
                             inputText,
                             language,
-                            tokenizer
+                            tokenizer,
+                            controller.signal
                         );
+
+                    if (controller.signal.aborted) {
+                        return;
+                    }
 
                     setTextMetrics({
                         tokens:
@@ -588,6 +605,13 @@ function Inspect() {
                 }
                 catch (err) {
 
+                    if (
+                        err.name === "AbortError" ||
+                        controller.signal.aborted
+                    ) {
+                        return;
+                    }
+
                     setError(
                         friendlyError(err) ||
                         "Could not tokenize the text."
@@ -599,8 +623,10 @@ function Inspect() {
             400
         );
 
-        return () =>
+        return () => {
             clearTimeout(timeoutId);
+            controller.abort();
+        };
 
     }, [
         inputText,

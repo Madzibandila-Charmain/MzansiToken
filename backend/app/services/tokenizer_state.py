@@ -21,6 +21,13 @@ MAX_MODEL_NAME_LENGTH = 96
 REPO_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)?$")
 
 # Tokenizers offered in the dropdowns — curated and verified to load without a Hugging Face login via check_tokenizers.py.
+# Davlan/afro-xlmr-base and castorini/afriberta_base were added to Rank's
+# starters to showcase African-language tokenizers specifically, but this
+# list (what populates the Compare/Inspect dropdown pills, via /options)
+# was never updated alongside it - so neither one showed up anywhere a
+# user could discover them by browsing instead of already knowing the
+# exact Hugging Face name to type. Both load without a login - verified
+# the same way as the rest of this list, and already relied on by Rank.
 SUPPORTED_TOKENIZERS = [
     "gpt2",
     "openai-community/gpt2-large",
@@ -31,6 +38,8 @@ SUPPORTED_TOKENIZERS = [
     "xlm-roberta-base",
     "facebook/nllb-200-distilled-600M",
     "tiiuae/falcon-7b",
+    "Davlan/afro-xlmr-base",
+    "castorini/afriberta_base",
 ]
 
 

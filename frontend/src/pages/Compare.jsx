@@ -259,9 +259,9 @@ function Compare() {
             setError("");
 
             const [
-                resultOne,
-                resultTwo
-            ] = await Promise.all([
+                settledOne,
+                settledTwo
+            ] = await Promise.allSettled([
 
                 getDefaultCorpus(
                     selectedLanguage,
@@ -275,29 +275,52 @@ function Compare() {
 
             ]);
 
-            setTokenizerOneTokens(
-                formatTokenizedText(
-                    resultOne.tokenized_text
-                )
-            );
+            /*
+                Promise.all rejected the instant either side failed,
+                discarding whichever side HAD actually come back - one
+                gated or slow tokenizer blanked a perfectly good result
+                on the other side too. allSettled keeps both outcomes, so
+                a working side still reaches the screen and only the
+                failing side's own reason gets thrown below, instead of
+                a generic message covering a result that was fine.
+            */
+            if (settledOne.status === "fulfilled") {
 
-            setTokenizerTwoTokens(
-                formatTokenizedText(
-                    resultTwo.tokenized_text
-                )
-            );
+                setTokenizerOneTokens(
+                    formatTokenizedText(
+                        settledOne.value.tokenized_text
+                    )
+                );
 
-            setTokenizerOneMetrics(
-                formatMetrics(resultOne)
-            );
+                setTokenizerOneMetrics(
+                    formatMetrics(settledOne.value)
+                );
+            }
 
-            setTokenizerTwoMetrics(
-                formatMetrics(resultTwo)
-            );
+            if (settledTwo.status === "fulfilled") {
+
+                setTokenizerTwoTokens(
+                    formatTokenizedText(
+                        settledTwo.value.tokenized_text
+                    )
+                );
+
+                setTokenizerTwoMetrics(
+                    formatMetrics(settledTwo.value)
+                );
+            }
 
             setCompareSource("default");
             setCompareSelectedFile(null);
             setCompareFileName("default");
+
+            if (settledOne.status === "rejected") {
+                throw settledOne.reason;
+            }
+
+            if (settledTwo.status === "rejected") {
+                throw settledTwo.reason;
+            }
 
         } catch (err) {
 
@@ -583,9 +606,9 @@ function Compare() {
                 setError("");
 
                 const [
-                    resultOne,
-                    resultTwo
-                ] = await Promise.all([
+                    settledOne,
+                    settledTwo
+                ] = await Promise.allSettled([
 
                     tokenizeText(
                         inputText,
@@ -601,36 +624,48 @@ function Compare() {
 
                 ]);
 
-                setTypedTokenizerOneTokens(
-                    formatTokenizedText(
-                        resultOne.tokenized_text
-                    )
-                );
-
-                setTypedTokenizerTwoTokens(
-                    formatTokenizedText(
-                        resultTwo.tokenized_text
-                    )
-                );
-
                 /*
                     Token Premium for typed text is always zero.
+
+                    Same reasoning as the corpus loads above: one side
+                    failing should not blank the side that tokenized
+                    fine.
                 */
-                const typedMetricsOne =
-                    formatMetrics(resultOne);
+                if (settledOne.status === "fulfilled") {
 
-                const typedMetricsTwo =
-                    formatMetrics(resultTwo);
+                    setTypedTokenizerOneTokens(
+                        formatTokenizedText(
+                            settledOne.value.tokenized_text
+                        )
+                    );
 
-                setTypedTokenizerOneMetrics({
-                    ...typedMetricsOne,
-                    token_premium: 0
-                });
+                    setTypedTokenizerOneMetrics({
+                        ...formatMetrics(settledOne.value),
+                        token_premium: 0
+                    });
+                }
 
-                setTypedTokenizerTwoMetrics({
-                    ...typedMetricsTwo,
-                    token_premium: 0
-                });
+                if (settledTwo.status === "fulfilled") {
+
+                    setTypedTokenizerTwoTokens(
+                        formatTokenizedText(
+                            settledTwo.value.tokenized_text
+                        )
+                    );
+
+                    setTypedTokenizerTwoMetrics({
+                        ...formatMetrics(settledTwo.value),
+                        token_premium: 0
+                    });
+                }
+
+                const failure = [settledOne, settledTwo].find(
+                    (settled) => settled.status === "rejected"
+                );
+
+                if (failure) {
+                    throw failure.reason;
+                }
 
             } catch (err) {
 
@@ -725,9 +760,9 @@ function Compare() {
             setError("");
 
             const [
-                resultOne,
-                resultTwo
-            ] = await Promise.all([
+                settledOne,
+                settledTwo
+            ] = await Promise.allSettled([
 
                 uploadCorpus(
                     file,
@@ -741,29 +776,46 @@ function Compare() {
 
             ]);
 
+            /* Same reasoning as loadDefaultCorpus: a side that uploaded
+               fine should not be thrown away just because the other
+               side failed to load. */
             setCompareSource("upload");
             setCompareSelectedFile(file);
             setCompareFileName(file.name);
 
-            setTokenizerOneTokens(
-                formatTokenizedText(
-                    resultOne.tokenized_text
-                )
-            );
+            if (settledOne.status === "fulfilled") {
 
-            setTokenizerTwoTokens(
-                formatTokenizedText(
-                    resultTwo.tokenized_text
-                )
-            );
+                setTokenizerOneTokens(
+                    formatTokenizedText(
+                        settledOne.value.tokenized_text
+                    )
+                );
 
-            setTokenizerOneMetrics(
-                formatMetrics(resultOne)
-            );
+                setTokenizerOneMetrics(
+                    formatMetrics(settledOne.value)
+                );
+            }
 
-            setTokenizerTwoMetrics(
-                formatMetrics(resultTwo)
-            );
+            if (settledTwo.status === "fulfilled") {
+
+                setTokenizerTwoTokens(
+                    formatTokenizedText(
+                        settledTwo.value.tokenized_text
+                    )
+                );
+
+                setTokenizerTwoMetrics(
+                    formatMetrics(settledTwo.value)
+                );
+            }
+
+            if (settledOne.status === "rejected") {
+                throw settledOne.reason;
+            }
+
+            if (settledTwo.status === "rejected") {
+                throw settledTwo.reason;
+            }
 
         } catch (err) {
 

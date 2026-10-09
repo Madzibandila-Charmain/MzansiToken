@@ -188,8 +188,9 @@ function hasCompleteLeaderboardMetrics(saved) {
     );
 }
 
-/* "restored 3" / "restored 2 and measured 1" */
-function describeDefaults(restored, measured) {
+/* "restored 3" / "restored 2 and measured 1" / with a failure appended,
+   "... 1 did not load: castorini/afriberta_base (detail)." */
+function describeDefaults(restored, measured, failed = []) {
 
     const parts = [];
 
@@ -201,11 +202,20 @@ function describeDefaults(restored, measured) {
         parts.push(`measured ${measured}`);
     }
 
-    if (parts.length === 0) {
-        return "Leaderboard ready.";
+    const sentence = parts.length === 0
+        ? (failed.length
+            ? "Could not set up the default leaderboard."
+            : "Leaderboard ready.")
+        : `Leaderboard ready \u2014 ${parts.join(" and ")}.`;
+
+    if (!failed.length) {
+        return sentence;
     }
 
-    return `Leaderboard ready \u2014 ${parts.join(" and ")}.`;
+    const names = failed.map((item) => item.name).join(", ");
+
+    return `${sentence} ${failed.length} did not load: ${names} ` +
+        `(${failed[0].detail}).`;
 }
 
 function Rank() {
@@ -325,7 +335,7 @@ function Rank() {
        above, so their identity never changes at all. */
     const initialiseDefaultLeaderboard = useCallback(async function initialiseDefaultLeaderboard(signal) {
         /*
-            These are the three tokenizers that make up the default Rank board.
+            These are the tokenizers that make up the default Rank board.
             If a tokenizer was measured before, restore its saved measurement.
             Otherwise, measure it through the normal real-data pipeline.
         */
@@ -363,76 +373,116 @@ function Rank() {
         let restored = 0;
         let measured = 0;
 
+        /*
+            One tokenizer failing here - a cold download timing out, a
+            genuinely gated model, a backend hiccup - used to throw out of
+            this whole function before the loop ever reached
+            loadLeaderboard() below, so tokenizers that HAD already
+            measured successfully earlier in this same run were sitting in
+            the database but never made it onto the screen: the page
+            showed an empty board with no explanation. Each tokenizer now
+            gets its own try/catch below - a failure is recorded here and
+            the loop moves on, so the rest of the board still gets
+            measured and shown.
+        */
+        const failed = [];
+
         for (let index = 0; index < total; index += 1) {
 
             const name = INITIAL_TOKENIZERS[index];
             const saved = savedEntries[index];
             const position = `${index + 1} of ${total}`;
 
-            /*
-                The tokenizer already has a measurement in the database.
-                Reactivate it without running the expensive measurement
-                again - restoreLeaderboardEntry (POST .../restore) just
-                flips the row back to active, the same call handleAdd
-                below already uses for the identical situation.
-                createOrUpdateLeaderboardEntry was being called here
-                instead, which re-runs the full FLORES + NCHLT
-                measurement regardless of there being a saved result
-                already sitting in the database - "Restoring" was
-                claiming to skip the expensive path while actually
-                paying for it every time.
-            */
-            if (hasCompleteLeaderboardMetrics(saved)) {
+            try {
 
+                /*
+                    The tokenizer already has a measurement in the database.
+                    Reactivate it without running the expensive measurement
+                    again - restoreLeaderboardEntry (POST .../restore) just
+                    flips the row back to active, the same call handleAdd
+                    below already uses for the identical situation.
+                    createOrUpdateLeaderboardEntry was being called here
+                    instead, which re-runs the full FLORES + NCHLT
+                    measurement regardless of there being a saved result
+                    already sitting in the database - "Restoring" was
+                    claiming to skip the expensive path while actually
+                    paying for it every time.
+                */
+                if (hasCompleteLeaderboardMetrics(saved)) {
+
+                    setAddStatus(
+                        `Restoring ${name} (${position})...`
+                    );
+
+                    await restoreLeaderboardEntry(
+                        name,
+                        signal
+                    );
+
+                    restored += 1;
+
+                    continue;
+                }
+
+                /*
+                    This tokenizer has never been measured, so use the real
+                    Hugging Face tokenizer and MzansiToken measurement pipeline.
+                    Worth naming as measuring rather than saving: it is the slow
+                    path, and a user who knows which one they are on knows why
+                    it is taking as long as it is.
+                */
                 setAddStatus(
-                    `Restoring ${name} (${position})...`
+                    `Measuring ${name} for the first time (${position})...`
                 );
 
-                await restoreLeaderboardEntry(
+                await getTokenizerInfo(name, signal);
+
+                await createOrUpdateLeaderboardEntry(
                     name,
                     signal
                 );
 
-                restored += 1;
+                measured += 1;
 
-                continue;
             }
+            catch (error) {
 
-            /*
-                This tokenizer has never been measured, so use the real
-                Hugging Face tokenizer and MzansiToken measurement pipeline.
-                Worth naming as measuring rather than saving: it is the slow
-                path, and a user who knows which one they are on knows why
-                it is taking as long as it is.
-            */
-            setAddStatus(
-                `Measuring ${name} for the first time (${position})...`
-            );
+                /* Leaving the page aborts every request in flight at
+                   once - that is not this tokenizer's fault, and nothing
+                   later in the loop can succeed either, so stop instead
+                   of recording a string of identical abort failures. */
+                if (error.name === "AbortError") {
+                    throw error;
+                }
 
-            await getTokenizerInfo(name, signal);
-
-            await createOrUpdateLeaderboardEntry(
-                name,
-                signal
-            );
-
-            measured += 1;
+                failed.push({
+                    name,
+                    detail: friendlyError(error) || String(error?.message || error)
+                });
+            }
         }
 
         /*
-            Now that all three defaults have been created/restored,
-            fetch the real active leaderboard and put it into React state.
+            Fetch the real active leaderboard and put it into React state -
+            always, even when some of the above failed, so whatever DID
+            measure or restore successfully still reaches the screen
+            instead of staying hidden behind one bad tokenizer.
         */
         setAddStatus("Loading the leaderboard...");
 
         await loadLeaderboard(signal);
 
+        if (failed.length) {
+            setAddPartial(true);
+        }
+
         /*
             The loop used to leave its last "Restoring..." line on screen
             for good, so the page went on claiming to be busy long after it
-            had finished. Say what happened instead.
+            had finished. Say what happened instead - including whatever
+            did not make it onto the board.
         */
-        setAddStatus(describeDefaults(restored, measured));
+        setAddStatus(describeDefaults(restored, measured, failed));
     }, [loadLeaderboard]);
 
     useEffect(() => {
