@@ -364,6 +364,10 @@ function Compare() {
         compareLanguage,
         compareTokenizerOne,
         compareTokenizerTwo,
+        setTokenizerOneTokens,
+        setTokenizerTwoTokens,
+        setTokenizerOneMetrics,
+        setTokenizerTwoMetrics,
         setCompareFileName,
         setCompareSelectedFile,
         setCompareSource
@@ -556,20 +560,32 @@ function Compare() {
         setCompareCorpusLoaded(true);
 
         /*
+            The loading flags are set inside this function rather than
+            straight in the effect body, which react-hooks/set-state-in-
+            effect flags. It runs at exactly the same moment either way
+            (the effect calls it immediately), so nothing on screen
+            changes - it is the same first load, started the same way.
+        */
+        async function loadFirstCorpus() {
+
+            setSelectionType("default");
+            setCorpusLoadingLabel("built-in corpus");
+            setSelectionLoading(true);
+
+            return loadDefaultCorpus(
+                compareLanguage,
+                compareTokenizerOne,
+                compareTokenizerTwo
+            );
+        }
+
+        /*
             loadDefaultCorpus re-throws and leaves reporting to its caller,
             and this first load is one - same split as handleDefault: can't
             reach the backend at all is page-level news, anything else
             (one tokenizer that would not load) belongs on the corpus line.
         */
-        setSelectionType("default");
-        setCorpusLoadingLabel("built-in corpus");
-        setSelectionLoading(true);
-
-        loadDefaultCorpus(
-            compareLanguage,
-            compareTokenizerOne,
-            compareTokenizerTwo
-        )
+        loadFirstCorpus()
             .catch((err) => {
 
                 if (isConnectivityError(err)) {

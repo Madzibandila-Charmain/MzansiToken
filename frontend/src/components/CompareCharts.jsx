@@ -21,7 +21,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { getMetrics, friendlyError } from "../api/client";
+import { getMetrics } from "../api/client";
 
 import { useAppState } from "../context/useAppState";
 
