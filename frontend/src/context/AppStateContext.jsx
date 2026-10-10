@@ -162,6 +162,12 @@ const [compareTokenizerTwo, setCompareTokenizerTwo] = useState(
     () => readStored(STORAGE_KEYS.compareTokenizerTwo, "", isText)
 );
 
+
+// Compare options loaded from the backend
+const [compareLanguages, setCompareLanguages] = useState([]);
+const [compareLimits, setCompareLimits] = useState(null);
+const [compareOptionsLoaded, setCompareOptionsLoaded] = useState(false);
+
 // Compare corpus source
 
 const [compareSource, setCompareSource] =
@@ -184,6 +190,31 @@ const [compareMetrics, setCompareMetrics] = useState(
         isTextList
     )
 );
+
+// Corpus results, kept so leaving Compare doesn't throw them away.
+// Deliberately NOT written to localStorage (large, and re-derivable).
+
+const [compareTokenizerOneTokens, setCompareTokenizerOneTokens] = useState([]);
+const [compareTokenizerTwoTokens, setCompareTokenizerTwoTokens] = useState([]);
+
+const [compareTokenizerOneMetrics, setCompareTokenizerOneMetrics] = useState({
+    tokens: 0, fertility: 0, compression: 0, token_premium: 0
+});
+
+const [compareTokenizerTwoMetrics, setCompareTokenizerTwoMetrics] = useState({
+    tokens: 0, fertility: 0, compression: 0, token_premium: 0
+});
+
+// True once the built-in corpus has been loaded this session
+const [compareCorpusLoaded, setCompareCorpusLoaded] = useState(false);
+
+// The eight-language table's data: { key, a, b } for the tokenizer pair it
+// was fetched for. Not written to localStorage - it is re-derivable.
+const [compareChartsCache, setCompareChartsCache] = useState(null);
+
+// The table's controls, so they are still as you left them on return.
+const [compareChartsMeasure, setCompareChartsMeasure] = useState("fertility");
+const [compareChartsShape, setCompareChartsShape] = useState("dots");
 
 // Prevent Compare from reinitialising selections
 
@@ -352,6 +383,15 @@ return (
 
             compareLanguage,
             setCompareLanguage,
+            
+            compareLanguages,
+            setCompareLanguages,
+
+            compareLimits,
+            setCompareLimits,
+
+            compareOptionsLoaded,
+            setCompareOptionsLoaded,
 
             compareTokenizerOne,
             setCompareTokenizerOne,
@@ -373,6 +413,30 @@ return (
 
             compareInitialised,
             setCompareInitialised,
+
+            compareTokenizerOneTokens, 
+            setCompareTokenizerOneTokens,
+
+            compareTokenizerTwoTokens, 
+            setCompareTokenizerTwoTokens,
+
+            compareTokenizerOneMetrics, 
+            setCompareTokenizerOneMetrics,
+
+            compareTokenizerTwoMetrics, 
+            setCompareTokenizerTwoMetrics,
+
+            compareCorpusLoaded, 
+            setCompareCorpusLoaded,
+
+            compareChartsCache,
+            setCompareChartsCache,
+
+            compareChartsMeasure,
+            setCompareChartsMeasure,
+
+            compareChartsShape,
+            setCompareChartsShape,
 
 
             // -------------------------------------------------
