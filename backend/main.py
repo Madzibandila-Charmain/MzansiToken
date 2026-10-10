@@ -6,10 +6,12 @@ Run it from the `backend` folder:
 Then open http://localhost:8000/docs to see and test every endpoint.
 """
 
+import traceback
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 # Each person imports only their own router, so two people editing the backend at the same time touch different files and git has nothing to conflict on.
 from db import init_db
@@ -27,6 +29,27 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="MzansiToken API", lifespan=lifespan)
+
+
+# An unexpected error inside an endpoint used to come back as a bare 500
+# from Starlette's outermost layer, which sits OUTSIDE the CORS middleware
+# below - so the response had no CORS header, the browser refused to hand
+# it to the page, and the page reported "Cannot reach the backend ... Is the
+# backend running?" while the backend was running fine. This turns any such
+# error into an ordinary JSON 500 from INSIDE the CORS layer (it is
+# registered before CORS, and Starlette runs the last-registered middleware
+# outermost), so the page can read it and say what actually happened. The
+# full traceback still goes to this terminal, which is where to look.
+@app.middleware("http")
+async def unexpected_errors_reach_the_page(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except Exception:
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "The backend hit an unexpected error while handling this request."},
+        )
 
 # CORS: the React dev server runs on 5173 (Vite) or 3000, this backend on 8000.
 # Without this the browser blocks requests between the two ports.

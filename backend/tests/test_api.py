@@ -20,6 +20,25 @@ from app.services.tokenizer_state import SUPPORTED_TOKENIZERS
 client = TestClient(app)
 
 
+# ── Unexpected errors ─────────────────────────────────────────────────────────
+
+def test_an_unexpected_error_still_reaches_the_page():
+    # An unhandled exception used to produce a 500 with no CORS header, which
+    # the browser blocks - so the page said "Cannot reach the backend. Is the
+    # backend running?" about a backend that was running. It must come back
+    # as a readable JSON error that the frontend at :5173 is allowed to see.
+    from unittest.mock import patch
+
+    quiet = TestClient(app, raise_server_exceptions=False)
+
+    with patch("app.routers.tokenizer_router.get_or_load_tokenizer", side_effect=RuntimeError("boom")):
+        response = quiet.get("/tokenizer/gpt2", headers={"Origin": "http://localhost:5173"})
+
+    assert response.status_code == 500
+    assert response.headers.get("access-control-allow-origin") == "http://localhost:5173"
+    assert "unexpected error" in response.json()["detail"]
+
+
 # ── Basic health ──────────────────────────────────────────────────────────────
 
 def test_root():
