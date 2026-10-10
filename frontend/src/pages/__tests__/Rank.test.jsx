@@ -201,10 +201,76 @@ describe("Rank - initial load", () => {
             screen.queryByText(/Leaderboard ready/i)
         ).not.toBeInTheDocument();
 
-        expect(getSavedLeaderboardEntry).not.toHaveBeenCalled();
+        /* The four defaults are looked up (a cheap database read, to
+           catch a setup that was cut short), but every one of them
+           already has a saved record here, so nothing is restored or
+           measured. */
         expect(getTokenizerInfo).not.toHaveBeenCalled();
         expect(restoreLeaderboardEntry).not.toHaveBeenCalled();
         expect(createOrUpdateLeaderboardEntry).not.toHaveBeenCalled();
+    });
+
+    it("finishes a setup that was cut short, without touching the defaults already saved", async () => {
+
+        /*
+            Leaving Rank while the four defaults are still being measured
+            stops the loop. Here two got measured before that happened:
+            the board has them, and the other two have no saved record
+            at all. The board is not empty, so it used to stay two short
+            for good.
+        */
+        setBoard([
+            makeRow({ id: 1, name: "gpt2", overall_score: 60 }),
+            makeRow({ id: 2, name: "xlm-roberta-base", overall_score: 67 }),
+        ]);
+
+        getSavedLeaderboardEntry.mockImplementation(async (name) => {
+            if (name === "gpt2" || name === "xlm-roberta-base") {
+                return makeSavedEntry();
+            }
+            throw new ApiError("Not found", 404, null);
+        });
+
+        renderRank();
+
+        expect(
+            await screen.findByText("Leaderboard ready — measured 2.")
+        ).toBeInTheDocument();
+
+        /* Only the two that were never measured... */
+        expect(createOrUpdateLeaderboardEntry).toHaveBeenCalledTimes(2);
+        expect(createOrUpdateLeaderboardEntry).toHaveBeenCalledWith(
+            "Davlan/afro-xlmr-base", expect.anything()
+        );
+        expect(createOrUpdateLeaderboardEntry).toHaveBeenCalledWith(
+            "facebook/nllb-200-distilled-600M", expect.anything()
+        );
+
+        /* ...and nothing already saved is restored or re-measured. */
+        expect(restoreLeaderboardEntry).not.toHaveBeenCalled();
+    });
+
+    it("leaves a default the user removed off the board", async () => {
+
+        /* nllb was removed on purpose: it has a saved record, it is just
+           not on the board. That is the user's choice, not a setup that
+           was cut short, so it must not come back on its own. */
+        setBoard([
+            makeRow({ id: 1, name: "gpt2" }),
+            makeRow({ id: 2, name: "xlm-roberta-base" }),
+            makeRow({ id: 3, name: "Davlan/afro-xlmr-base" }),
+        ]);
+
+        renderRank();
+        await screen.findByText("Current leader");
+
+        await vi.waitFor(() => {
+            expect(getSavedLeaderboardEntry).toHaveBeenCalledTimes(4);
+        });
+
+        expect(restoreLeaderboardEntry).not.toHaveBeenCalled();
+        expect(createOrUpdateLeaderboardEntry).not.toHaveBeenCalled();
+        expect(screen.queryByText(/Leaderboard ready/)).not.toBeInTheDocument();
     });
 
     it("seeds the four starter tokenizers only when the database leaderboard is genuinely empty", async () => {

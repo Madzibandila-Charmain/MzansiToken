@@ -363,7 +363,7 @@ function Rank() {
        with an empty array. hasCompleteLeaderboardMetrics and
        describeDefaults are not listed: they moved to module scope
        above, so their identity never changes at all. */
-    const initialiseDefaultLeaderboard = useCallback(async function initialiseDefaultLeaderboard(savedEntries, signal) {
+    const initialiseDefaultLeaderboard = useCallback(async function initialiseDefaultLeaderboard(savedEntries, signal, onlyMissing = false) {
         /*
             These are the tokenizers that make up the default Rank board.
             If a tokenizer was measured before, restore its saved measurement.
@@ -375,8 +375,6 @@ function Rank() {
             fetching the same four rows twice for one decision would be
             wasteful.
         */
-        const total = INITIAL_TOKENIZERS.length;
-
         let restored = 0;
         let measured = 0;
 
@@ -394,11 +392,23 @@ function Rank() {
         */
         const failed = [];
 
-        for (let index = 0; index < total; index += 1) {
+        /*
+            Which defaults to work through. Normally all four. When
+            finishing a setup that was cut short (onlyMissing), only the
+            ones that have never been measured: a default with a saved
+            record is either already on the board or was taken off it on
+            purpose, and either way it is left alone.
+        */
+        const work = INITIAL_TOKENIZERS
+            .map((_, index) => index)
+            .filter((index) => !onlyMissing || savedEntries[index] === null);
 
+        for (let step = 0; step < work.length; step += 1) {
+
+            const index = work[step];
             const name = INITIAL_TOKENIZERS[index];
             const saved = savedEntries[index];
-            const position = `${index + 1} of ${total}`;
+            const position = `${step + 1} of ${work.length}`;
 
             try {
 
@@ -611,25 +621,38 @@ function Rank() {
             }
 
             /*
-                Whether to seed the defaults is decided from what the
+                Whether to set up the defaults is decided from what the
                 database itself says, never from what this browser
-                remembers. Only an empty board is a candidate - and only
-                when the board was actually read: a backend that could not
-                be reached says nothing about whether the board is empty.
+                remembers - and only when the board was actually read: a
+                backend that could not be reached says nothing about it.
 
-                An empty board is then one of two things. A deliberately
+                An empty board is one of two things. A deliberately
                 emptied board - the user removed every tokenizer on
                 purpose - still has all four defaults saved in the
                 database, just inactive, and stays empty. A genuinely
                 reset backend - a deleted data folder, a fresh clone, a
                 teammate's first run - is missing at least one of them,
-                and gets seeded.
+                and gets set up.
+
+                A board that is NOT empty is checked too, because setup
+                can be cut short: leaving Rank while the defaults are
+                still being measured stops the loop, and the board used to
+                stay one, two or three defaults short for good, since it
+                was no longer empty. A default with no saved record at all
+                has never been measured, so it is measured now. Defaults
+                that have a saved record are left exactly as they are.
             */
-            if (boardRead && currentRows.length === 0) {
+            if (boardRead) {
+
+                const boardEmpty = currentRows.length === 0;
 
                 try {
 
-                    setAddStatus("Checking for saved measurements...");
+                    /* Only worth saying on an empty board - a normal
+                       revisit checks quietly. */
+                    if (boardEmpty) {
+                        setAddStatus("Checking for saved measurements...");
+                    }
 
                     /*
                         Cheap database reads, so they go out together and
@@ -662,30 +685,42 @@ function Rank() {
                         return;
                     }
 
-                    /*
-                        every(), not some(). "The user removed every
-                        tokenizer on purpose" means all four were once
-                        active and all four got taken off - which only
-                        holds if EVERY one of them already has a saved
-                        record. Three saved and one never measured is
-                        the ordinary restore-three/measure-one case.
-                    */
-                    const allDefaultsAlreadySaved = savedEntries.every(
-                        (entry) => entry !== null
-                    );
+                    if (boardEmpty) {
 
-                    if (!allDefaultsAlreadySaved) {
+                        /*
+                            every(), not some(). "The user removed every
+                            tokenizer on purpose" means all four were once
+                            active and all four got taken off - which only
+                            holds if EVERY one of them already has a saved
+                            record. Three saved and one never measured is
+                            the ordinary restore-three/measure-one case.
+                        */
+                        const allDefaultsAlreadySaved = savedEntries.every(
+                            (entry) => entry !== null
+                        );
 
+                        if (!allDefaultsAlreadySaved) {
+
+                            await initialiseDefaultLeaderboard(
+                                savedEntries,
+                                controller.signal
+                            );
+                        }
+                        else {
+                            /* Every default already has a saved record - this
+                               is a board the user emptied on purpose, not a
+                               reset backend. Respect it and stay empty. */
+                            setAddStatus("");
+                        }
+                    }
+                    else if (savedEntries.some((entry) => entry === null)) {
+
+                        /* Setup was cut short: finish it. */
                         await initialiseDefaultLeaderboard(
                             savedEntries,
-                            controller.signal
+                            controller.signal,
+                            true
                         );
-                    }
-                    else {
-                        /* Every default already has a saved record - this
-                           is a board the user emptied on purpose, not a
-                           reset backend. Respect it and stay empty. */
-                        setAddStatus("");
                     }
 
                 }
