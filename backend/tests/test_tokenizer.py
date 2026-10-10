@@ -361,6 +361,122 @@ def test_load_tokenizer_genuinely_missing_model_raises_not_found_error():
             load_tokenizer("this-model-does-not-exist-xyz-123")
 
 
+# ---- Why a load failed, as transformers really reports it --------------
+#
+# transformers raises a plain OSError for almost every loading failure and
+# chains the Hub's own exception underneath it. These build that same
+# chain - the shapes were taken from transformers 5.15 / huggingface_hub
+# 1.33 failing against a stand-in Hub - because load_tokenizer used to
+# call every OSError "not found, check the model name", including a
+# rate-limited computer, a Hugging Face outage and no internet at all.
+
+import httpx
+from huggingface_hub.errors import (
+    GatedRepoError,
+    HfHubHTTPError,
+    LocalEntryNotFoundError,
+    RepositoryNotFoundError,
+)
+
+COULD_NOT_CONNECT = (
+    "We couldn't connect to 'https://huggingface.co' to load the files, and couldn't find "
+    "them in the cached files.\nCheck your internet connection or see how to run the "
+    "library in offline mode at 'https://huggingface.co/docs/transformers/installation#offline-mode'."
+)
+
+
+def _hub_response(status):
+    return httpx.Response(status, request=httpx.Request("HEAD", "https://huggingface.co/x/y/resolve/main/config.json"))
+
+
+def _chained(*errors):
+    """errors[0] raised from errors[1], raised from errors[2], ..."""
+    for outer, inner in zip(errors, errors[1:]):
+        outer.__cause__ = inner
+    return errors[0]
+
+
+def _load_failing_with(error, name="someone/some-model"):
+    with patch("app.services.tokenizer.AutoTokenizer.from_pretrained", side_effect=error):
+        with pytest.raises(ValueError) as caught:
+            load_tokenizer(name)
+    return str(caught.value)
+
+
+def test_rate_limited_is_not_reported_as_a_bad_name():
+    message = _load_failing_with(_chained(
+        OSError(COULD_NOT_CONNECT),
+        LocalEntryNotFoundError("could not find the file in the cache"),
+        HfHubHTTPError("429 Client Error: Too Many Requests", response=_hub_response(429)),
+    ))
+    assert "rate-limiting" in message
+    assert "not found" not in message
+
+
+def test_hugging_face_outage_is_not_reported_as_a_bad_name():
+    message = _load_failing_with(_chained(
+        OSError(COULD_NOT_CONNECT),
+        LocalEntryNotFoundError("could not find the file in the cache"),
+        HfHubHTTPError("503 Server Error: Service Unavailable", response=_hub_response(503)),
+    ))
+    assert "server problem" in message
+    assert "not found" not in message
+
+
+def test_no_internet_is_not_reported_as_a_bad_name():
+    message = _load_failing_with(_chained(
+        OSError(COULD_NOT_CONNECT),
+        LocalEntryNotFoundError("could not find the file in the cache"),
+        ConnectionRefusedError(111, "Connection refused"),
+    ))
+    assert "Could not reach Hugging Face" in message
+    assert "not found" not in message
+
+
+def test_real_missing_repo_through_the_hub_chain_is_still_not_found():
+    message = _load_failing_with(_chained(
+        OSError(
+            "someone/typo is not a local folder and is not a valid model identifier listed on "
+            "'https://huggingface.co/models'\nIf this is a private repository, make sure to pass a token"
+        ),
+        RepositoryNotFoundError("Repository not found", response=_hub_response(401)),
+    ), name="someone/typo")
+    assert "not found on Hugging Face" in message
+    assert "huggingface.co/models" in message
+
+
+def test_real_gated_repo_through_the_hub_chain_is_gated():
+    message = _load_failing_with(_chained(
+        OSError("You are trying to access a gated repo.\nMake sure to have access to it at https://huggingface.co/x/y."),
+        GatedRepoError("Cannot access gated repo", response=_hub_response(401)),
+    ))
+    assert "gated model" in message
+
+
+def test_repo_without_a_tokenizer_says_so():
+    message = _load_failing_with(OSError(
+        "someone/weights-only does not appear to have a file named config.json. Checkout "
+        "'https://huggingface.co/someone/weights-only/tree/main' for available files."
+    ), name="someone/weights-only")
+    assert "has no tokenizer this tool can load" in message
+
+
+def test_custom_code_repo_says_why_it_is_refused():
+    message = _load_failing_with(ValueError(
+        "Loading this model requires you to execute custom code contained in the model repository "
+        "on your local machine. Please set the option `trust_remote_code=True` to permit loading of this model."
+    ))
+    assert "custom code" in message
+
+
+def test_an_unrelated_os_error_keeps_its_real_reason():
+    # A full disk is an OSError too. It used to come back as "not found".
+    message = _load_failing_with(OSError(28, "No space left on device"))
+    assert message.startswith("Failed to load tokenizer")
+    assert "No space left on device" in message
+    assert "not found" not in message
+
+
 
 #------------------test tokenize_NCHLT ---------------------
 

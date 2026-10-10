@@ -6,7 +6,138 @@ Usage:
     from tokenizer import load_tokenizer, tokenize_text, tokenize_corpus
 """
 
+import re
+
 from transformers import AutoTokenizer, PreTrainedTokenizer, PreTrainedTokenizerFast
+
+# The Hub's own exception types. transformers wraps almost every loading
+# failure in a plain OSError, but chains the original Hub exception
+# underneath it, so these are what actually say WHY a load failed.
+try:
+    from huggingface_hub.errors import (
+        GatedRepoError,
+        HfHubHTTPError,
+        LocalEntryNotFoundError,
+        OfflineModeIsEnabled,
+        RepositoryNotFoundError,
+    )
+except ImportError:  # an older huggingface_hub: fall back to message text
+    GatedRepoError = HfHubHTTPError = LocalEntryNotFoundError = None
+    OfflineModeIsEnabled = RepositoryNotFoundError = None
+
+
+def _causes(error):
+    """The error itself, then whatever it was raised from, all the way down."""
+    seen = set()
+    while error is not None and id(error) not in seen and len(seen) < 12:
+        seen.add(id(error))
+        yield error
+        error = error.__cause__ or error.__context__
+
+
+def _has(error, kind):
+    return kind is not None and any(isinstance(cause, kind) for cause in _causes(error))
+
+
+def _http_status(error):
+    """The HTTP status the Hub answered with, if any link in the chain has one."""
+    for cause in _causes(error):
+        status = getattr(getattr(cause, "response", None), "status_code", None)
+        if isinstance(status, int):
+            return status
+    return None
+
+
+def _first_line(error, limit=160):
+    line = (str(error).strip().splitlines() or [type(error).__name__])[0]
+    return line if len(line) <= limit else line[:limit] + "..."
+
+
+def _describe_load_failure(model_name: str, error: Exception) -> str:
+    """
+    One plain sentence about why a tokenizer did not load.
+
+    This used to report every OSError as "not found on Hugging Face. Check
+    the model name" - but transformers raises an OSError for nearly every
+    failure: a real typo, yes, but also no internet connection, a Hugging
+    Face server error, and Hugging Face rate-limiting a computer that has
+    made too many downloads without logging in. Those last three are not
+    the name's fault at all, and users were sent off to re-check names
+    that were already correct. The real cause is chained underneath
+    transformers' OSError, so that is what this reads, most specific first.
+
+    Kept short on purpose: the frontend cuts a status line at 220
+    characters (lib/statusText.js), and a long model name plus a long
+    sentence would cut off the link at the end.
+    """
+    message = str(error)
+    lowered = message.lower()
+    status = _http_status(error)
+
+    gated = (
+        _has(error, GatedRepoError)
+        or "gated" in lowered
+        or re.search(r"\b(401|403)\b", message) is not None
+    )
+    if gated:
+        return (
+            f"Model '{model_name}' is a gated model on Hugging Face and isn't available through this tool. "
+            f"Try a different public model."
+        )
+
+    if status == 429:
+        return (
+            f"Hugging Face is rate-limiting downloads from this computer right now. "
+            f"'{model_name}' may be fine - wait a minute and try again."
+        )
+
+    if status is not None and status >= 500:
+        return (
+            f"Hugging Face had a server problem (error {status}) loading '{model_name}'. "
+            f"That is on their side, not the name - try again shortly."
+        )
+
+    if _has(error, RepositoryNotFoundError) or (
+        isinstance(error, OSError)
+        and re.search(r"\b404\b|not found|not a valid model identifier", lowered)
+        and "connect" not in lowered
+    ):
+        return (
+            f"Model '{model_name}' not found on Hugging Face. Names are case-sensitive and include "
+            f"the owner: https://huggingface.co/models"
+        )
+
+    offline = (
+        _has(error, LocalEntryNotFoundError)
+        or _has(error, OfflineModeIsEnabled)
+        or any(isinstance(cause, ConnectionError) for cause in _causes(error))
+        or "couldn't connect" in lowered
+    )
+    if offline:
+        return (
+            f"Could not reach Hugging Face to load '{model_name}'. Check the internet connection "
+            f"and try again - the name may be fine."
+        )
+
+    if any(isinstance(cause, PermissionError) for cause in _causes(error)) or "permissionerror" in lowered:
+        return (
+            f"'{model_name}' could not be saved to the Hugging Face cache on this computer "
+            f"(permission denied). Close other model downloads and try again."
+        )
+
+    if "trust_remote_code" in lowered or "custom code" in lowered:
+        return (
+            f"'{model_name}' needs to run custom code to load its tokenizer, which this tool never "
+            f"does for safety. Try a different model."
+        )
+
+    if "does not appear to have" in lowered or "can't load tokenizer" in lowered:
+        return (
+            f"'{model_name}' is on Hugging Face but has no tokenizer this tool can load (weights-only, "
+            f"GGUF, adapter, or not a text model)."
+        )
+
+    return f"Failed to load tokenizer '{model_name}': {_first_line(error)}"
 
 
 def load_tokenizer(model_name: str) -> PreTrainedTokenizer | PreTrainedTokenizerFast:
@@ -45,34 +176,9 @@ def load_tokenizer(model_name: str) -> PreTrainedTokenizer | PreTrainedTokenizer
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=False)
 
     except Exception as e:
-        # A gated model can surface through more than one exception type -
-        # usually an OSError straight from the HTTP layer, but sometimes a
-        # different error raised further down the loading chain (a failed
-        # conversion step, for example) that happens to carry the same
-        # 401/403/gated wording. Checking the message text first, before
-        # looking at the exception's type, means a gated model is still
-        # recognised wherever the library actually raises it - this used
-        # to only be checked inside an "except OSError" branch, so any
-        # other exception type skipped the check and fell straight to
-        # the generic message below even when the real cause was gating.
-        error_str = str(e).lower()
-        if "401" in error_str or "403" in error_str or "gated" in error_str or "access" in error_str:
-            raise ValueError(
-                f"Model '{model_name}' is a gated model on Hugging Face and isn't available through this tool. "
-                f"Try one of the listed tokenizers, or a different public model."
-            )
-
-        # OSError here covers the ordinary "model name does not exist"
-        # case. Everything else - a missing optional dependency like
-        # protobuf, a malformed repo, and so on - falls through to the
-        # generic message below, which still shows the real error.
-        if isinstance(e, OSError):
-            raise ValueError(
-                f"Model '{model_name}' not found on Hugging Face. "
-                f"Check the model name at https://huggingface.co/models"
-            )
-
-        raise ValueError(f"Failed to load tokenizer '{model_name}': {e}")
+        # Why it failed - gated, rate-limited, offline, a real typo, and so
+        # on - is worked out in _describe_load_failure above.
+        raise ValueError(_describe_load_failure(model_name, e)) from e
 
     # 3. Validate the returned object is actually a tokenizer
     # "not isinstance()" means if it is NOT one of these types then reject it.
