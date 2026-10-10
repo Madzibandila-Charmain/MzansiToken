@@ -23,6 +23,8 @@ import { useEffect, useRef, useState } from "react";
 
 import { getMetrics, friendlyError } from "../api/client";
 
+import { useAppState } from "../context/useAppState";
+
 import { FAMILY } from "./languageColours";
 
 /* One colour each. Checked for colour-blind separation - these two stay
@@ -40,32 +42,47 @@ import { COMPARE_MEASURES as MEASURES } from "../lib/measures";
 
 function CompareCharts({ tokenizerA, tokenizerB }) {
 
-    const [pair, setPair] = useState(null);
-    const [error, setError] = useState("");
-    const [measure, setMeasure] = useState("fertility");
-    const [hot, setHot] = useState(null);
+    /*
+        The fetched data lives in context, so leaving Compare and coming
+        back finds it already there instead of fetching it again.
+        `pair` is { key, a, b }, where key says which tokenizer pair the
+        data was fetched for.
+    */
+    const {
+        compareChartsCache: pair,
+        setCompareChartsCache,
 
-    /* Which shape the same numbers are drawn in. */
-    const [shape, setShape] = useState("dots");
+        /* Which measure is charted, and which shape the same numbers
+           are drawn in. Both come from context so they survive leaving
+           the page. */
+        compareChartsMeasure: measure,
+        setCompareChartsMeasure: setMeasure,
+        compareChartsShape: shape,
+        setCompareChartsShape: setShape
+    } = useAppState();
+
+    const [hot, setHot] = useState(null);
 
     const requestRef = useRef(0);
 
-    /* Which [tokenizerA, tokenizerB] pair `pair`/`error` currently
-       reflect. `loading` below is derived by comparing this against
-       the pair the page is actually showing now, instead of being a
-       flag the effect flips on and off - the flip was a synchronous
-       setState in the effect body, flagged by
-       react-hooks/set-state-in-effect. JSON.stringify is just a cheap
-       way to compare two strings at once; tokenizer names can contain
-       "/", so they cannot be joined with it safely. */
-    const [resolvedFor, setResolvedFor] = useState(null);
+    /* The pair that last failed to load, if any. Kept local on purpose:
+       a failure is retried when you come back to the page, while a
+       success is remembered. JSON.stringify is just a cheap way to
+       compare two strings at once; tokenizer names can contain "/", so
+       they cannot be joined with it safely. */
+    const [failedFor, setFailedFor] = useState(null);
 
     const requestedFor =
         tokenizerA && tokenizerB
             ? JSON.stringify([tokenizerA, tokenizerB])
             : null;
 
-    const loading = requestedFor !== null && requestedFor !== resolvedFor;
+    const loading =
+        requestedFor !== null &&
+        requestedFor !== pair?.key &&
+        requestedFor !== failedFor;
+
+    const failed = requestedFor !== null && requestedFor === failedFor;
 
     useEffect(() => {
 
@@ -73,12 +90,20 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
             return;
         }
 
+        const key = JSON.stringify([tokenizerA, tokenizerB]);
+
+        /* Already have this pair (or it just failed): nothing to fetch.
+           This is what stops the reload when you navigate back. It sits
+           before the request counter on purpose, so skipping here never
+           cancels a fetch that is still in flight. */
+        if (pair?.key === key || failedFor === key) {
+            return;
+        }
+
         /* Number every request so a slow reply for an old pair of
            tokenizers cannot overwrite a newer one. */
         const id = requestRef.current + 1;
         requestRef.current = id;
-
-        const key = JSON.stringify([tokenizerA, tokenizerB]);
 
         Promise.all([
             getMetrics(tokenizerA),
@@ -90,35 +115,33 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
                     return;
                 }
 
-                setPair({ a, b });
-                setError("");
-                setResolvedFor(key);
+                setCompareChartsCache({ key, a, b });
 
             })
-            .catch((err) => {
+            .catch(() => {
 
                 if (requestRef.current !== id) {
                     return;
                 }
 
-                setPair(null);
-                setError(
-                    friendlyError(err) ||
-                    "Could not load the comparison."
-                );
-                setResolvedFor(key);
+                setFailedFor(key);
 
             });
 
-    }, [tokenizerA, tokenizerB]);
+    }, [
+        tokenizerA,
+        tokenizerB,
+        pair,
+        failedFor,
+        setCompareChartsCache
+    ]);
 
     /*
-        Compare already shows this exact failure at the top of the page
-        (same friendlyError text) the moment the backend is unreachable -
-        this used to repeat it a second time down here. Rendering nothing
-        leaves that one message as the only place it appears.
+        Compare already shows a failure at the top of the page the moment
+        the backend is unreachable, so this renders nothing rather than
+        repeating it down here.
     */
-    if (error && !loading) {
+    if (failed) {
         return null;
     }
 

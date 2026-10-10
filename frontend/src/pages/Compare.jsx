@@ -90,7 +90,26 @@ function Compare() {
         compareFileName,
         setCompareFileName,
         compareInitialised,
-        setCompareInitialised
+        setCompareInitialised,
+
+        compareLanguages: languages,
+        setCompareLanguages: setLanguages,
+        compareLimits: limits,
+        setCompareLimits: setLimits,
+        compareOptionsLoaded,
+        setCompareOptionsLoaded,
+
+        compareTokenizerOneTokens: tokenizerOneTokens,
+        setCompareTokenizerOneTokens: setTokenizerOneTokens,
+        compareTokenizerTwoTokens: tokenizerTwoTokens,
+        setCompareTokenizerTwoTokens: setTokenizerTwoTokens,
+        compareTokenizerOneMetrics: tokenizerOneMetrics,
+        setCompareTokenizerOneMetrics: setTokenizerOneMetrics,
+        compareTokenizerTwoMetrics: tokenizerTwoMetrics,
+        setCompareTokenizerTwoMetrics: setTokenizerTwoMetrics,
+
+    compareCorpusLoaded,
+    setCompareCorpusLoaded
     } = useAppState();
 
     /*
@@ -102,21 +121,15 @@ function Compare() {
 
 
     /*
-        Languages and tokenizers provided by the backend.
+        Languages, limits and the corpus tokens now come from context
+        (see the destructuring above), so they survive leaving Compare.
+        The search boxes start from the stored tokenizers so they are
+        not blank when you come back.
     */
-    const [languages, setLanguages] = useState([]);
-
-    /* Upload size and character caps, straight from /options. */
-    const [limits, setLimits] = useState(null);
-
-    const [tokenizerOneInput, setTokenizerOneInput] = useState("");
-    const [tokenizerTwoInput, setTokenizerTwoInput] = useState("");
-
-    /*
-        Tokenized corpus for each tokenizer.
-    */
-    const [tokenizerOneTokens, setTokenizerOneTokens] = useState([]);
-    const [tokenizerTwoTokens, setTokenizerTwoTokens] = useState([]);
+    const [tokenizerOneInput, setTokenizerOneInput] =
+        useState(compareTokenizerOne);
+    const [tokenizerTwoInput, setTokenizerTwoInput] =
+        useState(compareTokenizerTwo);
 
     /*
         Tokenized text entered by the user for each tokenizer.
@@ -150,29 +163,19 @@ function Compare() {
             words_evaluated: 0
         });
 
+    /*
+        Which input the typed tokens/metrics above were produced for.
+        They are only shown while this still matches what is in the box,
+        so a previous sentence's tokens never sit under a new sentence.
+    */
+    const [typedResultKey, setTypedResultKey] = useState("");
+
     const [mbiError, setMbiError] = useState("");
     const [mbiUnavailable, setMbiUnavailable] = useState("");
 
     const [mbiComparison, setMbiComparison] = useState({
         tokenizerA: readMbi(null),
         tokenizerB: readMbi(null)
-    });
-
-    /*
-        Metrics for each tokenizer.
-    */
-    const [tokenizerOneMetrics, setTokenizerOneMetrics] = useState({
-        tokens: 0,
-        fertility: 0,
-        compression: 0,
-        token_premium: 0
-    });
-
-    const [tokenizerTwoMetrics, setTokenizerTwoMetrics] = useState({
-        tokens: 0,
-        fertility: 0,
-        compression: 0,
-        token_premium: 0
     });
 
     /*
@@ -214,7 +217,6 @@ function Compare() {
         File input reference.
     */
     const fileInputRef = useRef(null);
-    const initialCorpusLoadRef = useRef(false);
 
     /*
         The label read "default", which is the internal name for the
@@ -357,6 +359,10 @@ function Compare() {
     */
     useEffect(() => {
 
+        if (compareOptionsLoaded) {
+            return;
+        }
+
         async function initialiseCompare() {
 
             try {
@@ -369,55 +375,31 @@ function Compare() {
                 setLanguages(result.languages || []);
                 setLimits(result.limits || null);
 
-                const defaultLanguage =
-                    result.defaults?.language || "isiZulu";
+                const initialTokenizerOne =
+                    compareTokenizerOne || DEFAULT_COMPARE_TOKENIZER_ONE;
 
-                const defaultTokenizer =
-                    DEFAULT_COMPARE_TOKENIZER_ONE;
+                const initialTokenizerTwo =
+                    compareTokenizerTwo || DEFAULT_COMPARE_TOKENIZER_TWO;
 
                 /*
                     Initialise Compare selections only once.
                     The selections are stored in AppStateContext,
                     so navigating away from Compare does not reset them.
                 */
-                if (!compareInitialised) {
-                    if (!compareLanguage) {
-                        setCompareLanguage(defaultLanguage);
-                    }
-
-                    const secondTokenizer =
-                        DEFAULT_COMPARE_TOKENIZER_TWO;
-
-                    const initialTokenizerOne =
-                        compareTokenizerOne ||
-                        defaultTokenizer;
-
-                    const initialTokenizerTwo =
-                        compareTokenizerTwo ||
-                        secondTokenizer;
-
-                    if (!compareTokenizerOne) {
-                        setCompareTokenizerOne(
-                            initialTokenizerOne
-                        );
-                    }
-
-                    if (!compareTokenizerTwo) {
-                        setCompareTokenizerTwo(
-                            initialTokenizerTwo
-                        );
-                    }
-
-                    setTokenizerOneInput(
-                        initialTokenizerOne
+                 if (!compareLanguage) {
+                    setCompareLanguage(
+                        result.defaults?.language || "isiZulu"
                     );
-
-                    setTokenizerTwoInput(
-                        initialTokenizerTwo
-                    );
-
-                    setCompareInitialised(true);
                 }
+
+                setCompareTokenizerOne(initialTokenizerOne);
+                setCompareTokenizerTwo(initialTokenizerTwo);
+
+                setTokenizerOneInput(initialTokenizerOne);
+                setTokenizerTwoInput(initialTokenizerTwo);
+
+                setCompareInitialised(true);
+                setCompareOptionsLoaded(true);
 
             } catch (err) {
 
@@ -436,14 +418,17 @@ function Compare() {
         initialiseCompare();
 
     }, [
-        compareInitialised,
+        compareOptionsLoaded,
         compareLanguage,
         compareTokenizerOne,
         compareTokenizerTwo,
         setCompareLanguage,
         setCompareTokenizerOne,
         setCompareTokenizerTwo,
-        setCompareInitialised
+        setCompareInitialised,
+        setCompareOptionsLoaded,
+        setLanguages,
+        setLimits
     ]);
 
     useEffect(() => {
@@ -541,12 +526,12 @@ function Compare() {
             !compareTokenizerTwo ||
             !compareLanguage ||
             compareSource !== "default" ||
-            initialCorpusLoadRef.current
+            compareCorpusLoaded
         ) {
             return;
         }
 
-        initialCorpusLoadRef.current = true;
+        setCompareCorpusLoaded(true);
 
         /*
             loadDefaultCorpus re-throws now, and an effect cannot catch for
@@ -572,6 +557,8 @@ function Compare() {
         compareTokenizerOne,
         compareTokenizerTwo,
         compareSource,
+        compareCorpusLoaded,
+        setCompareCorpusLoaded,
         loadDefaultCorpus
     ]);
 
@@ -588,6 +575,19 @@ function Compare() {
         compareLanguage
     );
 
+    /*
+        Identifies exactly what the typed results should be for. Results
+        are only displayed once typedResultKey has caught up with it.
+    */
+    const typedKey = JSON.stringify([
+        inputText,
+        compareLanguage,
+        compareTokenizerOne,
+        compareTokenizerTwo
+    ]);
+
+    const typedShown = typedReady && typedResultKey === typedKey;
+
     useEffect(() => {
 
         /* Nothing reset here on purpose - typedReady (below, used by
@@ -598,6 +598,11 @@ function Compare() {
         if (!typedReady) {
             return;
         }
+
+        /* Set by the cleanup below. Any response that arrives after the
+           input has changed again is ignored instead of overwriting the
+           newer one. */
+        let cancelled = false;
 
         const timeoutId = setTimeout(async () => {
 
@@ -624,6 +629,10 @@ function Compare() {
 
                 ]);
 
+                if (cancelled) {
+                    return;
+                }
+
                 /*
                     Token Premium for typed text is always zero.
 
@@ -644,6 +653,11 @@ function Compare() {
                         token_premium: 0
                     });
                 }
+                else {
+
+                    setTypedTokenizerOneTokens([]);
+                    setTypedTokenizerOneMetrics(EMPTY_TYPED_METRICS);
+                }
 
                 if (settledTwo.status === "fulfilled") {
 
@@ -658,6 +672,13 @@ function Compare() {
                         token_premium: 0
                     });
                 }
+                else {
+
+                    setTypedTokenizerTwoTokens([]);
+                    setTypedTokenizerTwoMetrics(EMPTY_TYPED_METRICS);
+                }
+
+                setTypedResultKey(typedKey);
 
                 const failure = [settledOne, settledTwo].find(
                     (settled) => settled.status === "rejected"
@@ -678,14 +699,18 @@ function Compare() {
 
         }, 400);
 
-        return () => clearTimeout(timeoutId);
+        return () => {
+            cancelled = true;
+            clearTimeout(timeoutId);
+        };
 
     }, [
         inputText,
         compareLanguage,
         compareTokenizerOne,
         compareTokenizerTwo,
-        typedReady
+        typedReady,
+        typedKey
     ]);
 
     /*
@@ -1752,16 +1777,16 @@ function Compare() {
                     {
                         id: "tokenizer-a",
                         title: compareTokenizerOne,
-                        tokens: typedReady ? typedTokenizerOneTokens : [],
-                        metrics: typedReady
+                        tokens: typedShown ? typedTokenizerOneTokens : [],
+                        metrics: typedShown
                             ? typedTokenizerOneMetrics
                             : EMPTY_TYPED_METRICS
                     },
                     {
                         id: "tokenizer-b",
                         title: compareTokenizerTwo,
-                        tokens: typedReady ? typedTokenizerTwoTokens : [],
-                        metrics: typedReady
+                        tokens: typedShown ? typedTokenizerTwoTokens : [],
+                        metrics: typedShown
                             ? typedTokenizerTwoMetrics
                             : EMPTY_TYPED_METRICS
                     }
