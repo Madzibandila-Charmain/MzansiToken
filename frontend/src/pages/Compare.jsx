@@ -163,11 +163,6 @@ function Compare() {
             words_evaluated: 0
         });
 
-    /*
-        Which input the typed tokens/metrics above were produced for.
-        They are only shown while this still matches what is in the box,
-        so a previous sentence's tokens never sit under a new sentence.
-    */
     const [typedResultKey, setTypedResultKey] = useState("");
 
     const [mbiError, setMbiError] = useState("");
@@ -576,35 +571,37 @@ function Compare() {
     );
 
     /*
-        Identifies exactly what the typed results should be for. Results
-        are only displayed once typedResultKey has caught up with it.
+        Identifies which language + tokenizers the typed results belong
+        to. Results are shown only while it matches the current selection.
     */
-    const typedKey = JSON.stringify([
-        inputText,
+    const typedSettingsKey = JSON.stringify([
         compareLanguage,
         compareTokenizerOne,
         compareTokenizerTwo
     ]);
 
-    const typedShown = typedReady && typedResultKey === typedKey;
+    const typedShown = typedReady && typedResultKey === typedSettingsKey;
+
+    /*
+        typedRequestRef numbers every request as it is sent.
+        typedAppliedRef is the number of the newest one already shown.
+        A response older than that is dropped, so a slow reply cannot
+        overwrite a newer one - but nothing is cancelled while you type,
+        which is what lets the tokens update as you go.
+    */
+    const typedRequestRef = useRef(0);
+    const typedAppliedRef = useRef(0);
 
     useEffect(() => {
 
-        /* Nothing reset here on purpose - typedReady (below, used by
-           the TypeAnything call) already hides the stale tokens/
-           metrics from this effect's last run, so clearing them via
-           setState had nothing behind it. It was flagged by
-           react-hooks/set-state-in-effect for exactly that reason. */
         if (!typedReady) {
             return;
         }
 
-        /* Set by the cleanup below. Any response that arrives after the
-           input has changed again is ignored instead of overwriting the
-           newer one. */
-        let cancelled = false;
-
         const timeoutId = setTimeout(async () => {
+
+            const id = typedRequestRef.current + 1;
+            typedRequestRef.current = id;
 
             try {
 
@@ -629,16 +626,19 @@ function Compare() {
 
                 ]);
 
-                if (cancelled) {
+                /* Older than what is already on screen, or the box was
+                   cleared while this was in flight. */
+                if (id <= typedAppliedRef.current) {
                     return;
                 }
+
+                typedAppliedRef.current = id;
 
                 /*
                     Token Premium for typed text is always zero.
 
-                    Same reasoning as the corpus loads above: one side
-                    failing should not blank the side that tokenized
-                    fine.
+                    A side that failed is emptied rather than left holding
+                    an earlier result.
                 */
                 if (settledOne.status === "fulfilled") {
 
@@ -678,7 +678,7 @@ function Compare() {
                     setTypedTokenizerTwoMetrics(EMPTY_TYPED_METRICS);
                 }
 
-                setTypedResultKey(typedKey);
+                setTypedResultKey(typedSettingsKey);
 
                 const failure = [settledOne, settledTwo].find(
                     (settled) => settled.status === "rejected"
@@ -690,6 +690,10 @@ function Compare() {
 
             } catch (err) {
 
+                if (id < typedAppliedRef.current) {
+                    return;
+                }
+
                 setError(
                     friendlyError(err) ||
                     "Could not tokenize the text."
@@ -697,12 +701,9 @@ function Compare() {
 
             }
 
-        }, 400);
+        }, 150);
 
-        return () => {
-            cancelled = true;
-            clearTimeout(timeoutId);
-        };
+        return () => clearTimeout(timeoutId);
 
     }, [
         inputText,
@@ -710,8 +711,31 @@ function Compare() {
         compareTokenizerOne,
         compareTokenizerTwo,
         typedReady,
-        typedKey
+        typedSettingsKey
     ]);
+
+    /*
+        The box is the only thing that decides when typed results go away.
+        Emptying it clears them straight away, and also marks any request
+        still in flight as stale so it cannot bring the old sentence back.
+        This lives in the change handler rather than the effect, so the
+        old sentence is gone before the next one starts.
+    */
+    function handleTypedInputChange(value) {
+
+        setInputText(value);
+
+        if (!value.trim()) {
+
+            typedAppliedRef.current = typedRequestRef.current;
+
+            setTypedTokenizerOneTokens([]);
+            setTypedTokenizerTwoTokens([]);
+            setTypedTokenizerOneMetrics(EMPTY_TYPED_METRICS);
+            setTypedTokenizerTwoMetrics(EMPTY_TYPED_METRICS);
+            setTypedResultKey("");
+        }
+    }
 
     /*
         Converts backend tokenized text into an array.
@@ -1772,7 +1796,7 @@ function Compare() {
             <TypeAnything
                 maxChars={limits?.max_text_chars ?? null}
                 inputText={inputText}
-                onInputChange={setInputText}
+                onInputChange={handleTypedInputChange}
                 results={[
                     {
                         id: "tokenizer-a",
