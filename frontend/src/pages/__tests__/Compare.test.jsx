@@ -23,7 +23,10 @@ import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
 import Compare from "../Compare";
-import { AppStateProvider } from "../../context/appStateContext";
+/* AppStateContext.jsx, the provider - not appStateContext.js, which only
+   holds the bare context object. Importing the provider from that one
+   gave `undefined` and failed every test in this file. */
+import { AppStateProvider } from "../../context/AppStateContext";
 
 vi.mock("../../api/client", async (importOriginal) => {
     const actual = await importOriginal();
@@ -198,6 +201,58 @@ describe("Compare - changing the corpus language", () => {
         ).toBeInTheDocument();
     });
 
+    it("reports a side that fails on the new language once, and clears its old tokens", async () => {
+
+        renderCompare();
+
+        await vi.waitFor(() => {
+            expect(corpusLabel()).toMatch(
+                /Built-in corpus.*isiZulu.*gpt2 vs google\/gemma-4-12B-it/
+            );
+        });
+
+        await vi.waitFor(() => {
+            expect(
+                document.querySelectorAll(".tokenization-text")[1].textContent
+            ).toMatch(/tokensfromgoogle\/gemma-4-12B-it/);
+        });
+
+        /* gpt2 still loads on English; gemma does not. */
+        getDefaultCorpus.mockImplementation(async (language, tokenizer) => {
+            if (tokenizer === "google/gemma-4-12B-it") {
+                throw new ApiError(
+                    "Hugging Face had a server problem while loading google/gemma-4-12B-it.",
+                    400,
+                    null
+                );
+            }
+            return makeCorpusResult(tokenizer);
+        });
+
+        const user = userEvent.setup();
+
+        await user.click(screen.getByRole("button", { name: "English" }));
+
+        await screen.findByText(/server problem while loading google\/gemma-4-12B-it/);
+
+        /* Once - it used to be reported by loadDefaultCorpus AND by the
+           language-change handler, so the same sentence showed twice. */
+        expect(
+            screen.getAllByText(/server problem while loading google\/gemma-4-12B-it/)
+        ).toHaveLength(1);
+
+        /* The failed side is cleared: it used to keep showing its isiZulu
+           tokens under a label that now says English. */
+        expect(
+            document.querySelectorAll(".tokenization-text")[1].textContent
+        ).not.toMatch(/tokensfrom/);
+
+        /* ...while the side that worked shows its English result. */
+        expect(
+            document.querySelectorAll(".tokenization-text")[0].textContent
+        ).toMatch(/tokensfromgpt2/);
+    });
+
 });
 
 describe("Compare - MBI comparison", () => {
@@ -213,6 +268,48 @@ describe("Compare - MBI comparison", () => {
         const alert = await screen.findByRole("alert");
 
         expect(alert).toHaveTextContent("isiZulu does not have MBI metrics.");
+    });
+
+    it("does not raise an error just because English has no morphology data", async () => {
+
+        /* English is the baseline - the cards already hide its MBI rows,
+           so the backend's "unsupported" answer is expected, not news. */
+        compareMBI.mockImplementation(async (one, two, language) => {
+            if (language === "English") {
+                throw new ApiError("Unsupported language: English", 400, null);
+            }
+            return { tokenizer_a: makeMbiSide(), tokenizer_b: makeMbiSide() };
+        });
+
+        renderCompare();
+
+        await vi.waitFor(() => {
+            expect(corpusLabel()).toMatch(
+                /Built-in corpus.*isiZulu.*gpt2 vs google\/gemma-4-12B-it/
+            );
+        });
+
+        const user = userEvent.setup();
+
+        await user.click(screen.getByRole("button", { name: "English" }));
+
+        expect(await screen.findByText("English ready.")).toBeInTheDocument();
+
+        await vi.waitFor(() => {
+            expect(compareMBI).toHaveBeenCalledWith(
+                expect.anything(),
+                expect.anything(),
+                "English"
+            );
+        });
+
+        /* Let the rejected MBI request finish landing. */
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        expect(
+            screen.queryByText(/does not have MBI metrics/)
+        ).not.toBeInTheDocument();
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     });
 
     it("reports any other MBI failure through the same error line", async () => {

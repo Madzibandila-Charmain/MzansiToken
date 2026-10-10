@@ -45,6 +45,15 @@ const DEFAULT_COMPARE_TOKENIZER_TWO = "google/gemma-4-12B-it";
 /* What TypeAnything is shown when there is nothing typed yet, or the
    page is missing a language/tokenizer to type against. Shared so
    both sides of the pair use the exact same zeroed shape. */
+/* What a corpus card shows before anything has loaded into it - and what a
+   side goes back to when its load fails. */
+const EMPTY_CORPUS_METRICS = {
+    tokens: 0,
+    fertility: 0,
+    compression: 0,
+    token_premium: 0
+};
+
 const EMPTY_TYPED_METRICS = {
     tokens: 0,
     fertility: 0,
@@ -310,6 +319,23 @@ function Compare() {
                 );
             }
 
+            /*
+                A side that failed is cleared, not left as it was. Leaving
+                it kept the PREVIOUS corpus's numbers on screen - after a
+                language change, English figures sitting under a label that
+                now says Sesotho, compared against a side that really is
+                Sesotho, with nothing to say they were from different text.
+            */
+            if (settledOne.status === "rejected") {
+                setTokenizerOneTokens([]);
+                setTokenizerOneMetrics({ ...EMPTY_CORPUS_METRICS });
+            }
+
+            if (settledTwo.status === "rejected") {
+                setTokenizerTwoTokens([]);
+                setTokenizerTwoMetrics({ ...EMPTY_CORPUS_METRICS });
+            }
+
             setCompareSource("default");
             setCompareSelectedFile(null);
             setCompareFileName("default");
@@ -322,23 +348,17 @@ function Compare() {
                 throw settledTwo.reason;
             }
 
-        } catch (err) {
-
-            setError(
-                friendlyError(err) ||
-                "Could not load the corpus."
-            );
-
-            /*
-                Re-thrown on purpose. This was swallowed here, so the
-                caller's catch never ran and handleLanguageChange went on
-                to report "ready" for a load that had failed - a green
-                status line over no data. Inspect's version has always
-                re-thrown; this one did not.
-            */
-            throw err;
-
-        } finally {
+        }
+        /*
+            No catch: a failure goes straight up to the caller, unreported.
+            It was swallowed here once, so the caller's catch never ran and
+            handleLanguageChange went on to report "ready" for a load that
+            had failed. Then it was reported here AND re-thrown, and every
+            caller reported it again - the same sentence on screen twice
+            after a language change. Every caller already says what went
+            wrong in the right place, so only they do.
+        */
+        finally {
 
             setLoading(false);
 
@@ -496,9 +516,16 @@ function Compare() {
                             tokenizerB: readMbi(null)
                         });
 
-                        setMbiUnavailable(
-                            `${compareLanguage} does not have MBI metrics.`
-                        );
+                        /* English is the baseline: it never has
+                           morphology data, and the cards already hide
+                           those rows for it (hasMbiMetrics), so a red
+                           line saying so on every English visit was
+                           noise dressed as an error. */
+                        if (compareLanguage !== "English") {
+                            setMbiUnavailable(
+                                `${compareLanguage} does not have MBI metrics.`
+                            );
+                        }
                     }
 
                     return;
@@ -549,9 +576,10 @@ function Compare() {
         initialCorpusLoadRef.current = true;
 
         /*
-            loadDefaultCorpus re-throws now, and an effect cannot catch for
-            us. The message is already in `error` by the time it rejects,
-            so this only stops it surfacing as an unhandled rejection.
+            loadDefaultCorpus re-throws and leaves reporting to its caller,
+            and this first load is one - same split as handleDefault: can't
+            reach the backend at all is page-level news, anything else
+            (one tokenizer that would not load) belongs on the corpus line.
         */
         setSelectionType("default");
         setCorpusLoadingLabel("built-in corpus");
@@ -562,7 +590,19 @@ function Compare() {
             compareTokenizerOne,
             compareTokenizerTwo
         )
-            .catch(() => {})
+            .catch((err) => {
+
+                if (isConnectivityError(err)) {
+                    setError(friendlyError(err));
+                    return;
+                }
+
+                setSelectionFailed(true);
+                setSelectionStatus(
+                    friendlyError(err) ||
+                    "Could not load the built-in corpus."
+                );
+            })
             .finally(() => {
                 setSelectionLoading(false);
             });
@@ -657,6 +697,18 @@ function Compare() {
                         ...formatMetrics(settledTwo.value),
                         token_premium: 0
                     });
+                }
+
+                /* Same as the corpus loads: a failed side is cleared
+                   rather than left showing the last text's tokens. */
+                if (settledOne.status === "rejected") {
+                    setTypedTokenizerOneTokens([]);
+                    setTypedTokenizerOneMetrics({ ...EMPTY_TYPED_METRICS });
+                }
+
+                if (settledTwo.status === "rejected") {
+                    setTypedTokenizerTwoTokens([]);
+                    setTypedTokenizerTwoMetrics({ ...EMPTY_TYPED_METRICS });
                 }
 
                 const failure = [settledOne, settledTwo].find(
@@ -809,11 +861,17 @@ function Compare() {
                 );
             }
 
+            /* Same as loadDefaultCorpus: a failed side is cleared, so it
+               cannot go on showing numbers from a different text. */
             if (settledOne.status === "rejected") {
+                setTokenizerOneTokens([]);
+                setTokenizerOneMetrics({ ...EMPTY_CORPUS_METRICS });
                 throw settledOne.reason;
             }
 
             if (settledTwo.status === "rejected") {
+                setTokenizerTwoTokens([]);
+                setTokenizerTwoMetrics({ ...EMPTY_CORPUS_METRICS });
                 throw settledTwo.reason;
             }
 
@@ -1104,6 +1162,15 @@ function Compare() {
                 `${newTokenizer} ready.`
             );
 
+            /* A red corpus line left over from a load this search has
+               just replaced - "model X not found" under a page that now
+               shows a working model in X's place - would describe a
+               problem that is no longer there. */
+            if (selectionFailed) {
+                setSelectionFailed(false);
+                setSelectionStatus("");
+            }
+
         }
         catch (err) {
 
@@ -1251,6 +1318,15 @@ function Compare() {
             setTokenizerTwoStatus(
                 `${newTokenizer} ready.`
             );
+
+            /* A red corpus line left over from a load this search has
+               just replaced - "model X not found" under a page that now
+               shows a working model in X's place - would describe a
+               problem that is no longer there. */
+            if (selectionFailed) {
+                setSelectionFailed(false);
+                setSelectionStatus("");
+            }
 
         }
         catch (err) {
@@ -1609,7 +1685,14 @@ function Compare() {
                     belong to. Under the tokenizer search fields, the
                     same spot their own status lines sit. */}
 
-                {(error || mbiUnavailable || mbiError) && (
+                {/* The morphology request needs both tokenizers to load,
+                    so when the corpus line already says one of them
+                    failed, its error is the same failure in different
+                    words - "Morphology metrics could not be loaded:
+                    model X not found" right under "model X not found".
+                    It only gets its own line when it is the only
+                    thing that went wrong. */}
+                {(error || mbiUnavailable || (mbiError && !selectionFailed)) && (
 
                     <StatusLine
                         state="error"
