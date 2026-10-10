@@ -44,7 +44,6 @@ const STORAGE_KEYS = {
     rankMatrix: "rankMatrix",
     rankSortKey: "rankSortKey",
     rankBestFirst: "rankBestFirst",
-    rankFilter: "rankFilter",
     rankShowAllMetrics: "rankShowAllMetrics",
 };
 
@@ -257,9 +256,12 @@ const [rankBestFirst, setRankBestFirst] = useState(
     () => readStored(STORAGE_KEYS.rankBestFirst, true, isBoolean)
 );
 
-const [rankFilter, setRankFilter] = useState(
-    () => readStored(STORAGE_KEYS.rankFilter, "", isText)
-);
+/* Kept here so it survives moving between pages, but deliberately NOT
+   written to localStorage. A saved search came back after every refresh
+   and filtered the board as it loaded - one with no matches hid the whole
+   board behind "Nothing matches that.", which looks exactly like the
+   board was wiped. A refresh now always opens on the full board. */
+const [rankFilter, setRankFilter] = useState("");
 
 const [rankShowAllMetrics, setRankShowAllMetrics] = useState(
     () => readStored(STORAGE_KEYS.rankShowAllMetrics, false, isBoolean)
@@ -292,10 +294,6 @@ useEffect(() => {
 useEffect(() => {
     writeStored(STORAGE_KEYS.rankBestFirst, rankBestFirst);
 }, [rankBestFirst]);
-
-useEffect(() => {
-    writeStored(STORAGE_KEYS.rankFilter, rankFilter);
-}, [rankFilter]);
 
 useEffect(() => {
     writeStored(STORAGE_KEYS.rankShowAllMetrics, rankShowAllMetrics);

@@ -184,8 +184,13 @@ function hasCompleteLeaderboardMetrics(saved) {
     );
 }
 
-/* "restored 3" / "restored 2 and measured 1" / with a failure appended,
-   "... 1 did not load: some/model (detail)." */
+/* "restored 3" / "restored 2 and measured 1" / with a failure appended.
+   One failure reads the way the same failure reads on every other page:
+   "Leaderboard ready - restored 3. Model 'x' not found on Hugging Face..."
+   - the backend's sentence already names the model, so it is not wrapped
+   in "1 did not load: x (...)" as well, which said the name twice and
+   pushed the line past the 220 characters a status line is cut at. More
+   than one failure lists the names, then the first reason. */
 function describeDefaults(restored, measured, failed = []) {
 
     const parts = [];
@@ -208,10 +213,16 @@ function describeDefaults(restored, measured, failed = []) {
         return sentence;
     }
 
+    const [first] = failed;
+
+    if (failed.length === 1 && first.detail.includes(first.name)) {
+        return `${sentence} ${first.detail}`;
+    }
+
     const names = failed.map((item) => item.name).join(", ");
 
     return `${sentence} ${failed.length} did not load: ${names} ` +
-        `(${failed[0].detail}).`;
+        `(${first.detail}).`;
 }
 
 function Rank() {
@@ -846,6 +857,13 @@ function Rank() {
                 friendlyError(error) ||
                 `Could not add ${name} to the leaderboard.`
             );
+
+            /* The box is cleared on a failure too, not only on success.
+               It is also the board's search filter, so leaving the failed
+               name in it filtered the whole table down to "Nothing matches
+               that." right under the error. The error line above still
+               names the model, so the user knows what to retype. */
+            setFilter("");
         }
         finally {
             if (addControllerRef.current === controller) {
@@ -1574,10 +1592,17 @@ function Rank() {
 
                     <div className="rank-board-tools">
 
+                        {/* "00 tokenizers" while the search was hiding
+                            every row read exactly like an empty board.
+                            Saying "of 15" makes it plain the rows are
+                            hidden by the search, not gone. */}
                         <p className="rank-board-count">
                             <strong>
                                 {String(visible.length).padStart(2, "0")}
                             </strong>
+                            {visible.length !== board.length && (
+                                <> of {String(board.length).padStart(2, "0")}</>
+                            )}
                             {" "}tokenizers &middot; sorted by{" "}
                             {sortSpec.label.toLowerCase()}
                         </p>

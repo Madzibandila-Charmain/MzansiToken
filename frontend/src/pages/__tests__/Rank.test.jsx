@@ -247,6 +247,33 @@ describe("Rank - initial load", () => {
         );
     });
 
+    it("reports a starter that would not load with the same sentence every other page shows", async () => {
+
+        const reason =
+            "Model 'gpt2' not found on Hugging Face. Names are case-sensitive " +
+            "and include the owner: https://huggingface.co/models";
+
+        getSavedLeaderboardEntry.mockImplementation(async (name) => {
+            if (name === "gpt2") {
+                throw new ApiError("Not found", 404, null);
+            }
+            return makeSavedEntry();
+        });
+
+        getTokenizerInfo.mockRejectedValue(new ApiError(reason, 400, null));
+
+        renderRank();
+
+        /* The backend's own sentence, after the summary - not wrapped in
+           "1 did not load: gpt2 (...)", which named gpt2 twice. */
+        const status = await screen.findByText(/Leaderboard ready — restored 3\./);
+
+        expect(status.closest(".selection-status").textContent).toContain(
+            "Leaderboard ready — restored 3. Model 'gpt2' not found on Hugging Face."
+        );
+        expect(screen.queryByText(/did not load/)).not.toBeInTheDocument();
+    });
+
     it("still seeds the starters under StrictMode, where the first mount is aborted straight away", async () => {
 
         /*
@@ -450,12 +477,12 @@ describe("Rank - adding a tokenizer", () => {
             document.querySelector(".selection-status.is-error")
         ).toBeTruthy();
 
-        /* The board itself never heard about this failure - still
-           showing the one row it had before the failed add. The find
-           box still holds the failed search text, which filters the
-           table down to nothing, so clear it before checking. */
-        await user.clear(findInput);
+        /* The box is emptied after a failure, so the user retypes the
+           name - and it no longer filters the table down to nothing. */
+        expect(findInput).toHaveValue("");
 
+        /* The board itself never heard about this failure - still
+           showing the one row it had before the failed add. */
         expect(leaderName()).toBe("gpt-4o");
         expect(
             await leaderboardRows().findByText("gpt-4o")
@@ -618,9 +645,42 @@ describe("Rank - sorting and filtering the board", () => {
         expect(leaderboardRows().queryByText("gpt-4o")).not.toBeInTheDocument();
         expect(leaderboardRows().getByText("byt5-small")).toBeInTheDocument();
 
+        /* "01 of 02", not a bare "01" - hidden rows are not missing rows. */
         expect(
             document.querySelector(".rank-board-count").textContent
-        ).toMatch(/01\s*tokenizers.*sorted by/i);
+        ).toMatch(/01\s*of\s*02\s*tokenizers.*sorted by/i);
+    });
+
+    it("opens on the whole board after a refresh, whatever was left in the search box", async () => {
+
+        /*
+            Whatever was typed in the search box used to be saved and come
+            back after a refresh, filtering the board as it loaded - a
+            search with no matches showed "Nothing matches that.", which
+            looks exactly like the board was wiped.
+        */
+        setBoard([
+            makeRow({ id: 1, name: "openai/gpt-4o" }),
+            makeRow({ id: 2, name: "google/byt5-small" }),
+        ]);
+
+        const first = renderRank();
+        await screen.findByText("Current leader");
+
+        const user = userEvent.setup();
+        await user.type(screen.getByLabelText("Find a tokenizer"), "tiiuae/falcon-7b");
+
+        expect(screen.getByText("Nothing matches that.")).toBeInTheDocument();
+
+        /* A refresh: everything in memory is gone, localStorage is not. */
+        first.unmount();
+        renderRank();
+        await screen.findByText("Current leader");
+
+        expect(screen.getByLabelText("Find a tokenizer")).toHaveValue("");
+        expect(
+            document.querySelector(".rank-board-count").textContent
+        ).toMatch(/^\s*02\s*tokenizers/i);
     });
 
 });
