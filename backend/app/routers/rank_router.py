@@ -9,6 +9,9 @@ Routes:
     POST   /leaderboard               calculate and save a tokenizer
     POST   /leaderboard/{name}/restore
                                       restore saved measurements
+    POST   /leaderboard/{name}/vocabulary
+                                      fill in the vocabulary metrics of
+                                      an entry saved before they existed
     DELETE /leaderboard/{id}          remove a tokenizer entry
 
 Amended by Mukovhe Ranwashe (RNWMUK001)
@@ -25,9 +28,12 @@ from app.services.leaderboard_service import (
     remove_tokenizer,
     upsert_tokenizer,
     restore_tokenizer,
+    update_metrics,
 )
 from app.services.leaderboard_measurement_service import (
+    VOCABULARY_METRICS,
     compute_leaderboard_metrics,
+    compute_vocabulary_metrics,
 )
 
 router = APIRouter(tags=["leaderboard"])
@@ -139,6 +145,30 @@ def create_or_update_leaderboard(request: LeaderboardUpsertRequest):
         "metrics": metrics,
     }
 
+def _fill_vocabulary_metrics(tokenizer: dict) -> dict:
+    """
+    An entry saved before the vocabulary metrics existed has NULL for all
+    three. Restoring it is the moment to fill them in: efficiency only (no
+    morphology), usually from the cache, and the saved score is untouched
+    because these are not part of it.
+
+    Best effort. If the tokenizer cannot be loaded right now (Hugging Face
+    unreachable, say), the restore still succeeds exactly as before and the
+    three just stay empty - a restore must never fail over extra columns.
+    """
+    if all(tokenizer.get(name) is not None for name in VOCABULARY_METRICS):
+        return tokenizer
+
+    try:
+        extra = compute_vocabulary_metrics(tokenizer["name"])
+        update_metrics(tokenizer["id"], extra)
+        return get_saved_tokenizer(tokenizer["name"]) or tokenizer
+
+    except Exception as error:
+        print(f"Could not fill the vocabulary metrics for {tokenizer['name']}: {error}")
+        return tokenizer
+
+
 # Endpoint 5: POST /leaderboard/{name}/restore
 @router.post("/leaderboard/{name:path}/restore")
 def restore_leaderboard_entry(name: str):
@@ -150,6 +180,8 @@ def restore_leaderboard_entry(name: str):
             status_code=400,
             detail=str(error)
         )
+
+    tokenizer = _fill_vocabulary_metrics(tokenizer)
 
     return {
         "id": tokenizer["id"],
@@ -163,7 +195,39 @@ def restore_leaderboard_entry(name: str):
             "precision": tokenizer.get("precision"),
             "recall": tokenizer.get("recall"),
             "overall_score": tokenizer.get("overall_score"),
+            **{name: tokenizer.get(name) for name in VOCABULARY_METRICS},
         },
+    }
+
+# Endpoint 5b: POST /leaderboard/{name}/vocabulary
+@router.post("/leaderboard/{name:path}/vocabulary")
+def fill_leaderboard_vocabulary(name: str):
+    """
+    Fill in the three vocabulary metrics for a saved entry that does not
+    have them yet, and nothing else.
+
+    Rank calls this for entries already on the board that were saved before
+    these columns existed. It is deliberately not /restore: restoring puts
+    an entry back on the board, and an entry the user removed a moment ago
+    must stay removed. This never touches whether an entry is on the board,
+    and never touches its score.
+
+    Best effort, like the restore path: if the tokenizer cannot be loaded
+    right now the entry is returned unchanged, with the three still empty.
+    """
+    saved = get_saved_tokenizer(name)
+
+    if saved is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Tokenizer has no saved leaderboard measurement.",
+        )
+
+    filled = _fill_vocabulary_metrics(saved)
+
+    return {
+        "name": filled["name"],
+        **{name: filled.get(name) for name in VOCABULARY_METRICS},
     }
 
 # Endpoint 6: DELETE /leaderboard/{tokenizer_id}

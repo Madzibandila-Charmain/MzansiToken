@@ -50,6 +50,7 @@ vi.mock("../../api/client", async (importOriginal) => {
         createOrUpdateLeaderboardEntry: vi.fn(),
         restoreLeaderboardEntry: vi.fn(),
         deleteLeaderboardEntry: vi.fn(),
+        fillLeaderboardVocabulary: vi.fn(),
         getLeaderboard: vi.fn(),
         getMetrics: vi.fn(),
         getMetricsBulk: vi.fn(),
@@ -65,6 +66,7 @@ import {
     createOrUpdateLeaderboardEntry,
     restoreLeaderboardEntry,
     deleteLeaderboardEntry,
+    fillLeaderboardVocabulary,
     getLeaderboard,
     getMetrics,
     getMetricsBulk,
@@ -107,6 +109,11 @@ function makeRow(overrides = {}) {
         f1: 0.6,
         precision: 0.55,
         recall: 0.5,
+        /* Measured with the vocabulary columns, like any entry saved
+           today - the fill-in tests below override these with null. */
+        renyi_efficiency: 0.7,
+        productivity: 3.1,
+        idiosyncrasy: 9.2,
         ...overrides,
     };
 }
@@ -158,6 +165,7 @@ beforeEach(() => {
     });
     restoreLeaderboardEntry.mockResolvedValue({});
     deleteLeaderboardEntry.mockResolvedValue({});
+    fillLeaderboardVocabulary.mockResolvedValue({});
 
     getLeaderboard.mockImplementation(async () => board);
 
@@ -749,4 +757,331 @@ describe("Rank - sorting and filtering the board", () => {
         ).toMatch(/^\s*02\s*tokenizers/i);
     });
 
+});
+
+describe("Rank - choosing which columns show", () => {
+
+    function boardHeader(name) {
+        return leaderboardRows().queryByRole("columnheader", { name });
+    }
+
+    async function openColumns(user) {
+        await user.click(
+            leaderboardRows().getByRole("button", { name: /columns/i })
+        );
+    }
+
+    it("hides a column from the Columns panel and keeps it hidden after a refresh", async () => {
+
+        const user = userEvent.setup();
+
+        setBoard([
+            makeRow({ renyi_efficiency: 0.61, productivity: 3.44, idiosyncrasy: 12.26 }),
+        ]);
+
+        const { unmount } = renderRank();
+        await screen.findByText("Current leader");
+
+        /* The three new ones are on by default. */
+        expect(boardHeader(/productivity/i)).toBeInTheDocument();
+        expect(boardHeader(/rényi/i)).toBeInTheDocument();
+        expect(leaderboardRows().getByText("3.4")).toBeInTheDocument();
+
+        await openColumns(user);
+        await user.click(screen.getByRole("checkbox", { name: /productivity/i }));
+
+        expect(boardHeader(/productivity/i)).not.toBeInTheDocument();
+        expect(leaderboardRows().queryByText("3.4")).not.toBeInTheDocument();
+
+        /* Display only: nothing was sent to the backend. */
+        expect(createOrUpdateLeaderboardEntry).not.toHaveBeenCalled();
+        expect(deleteLeaderboardEntry).not.toHaveBeenCalled();
+
+        unmount();
+        renderRank();
+        await screen.findByText("Current leader");
+
+        expect(boardHeader(/productivity/i)).not.toBeInTheDocument();
+        expect(boardHeader(/rényi/i)).toBeInTheDocument();
+    });
+
+    it("can bring a folded-away column in, and Reset puts the defaults back", async () => {
+
+        const user = userEvent.setup();
+
+        setBoard([makeRow()]);
+        renderRank();
+        await screen.findByText("Current leader");
+
+        expect(boardHeader(/^tokens/i)).not.toBeInTheDocument();
+
+        await openColumns(user);
+        await user.click(screen.getByRole("checkbox", { name: /^tokens/i }));
+        await user.click(screen.getByRole("checkbox", { name: /rényi/i }));
+
+        expect(boardHeader(/^tokens/i)).toBeInTheDocument();
+        expect(boardHeader(/rényi/i)).not.toBeInTheDocument();
+
+        await user.click(screen.getByRole("button", { name: "Reset" }));
+
+        expect(boardHeader(/^tokens/i)).not.toBeInTheDocument();
+        expect(boardHeader(/rényi/i)).toBeInTheDocument();
+    });
+
+    it("never offers to hide the tokenizer name or the score", async () => {
+
+        const user = userEvent.setup();
+
+        setBoard([makeRow()]);
+        renderRank();
+        await screen.findByText("Current leader");
+
+        await openColumns(user);
+
+        /* Exact names - "not scored" on the reference columns would match
+           a looser /score/. */
+        expect(screen.queryByRole("checkbox", { name: "Score" })).not.toBeInTheDocument();
+        expect(screen.queryByRole("checkbox", { name: "Tokenizer" })).not.toBeInTheDocument();
+        expect(screen.getAllByRole("checkbox")).toHaveLength(10);
+
+        /* The not-scored ones say so in the panel. */
+        expect(
+            screen.getByRole("checkbox", { name: /idiosyncrasy/i }).closest("label")
+        ).toHaveTextContent(/not scored/i);
+    });
+
+    it("closes on Escape and hands focus back to the button", async () => {
+
+        const user = userEvent.setup();
+
+        setBoard([makeRow()]);
+        renderRank();
+        await screen.findByText("Current leader");
+
+        await openColumns(user);
+        expect(screen.getByRole("group", { name: /columns shown/i })).toBeInTheDocument();
+
+        await user.keyboard("{Escape}");
+
+        expect(screen.queryByRole("group", { name: /columns shown/i })).not.toBeInTheDocument();
+        expect(
+            leaderboardRows().getByRole("button", { name: /columns/i })
+        ).toHaveFocus();
+    });
+
+    it("closes when you click somewhere else on the page", async () => {
+
+        const user = userEvent.setup();
+
+        setBoard([makeRow()]);
+        renderRank();
+        await screen.findByText("Current leader");
+
+        await openColumns(user);
+        await user.click(screen.getByText("The leaderboard"));
+
+        expect(screen.queryByRole("group", { name: /columns shown/i })).not.toBeInTheDocument();
+    });
+
+    it("keeps an older All metrics choice when it first opens", async () => {
+
+        localStorage.setItem("rankShowAllMetrics", "true");
+
+        setBoard([makeRow()]);
+        renderRank();
+        await screen.findByText("Current leader");
+
+        expect(boardHeader(/^tokens/i)).toBeInTheDocument();
+        expect(boardHeader(/precision/i)).toBeInTheDocument();
+    });
+
+    it("ignores a damaged saved setting and opens on the defaults", async () => {
+
+        localStorage.setItem("rankHiddenColumns", "{not json");
+
+        setBoard([makeRow()]);
+        renderRank();
+        await screen.findByText("Current leader");
+
+        expect(boardHeader(/fertility/i)).toBeInTheDocument();
+        expect(boardHeader(/^tokens/i)).not.toBeInTheDocument();
+    });
+});
+
+describe("Rank - byte premium in the leader's breakdown", () => {
+
+    it("marks the byte premium beside each language's token premium", async () => {
+
+        setBoard([makeRow()]);
+
+        getMetrics.mockResolvedValue({
+            English: { token_premium: 1, byte_premium: 1 },
+            isiZulu: { token_premium: 2.4, byte_premium: 1.124 },
+            Setswana: { token_premium: 1.6, byte_premium: 1.05 },
+        });
+
+        renderRank();
+
+        expect(await screen.findByText("bytes 1.12×")).toBeInTheDocument();
+        expect(screen.getByText("bytes 1.05×")).toBeInTheDocument();
+
+        /* English is the baseline and stays off the list, as before. */
+        expect(screen.queryByText("bytes 1.00×")).not.toBeInTheDocument();
+
+        expect(document.querySelectorAll(".rank-breakdown-bytes-mark")).toHaveLength(2);
+        expect(screen.getByText(/thin mark on each bar/i)).toBeInTheDocument();
+    });
+
+    it("draws no marks when the backend sent no byte premium", async () => {
+
+        setBoard([makeRow()]);
+
+        getMetrics.mockResolvedValue({
+            English: { token_premium: 1 },
+            isiZulu: { token_premium: 2.4, byte_premium: null },
+        });
+
+        renderRank();
+
+        expect(await screen.findByText("2.40×")).toBeInTheDocument();
+        expect(document.querySelector(".rank-breakdown-bytes-mark")).toBeNull();
+        expect(screen.queryByText(/thin mark on each bar/i)).not.toBeInTheDocument();
+    });
+});
+
+describe("Rank - filling in entries saved before the vocabulary columns", () => {
+
+    const GAPS = { renyi_efficiency: null, productivity: null, idiosyncrasy: null };
+
+    it("fills them in the background and shows the numbers", async () => {
+
+        setBoard([
+            makeRow({ id: 1, name: "gpt2", ...GAPS }),
+            makeRow({ id: 2, name: "xlm-roberta-base", overall_score: 70 }),
+        ]);
+
+        fillLeaderboardVocabulary.mockImplementation(async (name) => {
+            /* The backend saves them; the next board read has them. */
+            board = board.map((row) =>
+                row.name === name
+                    ? { ...row, renyi_efficiency: 0.66, productivity: 5.55, idiosyncrasy: 7.77 }
+                    : row
+            );
+            return {};
+        });
+
+        renderRank();
+
+        expect(await leaderboardRows().findByText("5.5")).toBeInTheDocument();
+
+        /* Only the entry with gaps, and nothing that changes the board. */
+        expect(fillLeaderboardVocabulary).toHaveBeenCalledTimes(1);
+        expect(fillLeaderboardVocabulary).toHaveBeenCalledWith("gpt2", expect.anything());
+        expect(restoreLeaderboardEntry).not.toHaveBeenCalled();
+        expect(createOrUpdateLeaderboardEntry).not.toHaveBeenCalled();
+    });
+
+    it("tries each entry once, and keeps the dashes if it cannot be filled", async () => {
+
+        setBoard([makeRow({ id: 1, name: "gpt2", ...GAPS })]);
+
+        fillLeaderboardVocabulary.mockRejectedValue(
+            new ApiError("Could not reach Hugging Face", 503, null)
+        );
+
+        const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+        renderRank();
+        await screen.findByText("Current leader");
+
+        await vi.waitFor(() => {
+            expect(fillLeaderboardVocabulary).toHaveBeenCalledTimes(1);
+        });
+
+        /* Give any repeat a chance to happen - it must not. */
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        expect(fillLeaderboardVocabulary).toHaveBeenCalledTimes(1);
+
+        /* No error on the page for this: the board is right, it just
+           has dashes, each explaining itself on hover. */
+        expect(screen.queryByText(/Could not reach Hugging Face/)).not.toBeInTheDocument();
+        expect(
+            leaderboardRows().getAllByText("—").filter((cell) =>
+                /saved before this column existed/i.test(cell.title)
+            )
+        ).toHaveLength(3);
+
+        warn.mockRestore();
+    });
+
+    it("does nothing when every entry already has them", async () => {
+
+        setBoard([makeRow({ id: 1, name: "gpt2" })]);
+
+        renderRank();
+        await screen.findByText("Current leader");
+
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        expect(fillLeaderboardVocabulary).not.toHaveBeenCalled();
+    });
+
+    it("waits until the four defaults have been set up", async () => {
+
+        /* A first-ever run: gpt2 has never been measured, the other three
+           are restored. Their rows come back without the new columns, and
+           only once all four are in are they filled - never alongside the
+           setup. */
+        getSavedLeaderboardEntry.mockImplementation(async (name) => {
+            if (name === "gpt2") {
+                throw new ApiError("Not found", 404, null);
+            }
+            return makeSavedEntry();
+        });
+
+        function addToBoard(name) {
+            board = [
+                ...board,
+                makeRow({ id: board.length + 1, name, ...GAPS }),
+            ];
+        }
+
+        restoreLeaderboardEntry.mockImplementation(async (name) => {
+            addToBoard(name);
+            return {};
+        });
+
+        createOrUpdateLeaderboardEntry.mockImplementation(async (name) => {
+            addToBoard(name);
+            return {
+                metrics: {
+                    languages_measured: 8,
+                    morphology_measured: 7,
+                    failed_languages: [],
+                },
+            };
+        });
+
+        let setupCallsBeforeFirstFill = null;
+
+        fillLeaderboardVocabulary.mockImplementation(async () => {
+            if (setupCallsBeforeFirstFill === null) {
+                setupCallsBeforeFirstFill =
+                    restoreLeaderboardEntry.mock.calls.length +
+                    createOrUpdateLeaderboardEntry.mock.calls.length;
+            }
+            return {};
+        });
+
+        renderRank();
+
+        expect(
+            await screen.findByText("Leaderboard ready — restored 3 and measured 1.")
+        ).toBeInTheDocument();
+
+        await vi.waitFor(() => {
+            expect(fillLeaderboardVocabulary).toHaveBeenCalledTimes(4);
+        });
+
+        expect(setupCallsBeforeFirstFill).toBe(4);
+    });
 });

@@ -170,6 +170,114 @@ describe("Compare - initial load", () => {
 
 });
 
+describe("Compare - typing while a tokenizer loads", () => {
+
+    it("locks the Type Anything box until both tokenizers have loaded", async () => {
+
+        let finish;
+        const waiting = new Promise((resolve) => {
+            finish = resolve;
+        });
+
+        getDefaultCorpus.mockImplementation(async (language, tokenizer) => {
+            await waiting;
+            return makeCorpusResult(tokenizer);
+        });
+
+        renderCompare();
+
+        /* Both tokenizers are now on their way. */
+        await vi.waitFor(() => {
+            expect(getDefaultCorpus).toHaveBeenCalledTimes(2);
+        });
+
+        const box = screen.getByPlaceholderText(/tokenizer is still loading/i);
+        expect(box).toBeDisabled();
+
+        finish();
+
+        expect(
+            await screen.findByPlaceholderText("Type or paste your text here...")
+        ).toBeEnabled();
+    });
+});
+
+describe("Compare - loading order", () => {
+
+    it("asks for morphology only after the tokenizer boxes have loaded", async () => {
+
+        let finish;
+        const waiting = new Promise((resolve) => {
+            finish = resolve;
+        });
+
+        getDefaultCorpus.mockImplementation(async (language, tokenizer) => {
+            await waiting;
+            return makeCorpusResult(tokenizer);
+        });
+
+        renderCompare();
+
+        await vi.waitFor(() => {
+            expect(getDefaultCorpus).toHaveBeenCalledTimes(2);
+        });
+
+        /* FLORES first: no morphology while the boxes are loading. */
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        expect(compareMBI).not.toHaveBeenCalled();
+
+        finish();
+
+        /* Then NCHLT. */
+        await vi.waitFor(() => {
+            expect(compareMBI).toHaveBeenCalled();
+        });
+    });
+
+    it("shows each box all at once: the numbers wait for the morphology", async () => {
+
+        let finish;
+        compareMBI.mockImplementation(() => new Promise((resolve) => {
+            finish = () => resolve({
+                tokenizer_a: makeMbiSide(),
+                tokenizer_b: makeMbiSide(),
+            });
+        }));
+
+        renderCompare();
+
+        /* FLORES is in, morphology is not: both boxes still loading. */
+        await vi.waitFor(() => {
+            expect(compareMBI).toHaveBeenCalled();
+        });
+        expect(screen.getAllByText("Measuring morphology...")).toHaveLength(2);
+        expect(document.querySelectorAll(".tokenization-display-block.is-busy")).toHaveLength(2);
+
+        finish();
+
+        /* Now the whole box, morphology included, in one go. */
+        await vi.waitFor(() => {
+            expect(document.querySelectorAll(".tokenization-display-block.is-busy")).toHaveLength(0);
+        });
+        expect(screen.queryByText("Measuring morphology...")).not.toBeInTheDocument();
+        expect(screen.getAllByText("0.50").length).toBeGreaterThan(0);
+    });
+
+    it("does not leave the boxes loading when the morphology fails", async () => {
+
+        compareMBI.mockRejectedValue(new Error("Failed to fetch"));
+
+        renderCompare();
+
+        await vi.waitFor(() => {
+            expect(compareMBI).toHaveBeenCalled();
+        });
+        await vi.waitFor(() => {
+            expect(document.querySelectorAll(".tokenization-display-block.is-busy")).toHaveLength(0);
+        });
+    });
+});
+
 describe("Compare - changing the corpus language", () => {
 
     it("reloads the corpus for both tokenizers when a new language is picked", async () => {

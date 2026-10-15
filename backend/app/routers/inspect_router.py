@@ -18,7 +18,12 @@ from app.services.corpus_extract import (
     sanitise_filename,
     suffix_of,
 )
-from app.services.flores_state import corpus
+from app.services.compute_once import BoundedCache, once
+from app.services.flores_state import (
+    corpus,
+    get_or_compute_metrics,
+    get_or_compute_vocabulary,
+)
 from app.services.metrics import calculate_efficiency_metrics_one_language
 from app.services.tokenizer import tokenize_corpus, tokenize_text
 from app.services.tokenizer_state import get_or_load_tokenizer, validate_tokenizer
@@ -52,6 +57,38 @@ async def read_capped(file: UploadFile, limit: int) -> bytes:
 
 router = APIRouter(tags=["inspect"])
 
+# The built-in corpus for one tokenizer and one language, tokenized, with its
+# metrics. Picking the same language again - on Inspect, on Compare, after a
+# trip to another page - used to tokenize all 997 sentences again. A whole
+# tokenized corpus is a few megabytes, so only the 16 used most recently are
+# kept rather than every pair for the life of the server.
+_default_cache = BoundedCache(16)
+
+
+def _measure_default(model_name: str, language: str) -> dict:
+    tokenizer = get_or_load_tokenizer(model_name)
+    sentences = corpus[language]
+    tokenized = tokenize_corpus(tokenizer, sentences)
+    metrics = calculate_efficiency_metrics_one_language(tokenized, sentences, model_name, language, tokenizer, corpus)
+
+    # Everything this tokenizer's charts will show - all eight languages,
+    # every tab - worked out now, while the page is already waiting, so the
+    # boxes, the chart and every chart tab appear at the same moment. Both
+    # are cached: the charts' own requests are answered from memory (or
+    # wait for this same work if they arrive first, never repeating it).
+    get_or_compute_metrics(model_name, tokenizer)
+    vocabulary = get_or_compute_vocabulary(model_name, tokenizer)
+
+    # Productivity and idiosyncrasy for the cards, from the same answer.
+    metrics.update(vocabulary[language])
+
+    return {
+        "language": language,
+        "tokenizer": model_name,
+        "tokenized_text": tokenized,
+        "metrics": metrics,
+    }
+
 
 @router.post("/inspect/default")
 def inspect_default(request: InspectRequest):
@@ -69,20 +106,13 @@ def inspect_default(request: InspectRequest):
     validate_tokenizer(model_name)
 
     try:
-        tokenizer = get_or_load_tokenizer(model_name)
+        return once(
+            _default_cache,
+            (model_name, language),
+            lambda: _measure_default(model_name, language),
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-    sentences = corpus[language]
-    tokenized = tokenize_corpus(tokenizer, sentences)
-    metrics = calculate_efficiency_metrics_one_language(tokenized, sentences, model_name, language, tokenizer, corpus)
-
-    return {
-        "language": language,
-        "tokenizer": model_name,
-        "tokenized_text": tokenized,
-        "metrics": metrics,
-    }
 
 
 @router.post("/inspect/upload")

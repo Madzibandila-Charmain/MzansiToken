@@ -314,6 +314,26 @@ export async function getMetrics(
 }
 
 /*
+    Productivity and idiosyncrasy for every language, for one tokenizer -
+    what the chart tabs draw. Worked out on the server while the page's
+    boxes load, so by the time this is asked it is usually already there.
+*/
+export async function getVocabulary(tokenizer, signal) {
+
+    const response = await fetch(
+        `${API_BASE_URL}/vocabulary/${encodeURIComponent(tokenizer)}`,
+        {
+            signal,
+        }
+    );
+
+    return handleResponse(
+        response,
+        "Failed to load the vocabulary summary."
+    );
+}
+
+/*
     Same data as getMetrics, for several tokenizers in one request.
     Rank's per-language grid used this one at a time, once per board
     row, which meant up to ten HTTP round trips on every page load to
@@ -645,6 +665,26 @@ export async function restoreLeaderboardEntry(name, signal) {
     return handleResponse(
         response,
         "Failed to restore leaderboard entry."
+    );
+}
+
+/*
+    Fill in the Rényi / productivity / idiosyncrasy columns for an entry
+    saved before they existed. Never puts a removed entry back on the
+    board and never changes a score - that is what /restore is for.
+*/
+export async function fillLeaderboardVocabulary(name, signal) {
+    const response = await fetch(
+        `${API_BASE_URL}/leaderboard/${encodeURIComponent(name)}/vocabulary`,
+        {
+            method: "POST",
+            signal,
+        }
+    );
+
+    return handleResponse(
+        response,
+        "Failed to fill in the vocabulary metrics."
     );
 }
 

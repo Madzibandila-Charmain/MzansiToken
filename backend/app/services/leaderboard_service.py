@@ -194,7 +194,9 @@ def get_leaderboard(sort_by: str = "overall_score", descending: bool = True) -> 
         SELECT t.id, t.name, t.created_at,
                m.token_count, m.fertility, m.compression, m.token_premium,
                m.f1, m.precision_score AS "precision", m.recall,
-               m.overall_score, m.updated_at
+               m.overall_score,
+               m.renyi_efficiency, m.productivity, m.idiosyncrasy,
+               m.updated_at
         FROM tokenizers t
         JOIN metrics m ON m.tokenizer_id = t.id
         WHERE t.active = 1
@@ -229,6 +231,9 @@ def get_saved_tokenizer(name: str) -> dict | None:
                    m.precision_score AS "precision",
                    m.recall,
                    m.overall_score,
+                   m.renyi_efficiency,
+                   m.productivity,
+                   m.idiosyncrasy,
                    m.updated_at
             FROM tokenizers t
             JOIN metrics m ON m.tokenizer_id = t.id

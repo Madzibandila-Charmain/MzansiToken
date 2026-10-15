@@ -25,6 +25,18 @@ function figure(value, decimals = 2) {
     return number.toFixed(decimals);
 }
 
+/* For the vocabulary cards: null means the backend measured and there was
+   nothing to report, which is a dash - not a zero, which would read as a
+   real and very small measurement. */
+function reference(value, decimals) {
+
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return "—";
+    }
+
+    return Number(value).toFixed(decimals);
+}
+
 function Card({ name, value, title }) {
     return (
         <div className="metric-card" title={title}>
@@ -86,6 +98,26 @@ function MetricCards({
     const isStandalone =
         metrics?.token_premium_basis === "standalone";
 
+    /*
+        The second row: Rényi, productivity, idiosyncrasy and byte premium,
+        all in the same answer as the row above, so both rows fill in
+        together.
+
+        Left out entirely when the backend never sent Rényi (nothing loaded
+        yet, or an older backend) rather than shown as a row of dashes.
+    */
+    const hasVocabulary = metrics?.renyi_efficiency !== undefined;
+
+    /* Only the built-in corpus has one - it needs the same sentences in
+       English. A file or typed text gets null and no card. */
+    const bytePremium =
+        metrics?.byte_premium === null || metrics?.byte_premium === undefined
+            ? null
+            : Number(metrics.byte_premium);
+
+    const hasBytePremium =
+        bytePremium !== null && Number.isFinite(bytePremium);
+
     let alignmentValue = alignmentAsPercentage ? "0.0%" : "0 / 0";
 
     if (
@@ -145,6 +177,37 @@ function MetricCards({
                 <p className="metric-note">
                     Measured on this file alone.
                 </p>
+            )}
+
+            {/* Vocabulary - the same cards as the row above. Byte premium
+                is the fourth when there is one, so the row has the same
+                shape: four for the built-in corpus, three for a file. */}
+            {hasVocabulary && (
+                <div className="metric-row">
+
+                    <Card
+                        name="Rényi Efficiency"
+                        value={reference(metrics.renyi_efficiency, 2)}
+                    />
+
+                    <Card
+                        name="Productivity"
+                        value={reference(metrics.productivity, 1)}
+                    />
+
+                    <Card
+                        name="Idiosyncrasy"
+                        value={reference(metrics.idiosyncrasy, 1)}
+                    />
+
+                    {hasBytePremium && (
+                        <Card
+                            name="Byte Premium"
+                            value={`${bytePremium.toFixed(2)}×`}
+                        />
+                    )}
+
+                </div>
             )}
 
             {/* Morphology, from the NCHLT gold segmentations */}

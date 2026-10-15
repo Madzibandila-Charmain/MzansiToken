@@ -3,12 +3,19 @@ metrics_router.py - efficiency metrics endpoints (the RANK and COMPARE views).
 
 Routes:
     GET /metrics/{model_name}   metrics for one tokenizer, every language
+    GET /vocabulary/{model_name}?languages=a,b
+                                productivity and idiosyncrasy for one
+                                tokenizer - the languages named, or all
     GET /compare                metrics for two tokenizers at once
 """
 
 from fastapi import APIRouter, HTTPException
 
-from app.services.flores_state import get_or_compute_metrics
+from app.services.flores_state import (
+    corpus,
+    get_or_compute_metrics,
+    get_or_compute_vocabulary,
+)
 from app.services.tokenizer_state import get_or_load_tokenizer
 
 router = APIRouter(tags=["metrics"])
@@ -94,6 +101,40 @@ def get_metrics(model_name: str):
         raise HTTPException(status_code=400, detail=str(e))
 
     return get_or_compute_metrics(model_name, tokenizer)
+
+
+@router.get("/vocabulary/{model_name:path}")
+def get_vocabulary(model_name: str, languages: str | None = None):
+    """
+    Productivity and idiosyncrasy for one tokenizer:
+
+        {"isiZulu": {"productivity": 4.2, "idiosyncrasy": 1.3}, ...}
+
+    `languages` is a comma-separated list; leave it out for every language.
+    The cards under a language ask for just that one - working these out
+    means tokenizing every different word, so asking for all eight to show
+    one would make the page do eight times the work. Rényi efficiency and
+    the byte premium are not here: they come with /metrics and
+    /inspect/default, which every page already has.
+
+    Its own request, not part of /metrics, so nothing a page shows first
+    ever waits for it.
+    """
+    wanted = None
+
+    if languages:
+        wanted = [name for name in (part.strip() for part in languages.split(",")) if name]
+
+        unknown = [name for name in wanted if name not in corpus]
+        if unknown:
+            raise HTTPException(status_code=400, detail=f"Unsupported language: {unknown[0]}")
+
+    try:
+        tokenizer = get_or_load_tokenizer(model_name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return get_or_compute_vocabulary(model_name, tokenizer, wanted)
 
 
 @router.get("/compare")

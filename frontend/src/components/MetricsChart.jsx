@@ -30,6 +30,10 @@ import { languageColour, FAMILY, LANGUAGE_ORDER } from "./languageColours";
 */
 import { RATIO_MEASURES as MEASURES } from "../lib/measures";
 
+import { useVocabulary } from "../lib/useVocabulary";
+
+import VocabularySummary from "./VocabularySummary";
+
 
 /* Geometry. One centre for both charts so they line up. */
 const CENTRE = 160;
@@ -83,7 +87,7 @@ function ordinal(n) {
     return "th";
 }
 
-function MetricsChart({ tokenizer }) {
+function MetricsChart({ tokenizer, waiting = false }) {
 
     const [data, setData] = useState(null);
     const [error, setError] = useState("");
@@ -115,6 +119,14 @@ function MetricsChart({ tokenizer }) {
     const drawnRef = useRef(false);
 
     const loading = Boolean(tokenizer) && tokenizer !== resolvedFor;
+
+    /* Productivity and idiosyncrasy for every language, behind two of
+       the tabs - asked for straight away, so every tab is ready together. */
+    const {
+        vocabulary: vocabularyByName,
+        loading: vocabularyLoading,
+        failed: vocabularyFailed
+    } = useVocabulary([tokenizer]);
 
     useEffect(() => {
 
@@ -253,15 +265,33 @@ function MetricsChart({ tokenizer }) {
        would otherwise turn every slice into NaN and every path into "NaN". */
     const shareBase = total || 1;
 
-    const current = MEASURES.find((m) => m.key === measure);
+    /* If the vocabulary request failed, its two tabs are left out rather
+       than drawn as zeros. */
+    const shownMeasures = MEASURES.filter(
+        (m) => !m.fromVocabulary || vocabularyFailed.length === 0
+    );
+
+    const current =
+        shownMeasures.find((m) => m.key === measure) || shownMeasures[0];
+
+    /* Where this measure's numbers live. */
+    const measureData = current.fromVocabulary
+        ? vocabularyByName[tokenizer]
+        : data;
+
+    /* Still on its way: the page's own boxes (`waiting`), or the numbers
+       behind the Productivity and Idiosyncrasy tabs. The chart stays under
+       its spinner until all of it is in, so it appears with the boxes and
+       every tab is ready the moment it does. */
+    const measuring = waiting || vocabularyLoading.includes(tokenizer);
 
     /* token_premium is null for English - it is the baseline, so 1.00. */
     const valueOf = (name) => {
 
-        const value = data[name]?.[measure];
+        const value = measureData?.[name]?.[current.key];
 
         if (value === null || value === undefined) {
-            return measure === "token_premium" ? 1 : 0;
+            return current.key === "token_premium" ? 1 : 0;
         }
 
         return value;
@@ -428,7 +458,7 @@ function MetricsChart({ tokenizer }) {
 
     return (
         <section
-            className={"charts-box" + (loading ? " is-busy" : "")}
+            className={"charts-box" + (loading || measuring ? " is-busy" : "")}
         >
 
             {/* Blurs everything behind it, so nobody reads the old
@@ -437,6 +467,13 @@ function MetricsChart({ tokenizer }) {
                 <div className="charts-overlay">
                     <span className="spinner is-big"></span>
                     <span>Loading all eight languages at once&hellip;</span>
+                </div>
+            )}
+
+            {!loading && measuring && (
+                <div className="charts-overlay">
+                    <span className="spinner is-big"></span>
+                    <span>Measuring all eight languages&hellip;</span>
                 </div>
             )}
 
@@ -504,14 +541,17 @@ function MetricsChart({ tokenizer }) {
                 <div className="chart-card">
 
                     <h3>{current.title}</h3>
-                    <p>Longer petal is worse. Switch the measure and watch them grow.</p>
+                    <p>
+                        {current.petalNote ||
+                            "Longer petal is worse. Switch the measure and watch them grow."}
+                    </p>
 
                     <div className="chart-switch">
-                        {MEASURES.map((m) => (
+                        {shownMeasures.map((m) => (
                             <button
                                 key={m.key}
                                 type="button"
-                                aria-pressed={measure === m.key}
+                                aria-pressed={current.key === m.key}
                                 onClick={() => setMeasure(m.key)}
                             >
                                 {m.label}
@@ -528,7 +568,7 @@ function MetricsChart({ tokenizer }) {
                         {petals.map((petal) => wedge(petal, petal.scale))}
 
                         {/* English is 1.00 by definition */}
-                        {measure === "token_premium" && (
+                        {(current.key === "token_premium" || current.key === "byte_premium") && (
                             <circle
                                 className="chart-baseline-ring"
                                 cx={CENTRE}
@@ -583,6 +623,17 @@ function MetricsChart({ tokenizer }) {
                 ))}
             </div>
 
+            {/* The research-paper measures have a note of their own, about
+                the wheel they are drawn on. The per-word note stays for
+                everything else. */}
+            {current.ownNote ? (
+                !measuring && (
+                    <VocabularySummary
+                        measure={current.key}
+                        data={measureData}
+                    />
+                )
+            ) : (
             <p className="chart-note">
                 On the wheel <b>{bestPerWord}</b> has the shortest petal
                 &mdash; the best tokens-per-word score. On the doughnut it
@@ -593,6 +644,7 @@ function MetricsChart({ tokenizer }) {
                 bill. Per-word divides by spaces, and the two families do not
                 put their spaces in the same places.
             </p>
+            )}
 
             {/* Hover card */}
             <div
@@ -630,6 +682,16 @@ function MetricsChart({ tokenizer }) {
                                 ? "—"
                                 : data[hot].token_premium.toFixed(2) + "×"}
                         </span>
+                        {data[hot]?.byte_premium != null && (
+                            <>
+                                <br />
+                                <span className="key">bytes vs English</span>
+                                {" "}
+                                <span className="val">
+                                    {data[hot].byte_premium.toFixed(2) + "×"}
+                                </span>
+                            </>
+                        )}
                     </>
                 )}
             </div>

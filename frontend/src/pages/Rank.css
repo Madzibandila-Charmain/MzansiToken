@@ -825,7 +825,7 @@
 
     display: grid;
 
-    grid-template-columns: minmax(0, 96px) minmax(0, 1fr) 50px;
+    grid-template-columns: minmax(0, 96px) minmax(0, 1fr) 50px 78px;
 
     align-items: center;
 
@@ -850,6 +850,8 @@
 }
 
 .rank-breakdown-track {
+
+    position: relative;
 
     width: 100%;
 
@@ -886,6 +888,37 @@
     font-variant-numeric: tabular-nums;
 
     color: oklch(0.24 0.03 252);
+
+}
+
+/* The byte premium: a thin dark mark across the bar, and its figure in
+   quieter type after the token premium. */
+.rank-breakdown-bytes-mark {
+
+    position: absolute;
+
+    top: 0;
+    bottom: 0;
+
+    width: 2px;
+
+    background: oklch(0.22 0.03 252);
+
+}
+
+.rank-breakdown-bytes {
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+
+    font-size: 10.5px;
+
+    text-align: right;
+
+    font-variant-numeric: tabular-nums;
+
+    white-space: nowrap;
+
+    color: oklch(0.52 0.022 252);
 
 }
 
@@ -1598,6 +1631,150 @@
     border-color: var(--za-green);
     color: var(--za-green);
 }
+
+.rank-metrics-toggle[aria-expanded="true"] {
+    color: var(--za-green);
+    border-color: var(--za-green);
+
+    background: color-mix(in oklab, var(--za-green) 8%, white);
+}
+
+/* ---- Columns panel ---- */
+
+.rank-columns {
+    position: relative;
+}
+
+/* The board is its own layer (backdrop-filter), so the panel's z-index
+   only counts inside it - and the open panel hangs past the bottom of a
+   short board, where the next section was painted over it and swallowed
+   the clicks. While the panel is open, the board sits above its
+   neighbours. Only then: otherwise it stays level, so nothing from the
+   sections around it can end up underneath. */
+.rank-board:has(.rank-columns-panel) {
+    z-index: 5;
+}
+
+.rank-columns-count {
+    margin-left: 4px;
+
+    opacity: 0.7;
+}
+
+.rank-columns-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 4;
+
+    width: min(280px, calc(100vw - 32px));
+    padding: 14px 14px 12px;
+    box-sizing: border-box;
+
+    background: oklch(1 0 0);
+
+    border: 1px solid oklch(0.88 0.02 240);
+    border-radius: 14px;
+
+    box-shadow: 0 14px 32px oklch(0.25 0.025 252 / 0.14);
+}
+
+.rank-columns-title {
+    margin: 0 0 8px;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+
+    color: oklch(0.5 0.022 252);
+}
+
+.rank-columns-list {
+    margin: 0;
+    padding: 0;
+
+    list-style: none;
+}
+
+.rank-columns-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 7px 6px;
+
+    border-radius: 8px;
+
+    font-size: 13px;
+
+    color: oklch(0.24 0.03 252);
+
+    cursor: pointer;
+}
+
+.rank-columns-option:hover {
+    background: oklch(0.96 0.012 240);
+}
+
+.rank-columns-option input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+
+    accent-color: var(--za-green);
+
+    cursor: pointer;
+}
+
+.rank-columns-tag {
+    margin-left: auto;
+
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+
+    color: oklch(0.55 0.02 252);
+}
+
+.rank-columns-foot {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 10px;
+
+    margin-top: 10px;
+    padding-top: 10px;
+
+    border-top: 1px solid oklch(0.92 0.012 240);
+
+    font-size: 11px;
+    line-height: 1.4;
+
+    color: oklch(0.52 0.022 252);
+}
+
+.rank-columns-reset {
+    flex: none;
+
+    padding: 5px 10px;
+
+    font: inherit;
+    font-weight: 600;
+
+    color: var(--za-green);
+
+    background: none;
+
+    border: 1px solid currentColor;
+    border-radius: 999px;
+
+    cursor: pointer;
+}
+
+/* On a narrow screen ColumnPicker nudges the panel sideways so it stays
+   inside the screen wherever the button has wrapped to. */
 
 .rank-metrics-toggle[aria-pressed="true"] {
     color: var(--za-green);

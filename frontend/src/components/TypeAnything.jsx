@@ -15,7 +15,8 @@ function TypeAnything({
     inputText,
     onInputChange,
     results,
-    maxChars = null
+    maxChars = null,
+    busy = false
 }) {
 
     const used = inputText.length;
@@ -30,13 +31,21 @@ function TypeAnything({
             </div>
 
             {/* maxLength does the stopping; the count just shows where you are. */}
+            {/* Locked while a tokenizer is loading: anything typed then
+                would be split by the one on its way out, or by none. */}
             <textarea
                 className="text-input-area"
                 value={inputText}
                 onChange={(event) =>
                     onInputChange(event.target.value)
                 }
-                placeholder="Type or paste your text here..."
+                placeholder={
+                    busy
+                        ? "Wait a moment - the tokenizer is still loading..."
+                        : "Type or paste your text here..."
+                }
+                disabled={busy}
+                aria-busy={busy}
                 maxLength={maxChars ?? undefined}
                 aria-describedby={maxChars ? "typed-count" : undefined}
             />

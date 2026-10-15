@@ -12,6 +12,7 @@ import {
     createOrUpdateLeaderboardEntry,
     restoreLeaderboardEntry,
     deleteLeaderboardEntry,
+    fillLeaderboardVocabulary,
     friendlyError,
     getLeaderboard,
     getMetrics,
@@ -25,6 +26,14 @@ import {
 import { useAppState } from "../context/useAppState";
 
 import LeaderboardTable from "../components/LeaderboardTable";
+
+import ColumnPicker from "../components/ColumnPicker";
+
+import {
+    DEFAULT_HIDDEN_COLUMNS,
+    TOGGLEABLE_COLUMNS,
+    UNSCORED_COLUMN_KEYS,
+} from "../lib/leaderboardColumns";
 
 import LanguageHeatmap from "../components/LanguageHeatmap";
 
@@ -252,8 +261,8 @@ function Rank() {
         setRankBestFirst: setBestFirst,
         rankFilter: filter,
         setRankFilter: setFilter,
-        rankShowAllMetrics: showAllMetrics,
-        setRankShowAllMetrics: setShowAllMetrics,
+        rankHiddenColumns: hiddenColumns,
+        setRankHiddenColumns: setHiddenColumns,
         rankFloresLanguages: floresLanguages,
         setRankFloresLanguages: setFloresLanguages,
         rankMatrix: matrix,
@@ -357,6 +366,82 @@ function Rank() {
         */
         return list;
     }, [setRows]);
+
+    /*
+        Entries saved before the Rényi / productivity / idiosyncrasy
+        columns existed have gaps there. Once the board is settled - not
+        while the defaults are being set up, a tokenizer is being added or
+        one is being removed - each such entry is filled in, one at a time,
+        in the background, and the board is read again at the end so the
+        dashes turn into numbers. It never changes a score or which entries
+        are on the board.
+
+        Each name is tried once per visit: if its tokenizer cannot be
+        loaded right now, the dashes stay rather than this asking again on
+        every render. A pass that gets interrupted (an add starts) is not
+        counted, so it is picked up again afterwards.
+    */
+    const vocabularyTriedRef = useRef(new Set());
+
+    useEffect(() => {
+
+        if (bootstrapping || adding || removingId !== null) {
+            return undefined;
+        }
+
+        const missing = rows.filter((row) =>
+            UNSCORED_COLUMN_KEYS.some((key) => row[key] == null) &&
+            !vocabularyTriedRef.current.has(row.name)
+        );
+
+        if (!missing.length) {
+            return undefined;
+        }
+
+        const controller = new AbortController();
+
+        (async () => {
+
+            for (const row of missing) {
+
+                try {
+                    await fillLeaderboardVocabulary(
+                        row.name,
+                        controller.signal
+                    );
+                }
+                catch (error) {
+                    if (controller.signal.aborted) {
+                        return;
+                    }
+
+                    console.warn(
+                        `Could not fill in the vocabulary metrics for ${row.name}.`,
+                        error
+                    );
+                }
+
+                if (controller.signal.aborted) {
+                    return;
+                }
+
+                vocabularyTriedRef.current.add(row.name);
+            }
+
+            try {
+                await loadLeaderboard(controller.signal);
+            }
+            catch (error) {
+                /* The board on screen is still right, just with dashes. */
+                if (!controller.signal.aborted) {
+                    console.warn("Could not re-read the board.", error);
+                }
+            }
+        })();
+
+        return () => controller.abort();
+
+    }, [rows, bootstrapping, adding, removingId, loadLeaderboard]);
 
     /* Same reasoning as loadLeaderboard above - wrapped so the mount
        effect further down can depend on it honestly instead of lying
@@ -1064,6 +1149,12 @@ function Rank() {
                         premium: Number(
                             perLanguage[language]?.token_premium
                         ),
+                        /* The same for every tokenizer - it is the
+                           language. null (an older backend) is dropped
+                           rather than read as 0. */
+                        bytes: perLanguage[language]?.byte_premium == null
+                            ? null
+                            : Number(perLanguage[language].byte_premium),
                     }))
                     .filter((row) => Number.isFinite(row.premium))
                     .sort((a, b) => b.premium - a.premium);
@@ -1642,22 +1733,18 @@ function Rank() {
                             {sortSpec.label.toLowerCase()}
                         </p>
 
-                        {/* Every column sorts on click. These three are
-                            folded away by default only because nine numeric
-                            columns on one row is a table people scan past
-                            rather than read. */}
-                        <button
-                            type="button"
-                            className="rank-metrics-toggle"
-                            onClick={() =>
-                                setShowAllMetrics((open) => !open)
+                        {/* Every column sorts on click. Which ones are
+                            on the board at all is picked here - it is only
+                            what is shown; the saved measurements and the
+                            score do not change. */}
+                        <ColumnPicker
+                            columns={TOGGLEABLE_COLUMNS}
+                            hidden={hiddenColumns}
+                            onChange={setHiddenColumns}
+                            onReset={() =>
+                                setHiddenColumns(DEFAULT_HIDDEN_COLUMNS)
                             }
-                            aria-pressed={showAllMetrics}
-                        >
-                            {showAllMetrics
-                                ? "Key metrics"
-                                : "All metrics"}
-                        </button>
+                        />
 
                     </div>
 
@@ -1670,7 +1757,7 @@ function Rank() {
                     onRemove={handleRemove}
                     removingId={removingId}
                     disabled={adding || bootstrapping}
-                    showAllMetrics={showAllMetrics}
+                    hiddenColumns={hiddenColumns}
                     colourFor={identityColour}
                     initialsFor={initials}
                     vendorFor={vendor}
@@ -1700,6 +1787,16 @@ function Rank() {
                                 What each language costs next to the same
                                 sentence in English. 1.00&times; would be
                                 parity; longer is worse.
+                                {breakdown.some((row) => Number.isFinite(row.bytes)) && (
+                                    <>
+                                        {" "}The thin mark on each bar is
+                                        the byte premium - how much longer
+                                        the same sentences are in raw bytes,
+                                        whatever the tokenizer. The gap
+                                        between the mark and the end of the
+                                        bar is down to the tokenizer.
+                                    </>
+                                )}
                             </p>
                         </div>
 
@@ -1735,10 +1832,40 @@ function Rank() {
                                             )}%`
                                         }}
                                     ></span>
+
+                                    {Number.isFinite(row.bytes) && (
+                                        <span
+                                            className="rank-breakdown-bytes-mark"
+                                            aria-hidden="true"
+                                            style={{
+                                                left: `${Math.max(
+                                                    0,
+                                                    Math.min(
+                                                        99,
+                                                        (row.bytes /
+                                                            BREAKDOWN_CEILING) * 100
+                                                    )
+                                                )}%`
+                                            }}
+                                        ></span>
+                                    )}
                                 </span>
 
                                 <span className="rank-breakdown-value">
                                     {row.premium.toFixed(2)}&times;
+                                </span>
+
+                                <span
+                                    className="rank-breakdown-bytes"
+                                    title={
+                                        "Byte premium: bytes for these " +
+                                        "sentences against the same " +
+                                        "sentences in English"
+                                    }
+                                >
+                                    {Number.isFinite(row.bytes)
+                                        ? `bytes ${row.bytes.toFixed(2)}×`
+                                        : ""}
                                 </span>
 
                             </li>

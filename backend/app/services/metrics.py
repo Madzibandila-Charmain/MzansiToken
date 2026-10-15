@@ -9,6 +9,16 @@ TAD Capstone Project
         2. fertility     - average tokens per word
         3. compression   - average bytes per token
         4. token_premium - how many more tokens vs English
+
+    And four more from the literature, shown alongside them. None of them
+    feeds the MzansiScore:
+        5. renyi_efficiency - how evenly tokens are used, 0 to 1 (Zouhar et al. 2023, alpha 2.5)
+        6. productivity     - word types per subword, averaged (Gutierrez-Vasques et al. 2023)
+        7. idiosyncrasy     - average frequency of those words (same source)
+           (6 and 7 tokenize every different word on its own, so they are
+           computed separately - compute_vocabulary_by_language - and only
+           when something asks for them, never while a page first loads.)
+        8. byte_premium     - bytes vs English for the same sentences (Arnett et al. 2024)
  
     All four metrics are computed from the tokenized corpus that flores.py loads and tokenizer.py tokenizes.
  
@@ -20,6 +30,11 @@ How this file connects to the others:
 Usage:
     from metrics import compute_efficiency_metrics
 """
+
+import math
+from collections import Counter, defaultdict
+
+from transformers import PreTrainedTokenizerFast
 
 from app.services.tokenizer import load_tokenizer, tokenize_corpus
 
@@ -158,6 +173,140 @@ def token_premium_per_word(lang_fertility: float, eng_fertility: float) -> float
         return None
     return round(lang_fertility / eng_fertility, 3)
 
+# Metric 5: Renyi efficiency
+RENYI_ALPHA = 2.5
+
+def renyi_efficiency(tokenized_sentences: list[list[str]], alpha: float = RENYI_ALPHA) -> float | None:
+    """
+    How evenly the tokenizer spreads this text over the tokens it uses.
+
+    Formula (Zouhar et al., 2023 - the tokenization-scorer package that
+    Arnett & Bergen (2025) use, with their setting alpha = 2.5):
+
+        p(t)       = count(t) / total tokens
+        H_alpha    = 1 / (1 - alpha) * log2( sum_t p(t) ** alpha )
+        efficiency = H_alpha / log2(V)
+
+    V is the number of DIFFERENT tokens that appear in this text, which is
+    what tokenization-scorer uses by default. The result is between 0 and 1:
+    near 1 means the tokens are used about equally often, lower means a few
+    very frequent tokens carry most of the text.
+
+    Returns None when fewer than two different tokens appear - log2(1) is 0,
+    so the ratio does not exist, and a zero would look like a measurement.
+    """
+    counts = Counter(token for tokens in tokenized_sentences for token in tokens)
+    distinct = len(counts)
+
+    if distinct < 2:
+        return None
+
+    total = sum(counts.values())
+    power_sum = sum((count / total) ** alpha for count in counts.values())
+    entropy = math.log2(power_sum) / (1 - alpha)
+
+    return round(entropy / math.log2(distinct), 3)
+
+# Metric 6 and 7: Productivity and idiosyncrasy
+def productivity_idiosyncrasy(tokenizer, sentences: list[str]) -> tuple[float | None, float | None]:
+    """
+    The average productivity and idiosyncrasy of the subwords this
+    tokenizer uses on this text (Gutierrez-Vasques et al., 2023, as used by
+    Meyer & Buys, 2025):
+
+        productivity(s) = |W_s|
+        idiosyncrasy(s) = sum over w in W_s of freq(w), divided by |W_s|
+
+    W_s is the set of different words that subword s appears in, and
+    freq(w) is how many times word w occurs in the text. Productivity is how
+    many word types reuse a subword (a prefix like "aba-" turns up in many);
+    idiosyncrasy is how common those words are on average (a stem found in a
+    few very frequent words). Both are averaged over every subword used.
+
+    Words are split on whitespace, the same as fertility. Each different
+    word is tokenized once, on its own, so a subword is credited to the word
+    it came from - all of them in one batch (see _split_words).
+
+    Returns (None, None) for text with no words, or when the tokenizer
+    produced no subwords at all.
+    """
+    word_frequency = Counter(word for sentence in sentences for word in sentence.split())
+
+    words_containing = defaultdict(set)
+
+    for word, subwords in zip(word_frequency, _split_words(tokenizer, list(word_frequency))):
+        for subword in set(subwords):
+            words_containing[subword].add(word)
+
+    if not words_containing:
+        return None, None
+
+    subword_count = len(words_containing)
+
+    productivity = sum(len(words) for words in words_containing.values()) / subword_count
+
+    idiosyncrasy = sum(
+        sum(word_frequency[word] for word in words) / len(words)
+        for words in words_containing.values()
+    ) / subword_count
+
+    return round(productivity, 3), round(idiosyncrasy, 3)
+
+def _split_words(tokenizer, words: list[str]) -> list[list[str]]:
+    """
+    tokenizer.tokenize(word) for every word, in one call where possible.
+
+    A FLORES language has about nine thousand different words, and one
+    tokenize() call per word made the first load of a page roughly three
+    times slower. For a standard fast tokenizer, tokenize() IS a one-item
+    batch through the same Rust encoder - so calling the tokenizer on the
+    whole list runs exactly the same code, once, and gives the same tokens.
+
+    A tokenizer whose class replaces tokenize() with its own version keeps
+    being called word by word, so it still gets exactly what it would have.
+    """
+    if not words:
+        return []
+
+    standard_fast = (
+        isinstance(tokenizer, PreTrainedTokenizerFast)
+        and type(tokenizer).tokenize is PreTrainedTokenizerFast.tokenize
+    )
+
+    if standard_fast:
+        encoded = tokenizer(
+            words,
+            add_special_tokens=False,
+            return_attention_mask=False,
+            return_token_type_ids=False,
+        )
+        return [encoding.tokens for encoding in encoded.encodings]
+
+    return [tokenizer.tokenize(word) for word in words]
+
+# Metric 8: Byte premium
+def byte_premium(sentences: list[str], english_sentences: list[str] | None) -> float | None:
+    """
+    How many more UTF-8 bytes this language needs than English for the same
+    sentences (Arnett et al., 2024):
+
+        byte_premium = bytes(this language) / bytes(English)
+
+    It is a property of the language and the parallel text, not of the
+    tokenizer - every tokenizer sees the same bytes. It only means something
+    when `sentences` really is a translation of `english_sentences`, so it
+    is only ever computed for the built-in FLORES corpus.
+
+    Returns None when there is no English to compare with, or no text.
+    """
+    english_bytes = sum(len(sentence.encode("utf-8")) for sentence in english_sentences or [])
+    language_bytes = sum(len(sentence.encode("utf-8")) for sentence in sentences)
+
+    if not english_bytes or not language_bytes:
+        return None
+
+    return round(language_bytes / english_bytes, 3)
+
 # Compute all metrics for all languages
 def compute_efficiency_metrics(tokenizer, corpus: dict[str, list[str]]) -> dict[str, dict]:
     """
@@ -213,6 +362,8 @@ def compute_efficiency_metrics(tokenizer, corpus: dict[str, list[str]]) -> dict[
     else:
         eng_count = token_count(tokenized_corpus["English"])
 
+    english_sentences = corpus.get("English")
+
     # Compute all four metrics for each language
     results = {}
     for language, sentences in corpus.items():
@@ -229,9 +380,36 @@ def compute_efficiency_metrics(tokenizer, corpus: dict[str, list[str]]) -> dict[
             "compression":   compression(token_lists, sentences),
             "token_premium": token_premium(lang_token_count, eng_count),
             "token_premium_basis": "parallel_corpus",   # full parallel corpus, so totals are comparable
+            "renyi_efficiency": renyi_efficiency(token_lists),
+            "byte_premium":  byte_premium(sentences, english_sentences),
         }
 
     # Return the full results dictionary
+    return results
+
+
+def compute_vocabulary_by_language(tokenizer, corpus: dict[str, list[str]]) -> dict[str, dict]:
+    """
+    Productivity and idiosyncrasy for every language in the corpus:
+        {"isiZulu": {"productivity": 4.2, "idiosyncrasy": 1.3}, ...}
+
+    Kept apart from compute_efficiency_metrics on purpose. These two
+    tokenize each different word on its own - about nine thousand per
+    FLORES language - which roughly tripled the time a page took to show
+    its first numbers when all eight languages came with every load. Now
+    each language is worked out on its own and cached (flores_state), and
+    /inspect/default works out all eight while its page is loading, so the
+    chart tabs are ready when the boxes are.
+    """
+    results = {}
+
+    for language, sentences in corpus.items():
+        productivity, idiosyncrasy = productivity_idiosyncrasy(tokenizer, sentences)
+        results[language] = {
+            "productivity": productivity,
+            "idiosyncrasy": idiosyncrasy,
+        }
+
     return results
 
 def calculate_efficiency_metrics_one_language(tokenized_sentences, sentences, model_name: str, language: str,
@@ -256,10 +434,25 @@ def calculate_efficiency_metrics_one_language(tokenized_sentences, sentences, mo
 
     Passing "standalone" means `corpus` is never read, so callers may pass
     None for it - and nothing pays to tokenize English FLORES.
+
+    Renyi efficiency is computed from the given text alone, like fertility,
+    so every basis gets it - it only counts the tokens already here. The
+    byte premium needs a translation of the English corpus, so only
+    "parallel_corpus" gets one; the other two report None.
+
+    An uploaded file ("standalone") also gets productivity and
+    idiosyncrasy, measured on the file itself. The built-in corpus does
+    not get them here - they are served by /vocabulary, so that loading a
+    language never waits for them.
     """
     lang_token_count = token_count(tokenized_sentences)
     lang_fertility = fertility(tokenized_sentences, sentences)
     lang_compression = compression(tokenized_sentences, sentences)
+
+    if basis == "parallel_corpus":
+        bytes_vs_english = byte_premium(sentences, (corpus or {}).get("English"))
+    else:
+        bytes_vs_english = None
 
     if basis == "standalone":
         # Deliberately no get_english_stats call - see the docstring.
@@ -280,4 +473,17 @@ def calculate_efficiency_metrics_one_language(tokenized_sentences, sentences, mo
         "compression": lang_compression,
         "token_premium": premium,
         "token_premium_basis": basis,
+        "renyi_efficiency": renyi_efficiency(tokenized_sentences),
+        "byte_premium": bytes_vs_english,
+        **_file_vocabulary(tokenizer, sentences, basis),
     }
+
+
+def _file_vocabulary(tokenizer, sentences, basis):
+    """Productivity and idiosyncrasy for an uploaded file only."""
+    if basis != "standalone":
+        return {}
+
+    productivity, idiosyncrasy = productivity_idiosyncrasy(tokenizer, sentences)
+
+    return {"productivity": productivity, "idiosyncrasy": idiosyncrasy}

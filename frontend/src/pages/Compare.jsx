@@ -38,6 +38,7 @@ import { statusState } from "../lib/statusState";
 import { languageColour } from "../components/languageColours";
 
 import { formatTokenizedText } from "../lib/tokenText";
+import { extraMetricFields } from "../lib/vocabularyMetrics";
 
 const DEFAULT_COMPARE_TOKENIZER_ONE = "gpt2";
 const DEFAULT_COMPARE_TOKENIZER_TWO = "google/gemma-4-12B-it";
@@ -214,6 +215,25 @@ function Compare() {
     const [tokenizerTwoLoading, setTokenizerTwoLoading] = useState(false);
     const [tokenizerTwoStatus, setTokenizerTwoStatus] = useState("");
     const [tokenizerTwoFailed, setTokenizerTwoFailed] = useState(false);
+
+    /* Anything this page is still loading - a tokenizer or a corpus. Locks
+       Type Anything, and holds back morphology (NCHLT) until the FLORES
+       numbers are in, so the two never compete. */
+    const pageBusy =
+        loading ||
+        selectionLoading ||
+        tokenizerOneLoading ||
+        tokenizerTwoLoading;
+
+    /* Which selection the morphology request last came back for (or
+       failed for). Until it matches, the boxes stay in their loading state,
+       so every number in a box appears at the same moment. */
+    const [mbiSettledFor, setMbiSettledFor] = useState(null);
+    const mbiSelection = JSON.stringify([
+        compareLanguage,
+        compareTokenizerOne,
+        compareTokenizerTwo
+    ]);
 
     const [error, setError] = useState("");
 
@@ -452,8 +472,12 @@ function Compare() {
 
     useEffect(() => {
 
+        /* NCHLT after FLORES: morphology is asked for only once the
+           tokenizer boxes are in, so the two never compete. */
         if (
             !compareInitialised ||
+            !compareCorpusLoaded ||
+            pageBusy ||
             !compareLanguage ||
             !compareTokenizerOne ||
             !compareTokenizerTwo
@@ -529,7 +553,11 @@ function Compare() {
             }
         }
 
-        loadMbiComparison();
+        loadMbiComparison().finally(() => {
+            if (!cancelled) {
+                setMbiSettledFor(mbiSelection);
+            }
+        });
 
         return () => {
             cancelled = true;
@@ -537,9 +565,12 @@ function Compare() {
 
     }, [
         compareInitialised,
+        compareCorpusLoaded,
+        pageBusy,
         compareLanguage,
         compareTokenizerOne,
-        compareTokenizerTwo
+        compareTokenizerTwo,
+        mbiSelection
     ]);
 
     /*
@@ -814,11 +845,48 @@ function Compare() {
     */
 
     /*
+        Morphology for the current selection is still on its way. English
+        has none, so there is nothing to wait for.
+    */
+    const mbiPending =
+        compareInitialised &&
+        compareCorpusLoaded &&
+        Boolean(compareLanguage && compareTokenizerOne && compareTokenizerTwo) &&
+        hasMbiMetrics() &&
+        mbiSettledFor !== mbiSelection;
+
+    /* What a box's loading overlay says. The tokenizer in that box first,
+       then the corpus, then the morphology the box is still waiting for. */
+    function boxBusyLabel(slotLoading, slotInput, slotName) {
+
+        if (slotLoading) {
+            return `Loading ${slotInput || slotName}...`;
+        }
+
+        if (!selectionLoading && mbiPending) {
+            return "Measuring morphology...";
+        }
+
+        if (selectionType === "upload") {
+            return `Loading ${corpusLoadingLabel}...`;
+        }
+
+        if (selectionType === "default") {
+            return "Loading the built-in corpus...";
+        }
+
+        return `Loading ${compareLanguage}...`;
+    }
+
+    /*
         Converts backend metrics into the Compare format.
     */
     function formatMetrics(result) {
 
         return {
+            /* First, so the fields spelled out below win. */
+            ...extraMetricFields(result?.metrics),
+
             tokens:
                 result?.metrics?.token_count ?? 0,
 
@@ -1834,18 +1902,14 @@ function Compare() {
                         tokenizerType="1"
                         busy={
                             tokenizerOneLoading ||
-                            selectionLoading
+                            selectionLoading ||
+                            mbiPending
                         }
-                        busyLabel={
-                            tokenizerOneLoading
-                                ? `Loading ${tokenizerOneInput
-                                    || "tokenizer 1"}...`
-                                : selectionType === "upload"
-                                    ? `Loading ${corpusLoadingLabel}...`
-                                : selectionType === "default"
-                                    ? "Loading the built-in corpus..."
-                                : `Loading ${compareLanguage}...`
-                        }
+                        busyLabel={boxBusyLabel(
+                            tokenizerOneLoading,
+                            tokenizerOneInput,
+                            "tokenizer 1"
+                        )}
                     />
 
                     {/* TOKENIZER 2 */}
@@ -1867,18 +1931,14 @@ function Compare() {
                         tokenizerType="2"
                         busy={
                             tokenizerTwoLoading ||
-                            selectionLoading
+                            selectionLoading ||
+                            mbiPending
                         }
-                        busyLabel={
-                            tokenizerTwoLoading
-                                ? `Loading ${tokenizerTwoInput
-                                    || "tokenizer 2"}...`
-                                : selectionType === "upload"
-                                    ? `Loading ${corpusLoadingLabel}...`
-                                : selectionType === "default"
-                                    ? "Loading the built-in corpus..."
-                                : `Loading ${compareLanguage}...`
-                        }
+                        busyLabel={boxBusyLabel(
+                            tokenizerTwoLoading,
+                            tokenizerTwoInput,
+                            "tokenizer 2"
+                        )}
                     />
 
                 </div>
@@ -1889,11 +1949,13 @@ function Compare() {
             <CompareCharts
                 tokenizerA={compareTokenizerOne}
                 tokenizerB={compareTokenizerTwo}
+                waiting={pageBusy || mbiPending}
             />
 
             {/* Type Anything */}
             <TypeAnything
                 maxChars={limits?.max_text_chars ?? null}
+                busy={pageBusy}
                 inputText={inputText}
                 onInputChange={handleTypedInputChange}
                 results={[

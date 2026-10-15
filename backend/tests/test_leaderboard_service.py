@@ -146,3 +146,70 @@ def test_get_leaderboard_sorts_and_puts_nulls_last():
     names = [r["name"] for r in lb]
     # non-null score should appear before the null score when descending
     assert names.index("tok_non_null") < names.index("tok_null")
+
+
+def test_vocabulary_metrics_are_saved_and_read_back():
+    leaderboard_service.add_tokenizer("tok_vocab", {
+        "fertility": 2.0,
+        "renyi_efficiency": 0.61,
+        "productivity": 3.5,
+        "idiosyncrasy": 12.25,
+    })
+
+    row = leaderboard_service.get_leaderboard()[0]
+    assert row["renyi_efficiency"] == 0.61
+    assert row["productivity"] == 3.5
+    assert row["idiosyncrasy"] == 12.25
+
+    saved = leaderboard_service.get_saved_tokenizer("tok_vocab")
+    assert saved["productivity"] == 3.5
+
+
+def test_board_can_sort_by_a_vocabulary_metric():
+    leaderboard_service.add_tokenizer("low", {"productivity": 1.0})
+    leaderboard_service.add_tokenizer("high", {"productivity": 9.0})
+
+    names = [r["name"] for r in leaderboard_service.get_leaderboard(sort_by="productivity")]
+    assert names == ["high", "low"]
+
+
+def test_an_old_database_gains_the_new_columns_and_keeps_its_rows(tmp_path, monkeypatch):
+    """
+    A leaderboard.db made before the vocabulary metrics existed must open
+    with every saved entry intact - the new columns are added empty, nothing
+    is dropped or re-measured.
+    """
+    import sqlite3
+
+    old_db = tmp_path / "old.db"
+    conn = sqlite3.connect(old_db)
+    conn.executescript("""
+        CREATE TABLE tokenizers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            active INTEGER NOT NULL DEFAULT 1
+        );
+        CREATE TABLE metrics (
+            tokenizer_id INTEGER PRIMARY KEY,
+            token_count INTEGER, fertility REAL, compression REAL,
+            token_premium REAL, f1 REAL, precision_score REAL, recall REAL,
+            overall_score REAL,
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        INSERT INTO tokenizers (name) VALUES ('gpt2');
+        INSERT INTO metrics (tokenizer_id, fertility, overall_score) VALUES (1, 2.5, 61.2);
+    """)
+    conn.commit()
+    conn.close()
+
+    monkeypatch.setattr(db_module, "DB_PATH", old_db)
+    db_module.init_db()
+    db_module.init_db()  # a second start must not try to add them again
+
+    row = leaderboard_service.get_saved_tokenizer("gpt2")
+    assert row["fertility"] == 2.5
+    assert row["overall_score"] == 61.2
+    assert row["renyi_efficiency"] is None
+    assert row["productivity"] is None
+    assert row["idiosyncrasy"] is None

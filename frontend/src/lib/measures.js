@@ -63,6 +63,90 @@ export const MEASURES = [
         goodMeans: "Lower is better - it is how many times more this language costs than the same text in English.",
 
         format: (value) => Number(value).toFixed(2) + "×"
+    },
+    {
+        key: "byte_premium",
+        name: "the byte premium",
+        source: "Arnett et al. 2024",
+        label: "Bytes vs English",
+        title: "Bytes relative to English",
+
+        /* A property of the language, not the tokenizer: every tokenizer
+           sees the same bytes. Shown on the wheel only. */
+        lowerIsBetter: true,
+
+        unit: "bytes relative to English",
+        betterWord: "fewer",
+        worseWord: "more",
+        goodMeans: "How many more bytes the same sentences take than in English (Arnett et al. 2024).",
+        petalNote: "Longer petal means more bytes for the same sentences - the language, not the tokenizer.",
+        ownNote: true,
+
+        format: (value) => Number(value).toFixed(2) + "×"
+    },
+
+    /*
+        The three vocabulary measures. None has an agreed "better"
+        direction, so they are `neutral`: Compare says which tokenizer is
+        higher or lower, never which one wins. productivity and
+        idiosyncrasy come from /vocabulary rather than /metrics
+        (`fromVocabulary`), because they take a moment to compute.
+    */
+    {
+        key: "renyi_efficiency",
+        name: "Rényi efficiency",
+        source: "Zouhar et al. 2023",
+        petalNote: "Longer petal means the tokens are used more evenly. Neither end is better or worse.",
+        ownNote: true,
+        label: "Rényi",
+        title: "Rényi efficiency (how evenly the tokens are used)",
+        neutral: true,
+        lowerIsBetter: false,
+
+        unit: "Rényi efficiency",
+        betterWord: "higher",
+        worseWord: "lower",
+        goodMeans: "Rényi efficiency, α = 2.5 (Zouhar et al. 2023): how evenly the tokens are used, from 0 to 1. The papers disagree on whether higher is better, so this one is described, not judged.",
+
+        format: (value) => Number(value).toFixed(2)
+    },
+    {
+        key: "productivity",
+        name: "productivity",
+        source: "Gutierrez-Vasques et al. 2023",
+        petalNote: "Longer petal means each subword turns up in more different words. Neither end is better or worse.",
+        ownNote: true,
+        label: "Productivity",
+        title: "Productivity (different words per subword)",
+        neutral: true,
+        fromVocabulary: true,
+        lowerIsBetter: false,
+
+        unit: "words per subword",
+        betterWord: "higher",
+        worseWord: "lower",
+        goodMeans: "Productivity (Gutierrez-Vasques et al. 2023): how many different words each subword turns up in, on average. It describes how subwords are reused - neither direction is better on its own.",
+
+        format: (value) => Number(value).toFixed(1)
+    },
+    {
+        key: "idiosyncrasy",
+        name: "idiosyncrasy",
+        source: "Gutierrez-Vasques et al. 2023",
+        petalNote: "Longer petal means the words behind each subword are more common. Neither end is better or worse.",
+        ownNote: true,
+        label: "Idiosyncrasy",
+        title: "Idiosyncrasy (how common the words behind each subword are)",
+        neutral: true,
+        fromVocabulary: true,
+        lowerIsBetter: false,
+
+        unit: "average word frequency",
+        betterWord: "higher",
+        worseWord: "lower",
+        goodMeans: "Idiosyncrasy (Gutierrez-Vasques et al. 2023): how often the words behind each subword occur, on average. It describes how subwords are used - neither direction is better on its own.",
+
+        format: (value) => Number(value).toFixed(1)
     }
 ];
 
@@ -70,9 +154,10 @@ export const MEASURES = [
     Pick a subset, in the order given.
 
     The two charts deliberately show different sets. The petal wheel on
-    Inspect plots ratios, and a raw corpus total is not a ratio - drawn as a
-    petal it would just repeat the doughnut beside it. Compare is a
-    difference between two tokenizers, where the total IS worth seeing.
+    Inspect plots ratios and averages, and a raw corpus total is not one -
+    drawn as a petal it would just repeat the doughnut beside it. Compare
+    is a difference between two tokenizers, where the total IS worth
+    seeing, and the byte premium is not (it is the same for both).
 */
 export function measuresFor(keys) {
 
@@ -85,8 +170,31 @@ export function measuresFor(keys) {
 export const RATIO_MEASURES = measuresFor([
     "fertility",
     "compression",
-    "token_premium"
+    "token_premium",
+    "byte_premium",
+    "renyi_efficiency",
+    "productivity",
+    "idiosyncrasy"
 ]);
 
-/* Everything, for the two-tokenizer comparison. */
-export const COMPARE_MEASURES = MEASURES;
+/*
+    For the two-tokenizer comparison: everything except the byte premium,
+    which is the language's and so identical for both tokenizers - every
+    pair of dots would sit on top of each other.
+*/
+export const COMPARE_MEASURES = measuresFor([
+    "fertility",
+    "compression",
+    "token_count",
+    "token_premium",
+    "renyi_efficiency",
+    "productivity",
+    "idiosyncrasy"
+]);
+
+/*
+    The measures taken from the research papers - the ones with a
+    `source`. Home lists them from here, so adding one to MEASURES is all it
+    takes for the front page to mention it too.
+*/
+export const RESEARCH_MEASURES = MEASURES.filter((measure) => measure.source);

@@ -7,86 +7,18 @@
 
 import { useState } from "react";
 
-/*
-    Every column in one place: the key it reads, how it is labelled, what
-    the label means, and whether a bigger number is better. The header
-    arrow and the default sort direction both come from `lowerIsBetter`, so
-    the table cannot say one thing and sort the other way.
-*/
-const COLUMNS = [
-    {
-        key: "name",
-        label: "Tokenizer",
-        title: "The Hugging Face model id",
-        align: "left",
-        lowerIsBetter: true,
-    },
-    {
-        key: "overall_score",
-        label: "Score",
-        title: "Out of 100, computed by the backend from the four measures",
-        align: "right",
-        lowerIsBetter: false,
-    },
-    {
-        key: "token_count",
-        label: "Tokens",
-        title:
-            "Total tokens spent on the South African languages in the " +
-            "corpus. The raw bill, before any of it is averaged",
-        align: "right",
-        lowerIsBetter: true,
-        extra: true,
-    },
-    {
-        key: "compression",
-        label: "Compression",
-        title: "Bytes per token - how much text each token carries",
-        align: "right",
-        lowerIsBetter: false,
-    },
-    {
-        key: "fertility",
-        label: "Fertility",
-        title: "Tokens per word, averaged over the languages measured",
-        align: "right",
-        lowerIsBetter: true,
-    },
-    {
-        key: "token_premium",
-        label: "Premium",
-        title: "Tokens used against the same text in English. 1.0 is parity",
-        align: "right",
-        lowerIsBetter: true,
-    },
-    {
-        key: "f1",
-        label: "MBI F1",
-        title: "How often the splits land on a real morpheme boundary",
-        align: "right",
-        lowerIsBetter: false,
-    },
-    {
-        key: "precision",
-        label: "Precision",
-        title:
-            "Of the boundaries this tokenizer predicted, how many were " +
-            "real morpheme boundaries",
-        align: "right",
-        lowerIsBetter: false,
-        extra: true,
-    },
-    {
-        key: "recall",
-        label: "Recall",
-        title:
-            "Of the real morpheme boundaries, how many this tokenizer " +
-            "found",
-        align: "right",
-        lowerIsBetter: false,
-        extra: true,
-    },
-];
+import {
+    COLUMNS,
+    DEFAULT_HIDDEN_COLUMNS,
+    UNSCORED_COLUMN_KEYS,
+} from "../lib/leaderboardColumns";
+
+/* The unscored columns came after the first entries were saved, so an
+   older entry has a gap there until it is filled in. */
+
+const NOT_YET_MEASURED =
+    "Saved before this column existed. Remove it and add it again to " +
+    "fill it in - the score stays the same.";
 
 function formatCell(key, value) {
 
@@ -110,6 +42,10 @@ function formatCell(key, value) {
         return `${value.toFixed(2)}×`;
     }
 
+    if (key === "productivity" || key === "idiosyncrasy") {
+        return value.toFixed(1);
+    }
+
     return value.toFixed(2);
 }
 
@@ -122,6 +58,7 @@ function LeaderboardTable({
     disabled = false,
     emptyBecauseFiltered = false,
     showAllMetrics = false,
+    hiddenColumns,
     colourFor = () => "#007749",
     initialsFor = (name) => String(name).slice(0, 2).toUpperCase(),
     vendorFor = () => "",
@@ -134,6 +71,27 @@ function LeaderboardTable({
         overridden forever.
     */
     const [sort, setSort] = useState(null);
+
+    /*
+        Which columns are on. Rank passes the list the user picked in its
+        Columns panel; without one, the older showAllMetrics switch still
+        works - everything, or everything but the three folded away.
+    */
+    const hidden = hiddenColumns ?? (
+        showAllMetrics ? [] : DEFAULT_HIDDEN_COLUMNS
+    );
+
+    const columns = COLUMNS.filter(
+        (column) => column.alwaysShown || !hidden.includes(column.key)
+    );
+
+    /* A sort on a column that has just been hidden would keep ordering the
+       board by something no longer on screen, with no arrow to show it.
+       It lapses instead, and the order goes back to the control above. */
+    const activeSort =
+        sort && columns.some((column) => column.key === sort.keyToSort)
+            ? sort
+            : null;
 
     function handleHeaderClick(column) {
 
@@ -162,14 +120,14 @@ function LeaderboardTable({
 
     function getSortedArray(arrayToSort) {
 
-        if (!sort) {
+        if (!activeSort) {
             return arrayToSort;
         }
 
         return [...arrayToSort].sort((a, b) => {
 
-            const aValue = a?.[sort.keyToSort];
-            const bValue = b?.[sort.keyToSort];
+            const aValue = a?.[activeSort.keyToSort];
+            const bValue = b?.[activeSort.keyToSort];
 
             if (aValue == null && bValue == null) {
                 return 0;
@@ -185,14 +143,14 @@ function LeaderboardTable({
             }
 
             if (typeof aValue === "number" && typeof bValue === "number") {
-                return sort.direction === "asc"
+                return activeSort.direction === "asc"
                     ? aValue - bValue
                     : bValue - aValue;
             }
 
             const result = String(aValue).localeCompare(String(bValue));
 
-            return sort.direction === "asc"
+            return activeSort.direction === "asc"
                 ? result
                 : -result;
         });
@@ -243,22 +201,17 @@ function LeaderboardTable({
 
     const sorted = getSortedArray(rows);
 
-    /*
-        Token count, precision and recall are every bit as sortable as the
-        rest - they are just folded away by default, because nine numeric
-        columns on one row is a table people scan past rather than read.
-        The toggle above the board opens them.
-    */
-    const columns = showAllMetrics
-        ? COLUMNS
-        : COLUMNS.filter((column) => !column.extra);
+    /* Past five numbers a row, the tighter spacing keeps it on screen. */
+    const isWide = columns.filter(
+        (column) => column.key !== "name"
+    ).length > 5;
 
     return (
         <div className="rank-table-scroll">
 
             <table
                 className={
-                    showAllMetrics
+                    isWide
                         ? "rank-table is-wide"
                         : "rank-table"
                 }
@@ -273,7 +226,7 @@ function LeaderboardTable({
 
                         {columns.map((column) => {
 
-                            const isSorted = sort?.keyToSort === column.key;
+                            const isSorted = activeSort?.keyToSort === column.key;
 
                             return (
                                 <th
@@ -288,7 +241,7 @@ function LeaderboardTable({
                                     ].join(" ").trim()}
                                     aria-sort={
                                         isSorted
-                                            ? sort.direction === "asc"
+                                            ? activeSort.direction === "asc"
                                                 ? "ascending"
                                                 : "descending"
                                             : "none"
@@ -299,7 +252,7 @@ function LeaderboardTable({
 
                                     <span className="rank-sort-arrow">
                                         {isSorted
-                                            ? sort.direction === "asc"
+                                            ? activeSort.direction === "asc"
                                                 ? "↑"
                                                 : "↓"
                                             : ""}
@@ -425,10 +378,19 @@ function LeaderboardTable({
                                         );
                                     }
 
+                                    const notYetMeasured =
+                                        UNSCORED_COLUMN_KEYS.includes(column.key) &&
+                                        row[column.key] == null;
+
                                     return (
-                                        <td 
+                                        <td
                                             key={column.key}
                                             className="is-centered"
+                                            title={
+                                                notYetMeasured
+                                                    ? NOT_YET_MEASURED
+                                                    : undefined
+                                            }
                                         >
                                             {formatCell(
                                                 column.key,

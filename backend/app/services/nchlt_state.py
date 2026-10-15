@@ -7,6 +7,7 @@ Date: 18 September 2026
 
 from pathlib import Path
 
+from app.services.compute_once import once
 from app.services.NCHLT_dataset_service import load_nchlt_data
 from app.services.morphology_service import (BoundaryVector, aggregate_results, compare_boundaries, to_boundary_vector,)
 from app.services.tokenizer import get_NCHLT_boundary_vectors
@@ -53,17 +54,22 @@ def get_or_compute_mbi(model_name: str, language: str, tokenizer):
     Get morphology metrics for one tokenizer + one language.
 
     If we have already computed them, return the cached result.
-    Otherwise, tokenize all NCHLT words in a batch, compare the
-    predicted boundaries with the gold boundaries, and cache
-    the final metrics.
+    Otherwise work them out once - Inspect, Compare and a Rank measurement
+    can all ask for the same pair at the same moment, and the later ones
+    wait for the first rather than doing it again (compute_once.py).
     """
+    return once(
+        _mbi_cache,
+        (model_name, language),
+        lambda: _compute_mbi(language, tokenizer),
+    )
 
-    key = (model_name, language)
 
-    # Use cached result if available
-    if key in _mbi_cache:
-        return _mbi_cache[key]
-
+def _compute_mbi(language: str, tokenizer):
+    """
+    Tokenize all NCHLT words for this language in a batch and compare the
+    predicted boundaries with the gold ones.
+    """
     corpus = get_corpus()
 
     # If the language isn't in the dataset, stop here
@@ -125,8 +131,5 @@ def get_or_compute_mbi(model_name: str, language: str, tokenizer):
             "total_gold_boundaries": metrics.total_gold_boundaries,
         },
     }
-
-    # Save result in cache for next time
-    _mbi_cache[key] = result
 
     return result

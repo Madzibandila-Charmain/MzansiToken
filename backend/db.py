@@ -26,7 +26,14 @@ METRIC_COLUMN_MAP = {
     "precision": "precision_score",
     "recall": "recall",
     "overall_score": "overall_score",
+    "renyi_efficiency": "renyi_efficiency",
+    "productivity": "productivity",
+    "idiosyncrasy": "idiosyncrasy",
 }
+
+# The three vocabulary columns: shown on the board beside the scored ones,
+# never part of the score. The one list every other file reads.
+VOCABULARY_COLUMNS = ("renyi_efficiency", "productivity", "idiosyncrasy")
 
 ALLOWED_SORT_COLUMNS = {
     "token_count": "m.token_count",
@@ -37,6 +44,9 @@ ALLOWED_SORT_COLUMNS = {
     "precision": "m.precision_score",
     "recall": "m.recall",
     "overall_score": "m.overall_score",
+    "renyi_efficiency": "m.renyi_efficiency",
+    "productivity": "m.productivity",
+    "idiosyncrasy": "m.idiosyncrasy",
     "name": "t.name",
     "created_at": "t.created_at",
 }
@@ -63,6 +73,10 @@ CREATE TABLE IF NOT EXISTS metrics (
     precision_score REAL,    -- named 'precision_score': PRECISION is a SQL reserved word
     recall         REAL,
     overall_score  REAL,     -- composite score, computed and written by the app
+    -- Shown beside the score, never part of it. Same seven languages.
+    renyi_efficiency REAL,   -- how evenly tokens are used, 0 to 1
+    productivity   REAL,     -- word types per subword, averaged
+    idiosyncrasy   REAL,     -- average frequency of those words
     updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (tokenizer_id) REFERENCES tokenizers(id) ON DELETE CASCADE
 );
@@ -156,6 +170,18 @@ def init_db():
                 "ALTER TABLE tokenizers "
                 "ADD COLUMN active INTEGER NOT NULL DEFAULT 1;"
             )
+
+        # The three vocabulary metrics came later too. Entries saved before
+        # then keep everything they had and get NULL here, which the board
+        # shows as a dash until the entry is restored or measured again.
+        metric_columns = [
+            row["name"]
+            for row in conn.execute("PRAGMA table_info(metrics);").fetchall()
+        ]
+
+        for column in VOCABULARY_COLUMNS:
+            if column not in metric_columns:
+                conn.execute(f"ALTER TABLE metrics ADD COLUMN {column} REAL;")
 
     # Restrict the db (and its WAL/SHM sidecar files) to the owning process's
     # user only. Nobody else on the machine should be able to open the file.

@@ -1,7 +1,8 @@
 import pytest
 
 from app.services import metrics
-from app.services.flores_state import _metrics_cache
+from app.routers.inspect_router import _default_cache
+from app.services.flores_state import _metrics_cache, _vocabulary_cache
 
 
 @pytest.fixture(autouse=True)
@@ -14,7 +15,11 @@ def clear_metric_caches():
     test reload gpt2.
     """
     metrics._english_baseline_cache.clear()
+    _vocabulary_cache.clear()
     _metrics_cache.clear()
+    _default_cache.clear()
     yield
     metrics._english_baseline_cache.clear()
+    _vocabulary_cache.clear()
     _metrics_cache.clear()
+    _default_cache.clear()

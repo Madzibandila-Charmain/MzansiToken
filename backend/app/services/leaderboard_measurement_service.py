@@ -7,7 +7,11 @@ metric values supplied by the frontend.
 Author: Madzibandila Charmain
 """
 
-from app.services.flores_state import get_or_compute_metrics
+from db import VOCABULARY_COLUMNS as VOCABULARY_METRICS
+from app.services.flores_state import (
+    get_or_compute_metrics,
+    get_or_compute_vocabulary,
+)
 from app.services.nchlt_state import available_languages, get_or_compute_mbi
 from app.services.tokenizer_state import get_or_load_tokenizer
 
@@ -29,6 +33,36 @@ def _mean(values):
         return None
 
     return sum(valid_values) / len(valid_values)
+
+
+
+def _vocabulary_means(metrics: dict, vocabulary: dict) -> dict:
+    """The three vocabulary metrics, averaged over the South African
+    languages - English left out, the same as every other column."""
+    per_language = [
+        {**entry, **vocabulary.get(language, {})}
+        for language, entry in metrics.items()
+        if language != BASELINE_LANGUAGE
+    ]
+
+    return {
+        name: _mean(entry.get(name) for entry in per_language)
+        for name in VOCABULARY_METRICS
+    }
+
+
+def compute_vocabulary_metrics(model_name: str) -> dict:
+    """
+    Only the three vocabulary metrics, for a board entry saved before they
+    existed. Efficiency alone - no morphology run - and it comes from the
+    same cache as the per-language charts, so it is usually instant.
+    """
+    tokenizer = get_or_load_tokenizer(model_name)
+
+    return _vocabulary_means(
+        get_or_compute_metrics(model_name, tokenizer),
+        get_or_compute_vocabulary(model_name, tokenizer),
+    )
 
 
 def compute_leaderboard_metrics(model_name: str) -> dict:
@@ -150,6 +184,10 @@ def compute_leaderboard_metrics(model_name: str) -> dict:
         "f1": f1,
         "precision": precision,
         "recall": recall,
+        **_vocabulary_means(
+            metrics,
+            get_or_compute_vocabulary(model_name, tokenizer),
+        ),
         "languages_measured": len(languages),
         "morphology_measured": len(morphology_results),
         "failed_languages": failed_languages,

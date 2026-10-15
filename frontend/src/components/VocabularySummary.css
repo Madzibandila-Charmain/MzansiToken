@@ -1,0 +1,35 @@
+/*
+    VocabularySummary.css
+    Author: Mukovhe Ranwashe (RNWMUK001)
+
+    The block itself borrows .charts-box, .charts-head and .chart-note, so
+    it looks exactly like the "All eight languages at once" box and its
+    note. Only the small differences live here.
+*/
+
+/* A sentence, not two charts: less space above and below it. */
+.vocab-summary.charts-box {
+    padding-top: 22px;
+    padding-bottom: 24px;
+
+    margin-bottom: 40px;
+}
+
+.vocab-summary .chart-note {
+    max-width: none;
+}
+
+.vocab-summary-waiting {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.vocab-summary-waiting .spinner {
+    width: 16px;
+    height: 16px;
+
+    border-width: 2px;
+
+    flex: none;
+}

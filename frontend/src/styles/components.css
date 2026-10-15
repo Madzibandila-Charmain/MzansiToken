@@ -1514,6 +1514,10 @@
 
     display: inline-flex;
 
+    /* Seven tabs since the research-paper measures joined: they wrap to a
+       second row whole, instead of each squeezing onto two lines. */
+    flex-wrap: wrap;
+
     gap: 4px;
 
     margin-bottom: 6px;
@@ -1526,6 +1530,8 @@
 
 }
 .chart-switch button {
+
+    white-space: nowrap;
 
     padding: 6px 12px;
 
@@ -1716,6 +1722,15 @@
     min-height: 110px;
 
     max-height: 230px;
+
+}
+/* Type Anything while a tokenizer loads: visibly not ready. */
+
+.text-input-area:disabled {
+
+    opacity: 0.6;
+
+    cursor: not-allowed;
 
 }
 /* Metrics belong to the card above them, not to the page. */

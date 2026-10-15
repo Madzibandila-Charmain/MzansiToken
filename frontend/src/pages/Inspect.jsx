@@ -39,6 +39,7 @@ import StatusLine from "../components/StatusLine";
 import { statusState } from "../lib/statusState";
 
 import { formatTokenizedText } from "../lib/tokenText";
+import { extraMetricFields } from "../lib/vocabularyMetrics";
 
 /* Two side by side is what fits without scrolling. */
 const MAX_INSPECT_LANGUAGES = 2;
@@ -146,6 +147,11 @@ function Inspect() {
         fetched, so the names are tracked instead of a yes/no.
     */
     const [busyLanguages, setBusyLanguages] = useState([]);
+
+    /* Anything on this page still loading - a tokenizer, a language or the
+       very first load. Locks Type Anything and keeps the chart under its
+       spinner, so the boxes and the chart appear together. */
+    const pageBusy = selectionLoading || busyLanguages.length > 0;
     const [busyUpload, setBusyUpload] = useState(false);
     const [corpusLoadingLabel, setCorpusLoadingLabel] = useState("");
 
@@ -289,6 +295,11 @@ function Inspect() {
                         defaultTokenizer
                     );
 
+                    /* The first language's box stands in place with
+                       a spinner until its morphology is in too, like
+                       every later language change. */
+                    setBusyLanguages([defaultLanguage]);
+
                     const defaultResult =
                         await getDefaultCorpus(
                             defaultLanguage,
@@ -311,7 +322,9 @@ function Inspect() {
                             defaultResult.metrics.compression ?? 0,
 
                         token_premium:
-                            defaultResult.metrics.token_premium ?? null
+                            defaultResult.metrics.token_premium ?? null,
+
+                        ...extraMetricFields(defaultResult.metrics)
                     };
 
                     setCorpusTokenizedText(
@@ -481,6 +494,11 @@ function Inspect() {
                     friendlyError(err) ||
                     "Could not load the backend options."
                 );
+
+            }
+            finally {
+
+                setBusyLanguages([]);
 
             }
 
@@ -745,7 +763,9 @@ function Inspect() {
                     result.metrics.compression ?? 0,
 
                 token_premium:
-                    result.metrics.token_premium ?? null
+                    result.metrics.token_premium ?? null,
+
+                ...extraMetricFields(result.metrics)
             };
 
             const newMbi =
@@ -1131,7 +1151,9 @@ function Inspect() {
                 /* Carried through so the metric row can say WHY the
                    premium is N/A instead of just showing N/A. */
                 token_premium_basis:
-                    result.metrics?.token_premium_basis ?? null
+                    result.metrics?.token_premium_basis ?? null,
+
+                ...extraMetricFields(result.metrics)
             });
 
             /*
@@ -1307,7 +1329,12 @@ function Inspect() {
                         result.metrics?.compression ?? 0,
 
                     token_premium:
-                        result.metrics?.token_premium ?? null
+                        result.metrics?.token_premium ?? null,
+
+                    /* Carries the basis too, which this one used to
+                       drop - the premium card then came back as 0.00 for
+                       a file that has no premium at all. */
+                    ...extraMetricFields(result.metrics)
                 });
 
                 /*
@@ -1454,7 +1481,9 @@ function Inspect() {
 
                             token_premium:
                                 result.metrics
-                                    ?.token_premium ?? null
+                                    ?.token_premium ?? null,
+
+                            ...extraMetricFields(result.metrics)
 
                         },
 
@@ -1680,7 +1709,9 @@ function Inspect() {
                     result.metrics.compression ?? 0,
 
                 token_premium:
-                    result.metrics.token_premium ?? null
+                    result.metrics.token_premium ?? null,
+
+                ...extraMetricFields(result.metrics)
             };
 
             /* Restore MBI for the default language. */
@@ -2411,11 +2442,15 @@ function Inspect() {
                     alongside `error` - not repeated here. */}
 
             </section>
-            <MetricsChart tokenizer={tokenizer} />
+            <MetricsChart
+                tokenizer={tokenizer}
+                waiting={pageBusy}
+            />
 
             {/* Text input box */}
             <TypeAnything
                 maxChars={limits?.max_text_chars ?? null}
+                busy={pageBusy}
                 inputText={inputText}
                 onInputChange={setInputText}
                 results={[

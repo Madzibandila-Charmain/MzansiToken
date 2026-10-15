@@ -8,6 +8,8 @@ import { useEffect, useState } from "react";
 
 import { AppStateContext } from "./appStateContext.js";
 
+import { DEFAULT_HIDDEN_COLUMNS } from "../lib/leaderboardColumns";
+
 /*
     Compare used to lose everything on a browser refresh while Inspect
     survived it, because Inspect wrote its picks to localStorage and Compare
@@ -44,7 +46,10 @@ const STORAGE_KEYS = {
     rankMatrix: "rankMatrix",
     rankSortKey: "rankSortKey",
     rankBestFirst: "rankBestFirst",
+    /* Read once, only to carry an older "All metrics" choice over to
+       the Columns panel that replaced it. No longer written. */
     rankShowAllMetrics: "rankShowAllMetrics",
+    rankHiddenColumns: "rankHiddenColumns",
 };
 
 /*
@@ -294,9 +299,22 @@ const [rankBestFirst, setRankBestFirst] = useState(
    board was wiped. A refresh now always opens on the full board. */
 const [rankFilter, setRankFilter] = useState("");
 
-const [rankShowAllMetrics, setRankShowAllMetrics] = useState(
-    () => readStored(STORAGE_KEYS.rankShowAllMetrics, false, isBoolean)
-);
+/* Which leaderboard columns the user switched off in Rank's Columns
+   panel. The HIDDEN ones are stored, not the shown ones, so a column added
+   in a later version appears for everyone instead of starting hidden. A
+   browser that had "All metrics" open keeps seeing everything. */
+const [rankHiddenColumns, setRankHiddenColumns] = useState(() => {
+
+    const hadEverythingOpen = readStored(
+        STORAGE_KEYS.rankShowAllMetrics, false, isBoolean
+    );
+
+    return readStored(
+        STORAGE_KEYS.rankHiddenColumns,
+        hadEverythingOpen ? [] : DEFAULT_HIDDEN_COLUMNS,
+        isTextList
+    );
+});
 
 useEffect(() => {
     writeStored(STORAGE_KEYS.rankInitialised, rankInitialised);
@@ -327,8 +345,8 @@ useEffect(() => {
 }, [rankBestFirst]);
 
 useEffect(() => {
-    writeStored(STORAGE_KEYS.rankShowAllMetrics, rankShowAllMetrics);
-}, [rankShowAllMetrics]);
+    writeStored(STORAGE_KEYS.rankHiddenColumns, rankHiddenColumns);
+}, [rankHiddenColumns]);
 
 
 return (
@@ -467,8 +485,8 @@ return (
             rankFilter,
             setRankFilter,
 
-            rankShowAllMetrics,
-            setRankShowAllMetrics
+            rankHiddenColumns,
+            setRankHiddenColumns
 
         }}
     >

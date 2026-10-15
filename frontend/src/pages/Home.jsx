@@ -18,6 +18,29 @@ import { FLAG } from "../components/flagColours";
 
 import BrandMark from "../components/BrandMark";
 
+import {
+    COMPARE_MEASURES,
+    RATIO_MEASURES,
+    RESEARCH_MEASURES
+} from "../lib/measures";
+
+/* "a", "a and b", "a, b and c". */
+function listOf(items) {
+
+    if (items.length < 2) {
+        return items.join("");
+    }
+
+    return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
+
+/* Read once from the measure list, never typed in a second time. */
+const RESEARCH_NAMES = listOf(RESEARCH_MEASURES.map((measure) => measure.name));
+
+const RESEARCH_SOURCES = listOf(
+    [...new Set(RESEARCH_MEASURES.map((measure) => measure.source))]
+);
+
 /*
     A real sentence, split the way a byte-level tokenizer splits it. It sits
     behind the headline so the page demonstrates the idea before it explains
@@ -305,6 +328,14 @@ function Home() {
                         rather than inferred.
                     </Feature>
 
+                    <Feature icon={IconLayers} title="From the research papers">
+                        {RESEARCH_NAMES.charAt(0).toUpperCase()
+                            + RESEARCH_NAMES.slice(1)}, from{" "}
+                        {RESEARCH_SOURCES} &mdash; measured on the same FLORES
+                        sentences and shown beside the score, never folded
+                        into it.
+                    </Feature>
+
                 </div>
 
             </section>
@@ -335,7 +366,8 @@ function Home() {
                         <p>
                             Pick a tokenizer and up to two languages, and watch
                             the corpus split in front of you. Charts underneath
-                            put all eight languages side by side.
+                            put all eight languages side by side, on{" "}
+                            {RATIO_MEASURES.length} measures.
                         </p>
 
                         <span className="home-card-go">
@@ -354,8 +386,9 @@ function Home() {
 
                         <p>
                             Put two tokenizers head to head on the same text.
-                            One chart, four measures, and a plain-language
-                            verdict on which one is ahead and by how much.
+                            One chart, {COMPARE_MEASURES.length} measures, and a
+                            plain-language verdict on which one is ahead and by
+                            how much.
                         </p>
 
                         <span className="home-card-go">
@@ -375,7 +408,7 @@ function Home() {
                         <p>
                             Build a leaderboard of the tokenizers you have
                             tested, scored across every language, and keep it
-                            as you go.
+                            as you go. Choose which columns the board shows.
                         </p>
 
                         <span className="home-card-go">

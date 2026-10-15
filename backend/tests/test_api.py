@@ -383,6 +383,347 @@ def test_default_corpus_still_has_a_premium():
     assert metrics["token_premium"] is not None
     assert metrics["token_premium_basis"] != "standalone"
 
+# ── Vocabulary metrics and byte premium ───────────────────────────────────────
+
+def test_default_corpus_has_renyi_and_a_byte_premium():
+    metrics = client.post(
+        "/inspect/default",
+        json={"language": "isiZulu", "tokenizer": "gpt2"},
+    ).json()["metrics"]
+
+    assert 0 < metrics["renyi_efficiency"] <= 1
+
+    # Same bytes whatever the tokenizer: it is the language, not the model.
+    expected = round(
+        sum(len(s.encode("utf-8")) for s in corpus["isiZulu"])
+        / sum(len(s.encode("utf-8")) for s in corpus["English"]),
+        3,
+    )
+    assert metrics["byte_premium"] == expected
+
+
+def test_english_byte_premium_is_one():
+    metrics = client.post(
+        "/inspect/default",
+        json={"language": "English", "tokenizer": "gpt2"},
+    ).json()["metrics"]
+
+    assert metrics["byte_premium"] == 1.0
+
+
+def test_uploaded_corpus_has_renyi_but_no_byte_premium():
+    metrics = upload("Sawubona umhlaba\nUnjani namuhla\n" * 20).json()["metrics"]
+
+    assert metrics["byte_premium"] is None
+    assert metrics["renyi_efficiency"] is not None
+    assert metrics["productivity"] >= 1
+    assert metrics["idiosyncrasy"] >= 1
+
+
+def test_typed_text_has_no_byte_premium():
+    metrics = client.post(
+        "/tokenize-text",
+        json={"text": "Sawubona umhlaba, unjani?", "tokenizer": "gpt2"},
+    ).json()["metrics"]
+
+    assert metrics["byte_premium"] is None
+
+
+def test_per_language_metrics_carry_renyi_and_byte_premium():
+    per_language = client.get("/metrics/gpt2").json()
+
+    for language, entry in per_language.items():
+        assert {"renyi_efficiency", "byte_premium"} <= set(entry), language
+        assert "productivity" not in entry, language
+
+    assert per_language["English"]["byte_premium"] == 1.0
+
+
+def test_vocabulary_has_productivity_and_idiosyncrasy_for_every_language():
+    summary = client.get("/vocabulary/gpt2")
+
+    assert summary.status_code == 200
+    summary = summary.json()
+
+    assert set(summary) == set(corpus)
+
+    for language, entry in summary.items():
+        assert set(entry) == {"productivity", "idiosyncrasy"}, language
+        assert entry["productivity"] >= 1, language
+        assert entry["idiosyncrasy"] >= 1, language
+
+
+def test_vocabulary_for_just_the_languages_asked_for():
+    response = client.get("/vocabulary/gpt2", params={"languages": "isiZulu, Sesotho"})
+
+    assert response.status_code == 200
+    assert set(response.json()) == {"isiZulu", "Sesotho"}
+
+    # The same numbers as asking for everything.
+    everything = client.get("/vocabulary/gpt2").json()
+    assert response.json()["isiZulu"] == everything["isiZulu"]
+
+
+def test_vocabulary_does_not_wait_for_the_whole_corpus_metrics():
+    # Asking for one language must not tokenize all eight.
+    from unittest.mock import patch
+
+    with patch("app.routers.metrics_router.get_or_compute_metrics") as whole:
+        client.get("/vocabulary/gpt2", params={"languages": "isiZulu"})
+
+    whole.assert_not_called()
+
+
+def test_the_default_corpus_brings_its_vocabulary_with_everything_else():
+    # One answer for every card, so they fill in together - and the same
+    # numbers the charts get from /vocabulary.
+    response = client.post("/inspect/default", json={"language": "isiZulu", "tokenizer": "gpt2"})
+
+    assert response.status_code == 200
+    metrics = response.json()["metrics"]
+
+    for name in ("token_count", "fertility", "token_premium", "renyi_efficiency",
+                 "byte_premium", "productivity", "idiosyncrasy"):
+        assert name in metrics, name
+
+    alone = client.get("/vocabulary/gpt2", params={"languages": "isiZulu"}).json()["isiZulu"]
+    assert metrics["productivity"] == alone["productivity"]
+    assert metrics["idiosyncrasy"] == alone["idiosyncrasy"]
+
+
+def test_the_default_corpus_gets_the_charts_ready_too():
+    # The page's one wait covers the charts: after the boxes' request, the
+    # charts' own requests are answered from memory, nothing worked out twice.
+    from unittest.mock import patch
+    from app.services import flores_state
+
+    real_metrics = flores_state.compute_efficiency_metrics
+    real_vocabulary = flores_state.compute_vocabulary_by_language
+
+    with patch.object(flores_state, "compute_efficiency_metrics", side_effect=real_metrics) as whole, \
+         patch.object(flores_state, "compute_vocabulary_by_language", side_effect=real_vocabulary) as vocabulary:
+
+        client.post("/inspect/default", json={"language": "Sepedi", "tokenizer": "gpt2"})
+
+        assert whole.call_count == 1
+        assert vocabulary.call_count == len(corpus)
+
+        assert client.get("/metrics/gpt2").status_code == 200
+        assert set(client.get("/vocabulary/gpt2").json()) == set(corpus)
+        client.post("/inspect/default", json={"language": "isiZulu", "tokenizer": "gpt2"})
+
+    assert whole.call_count == 1
+    assert vocabulary.call_count == len(corpus)
+
+
+def test_vocabulary_for_an_unknown_language_is_a_readable_400():
+    response = client.get("/vocabulary/gpt2", params={"languages": "Klingon"})
+
+    assert response.status_code == 400
+    assert "Klingon" in response.json()["detail"]
+
+
+def test_vocabulary_differs_between_tokenizers():
+    one = client.get("/vocabulary/gpt2", params={"languages": "Setswana"}).json()
+    two = client.get("/vocabulary/xlm-roberta-base", params={"languages": "Setswana"}).json()
+
+    assert one["Setswana"]["productivity"] != two["Setswana"]["productivity"]
+
+
+def test_vocabulary_for_a_vendor_prefixed_name():
+    response = client.get("/vocabulary/openai-community/gpt2-large", params={"languages": "isiZulu"})
+
+    assert response.status_code == 200
+    assert "isiZulu" in response.json()
+
+
+def test_vocabulary_for_a_missing_model_is_a_readable_400():
+    response = client.get("/vocabulary/someone/missing-model")
+
+    assert response.status_code == 400
+    assert "detail" in response.json()
+
+
+# ── Restoring an entry saved before the vocabulary metrics existed ────────────
+
+@pytest.fixture
+def temp_leaderboard(tmp_path, monkeypatch):
+    import db as db_module
+    from app.services import leaderboard_service
+
+    monkeypatch.setattr(db_module, "DB_PATH", tmp_path / "leaderboard.db")
+    monkeypatch.setattr(db_module, "BACKUP_DIR", tmp_path / "backups")
+    monkeypatch.setattr(leaderboard_service, "perform_backup", lambda: None)
+    db_module.init_db()
+
+    # Saved the old way: every scored metric, none of the new three, and
+    # taken off the board so it can be restored.
+    tokenizer_id = leaderboard_service.add_tokenizer("gpt2", {
+        "token_count": 1000, "fertility": 2.5, "compression": 3.0,
+        "token_premium": 1.8, "f1": 0.4, "precision": 0.5, "recall": 0.3,
+        "overall_score": 55.5,
+    })
+    leaderboard_service.remove_tokenizer(tokenizer_id)
+
+    return leaderboard_service
+
+
+def test_restore_fills_in_the_vocabulary_metrics(temp_leaderboard):
+    response = client.post("/leaderboard/gpt2/restore")
+
+    assert response.status_code == 200
+    metrics = response.json()["metrics"]
+
+    assert metrics["renyi_efficiency"] is not None
+    assert metrics["productivity"] is not None
+    assert metrics["idiosyncrasy"] is not None
+
+    # Not part of the score, so the saved score and the rest are untouched.
+    assert metrics["overall_score"] == 55.5
+    assert metrics["fertility"] == 2.5
+
+    # And they were saved, so the board shows them from now on.
+    row = temp_leaderboard.get_leaderboard()[0]
+    assert row["productivity"] == metrics["productivity"]
+
+
+def test_restore_still_works_when_the_vocabulary_metrics_cannot_be_measured(temp_leaderboard):
+    # Hugging Face unreachable, say: the restore must succeed exactly as it
+    # did before, with the three left empty.
+    from unittest.mock import patch
+
+    with patch(
+        "app.routers.rank_router.compute_vocabulary_metrics",
+        side_effect=ValueError("Could not reach Hugging Face"),
+    ):
+        response = client.post("/leaderboard/gpt2/restore")
+
+    assert response.status_code == 200
+    metrics = response.json()["metrics"]
+    assert metrics["overall_score"] == 55.5
+    assert metrics["renyi_efficiency"] is None
+    assert temp_leaderboard.get_leaderboard()[0]["name"] == "gpt2"
+
+
+def test_restore_does_not_remeasure_an_entry_that_already_has_them(temp_leaderboard):
+    from unittest.mock import patch
+
+    client.post("/leaderboard/gpt2/restore")
+    temp_leaderboard.remove_tokenizer(temp_leaderboard.get_tokenizer_by_name("gpt2")["id"])
+
+    with patch("app.routers.rank_router.compute_vocabulary_metrics") as measure:
+        response = client.post("/leaderboard/gpt2/restore")
+
+    assert response.status_code == 200
+    measure.assert_not_called()
+
+
+def test_filling_the_vocabulary_metrics_never_puts_a_removed_entry_back(temp_leaderboard):
+    # The fixture's gpt2 is saved and removed. Filling must not restore it.
+    response = client.post("/leaderboard/gpt2/vocabulary")
+
+    assert response.status_code == 200
+    assert response.json()["productivity"] is not None
+
+    assert temp_leaderboard.get_leaderboard() == []
+    saved = temp_leaderboard.get_saved_tokenizer("gpt2")
+    assert saved["active"] == 0
+    assert saved["productivity"] == response.json()["productivity"]
+    assert saved["overall_score"] == 55.5
+
+
+def test_filling_the_vocabulary_metrics_of_an_entry_on_the_board(temp_leaderboard):
+    tokenizer_id = temp_leaderboard.get_tokenizer_by_name("gpt2")["id"]
+    client.post("/leaderboard/gpt2/restore")
+
+    from unittest.mock import patch
+
+    # Already filled by the restore, so nothing is measured again.
+    with patch("app.routers.rank_router.compute_vocabulary_metrics") as measure:
+        response = client.post("/leaderboard/gpt2/vocabulary")
+
+    assert response.status_code == 200
+    measure.assert_not_called()
+    assert temp_leaderboard.get_leaderboard()[0]["id"] == tokenizer_id
+
+
+def test_filling_works_for_a_vendor_prefixed_name(temp_leaderboard):
+    temp_leaderboard.add_tokenizer("openai-community/gpt2-large", {"overall_score": 50.0})
+
+    response = client.post("/leaderboard/openai-community%2Fgpt2-large/vocabulary")
+
+    assert response.status_code == 200
+    assert response.json()["name"] == "openai-community/gpt2-large"
+    assert response.json()["renyi_efficiency"] is not None
+
+
+def test_filling_an_unknown_entry_is_a_404(temp_leaderboard):
+    response = client.post("/leaderboard/never-measured/vocabulary")
+
+    assert response.status_code == 404
+
+
+def test_filling_survives_a_tokenizer_that_will_not_load(temp_leaderboard):
+    from unittest.mock import patch
+
+    with patch(
+        "app.routers.rank_router.compute_vocabulary_metrics",
+        side_effect=ValueError("Could not reach Hugging Face"),
+    ):
+        response = client.post("/leaderboard/gpt2/vocabulary")
+
+    assert response.status_code == 200
+    assert response.json()["productivity"] is None
+
+
+def test_the_same_language_is_tokenized_once():
+    # Picking it again - another page, another visit - is answered from
+    # memory instead of tokenizing all 997 sentences again.
+    from unittest.mock import patch
+    from app.routers import inspect_router
+
+    real = inspect_router.tokenize_corpus
+
+    with patch.object(inspect_router, "tokenize_corpus", side_effect=real) as tokenize:
+        first = client.post("/inspect/default", json={"language": "Sesotho", "tokenizer": "gpt2"})
+        second = client.post("/inspect/default", json={"language": "Sesotho", "tokenizer": "gpt2"})
+        other = client.post("/inspect/default", json={"language": "Sepedi", "tokenizer": "gpt2"})
+
+    assert first.json() == second.json()
+    assert other.json()["language"] == "Sepedi"
+    assert tokenize.call_count == 2
+
+
+def test_a_tokenizer_that_will_not_load_is_not_remembered():
+    from unittest.mock import patch
+    from app.routers import inspect_router
+
+    real = inspect_router.get_or_load_tokenizer
+
+    with patch.object(
+        inspect_router,
+        "get_or_load_tokenizer",
+        side_effect=ValueError("Could not reach Hugging Face"),
+    ):
+        failed = client.post("/inspect/default", json={"language": "Sesotho", "tokenizer": "gpt2"})
+
+    assert failed.status_code == 400
+
+    # Back online: the next request really loads it.
+    with patch.object(inspect_router, "get_or_load_tokenizer", side_effect=real):
+        worked = client.post("/inspect/default", json={"language": "Sesotho", "tokenizer": "gpt2"})
+
+    assert worked.status_code == 200
+
+
+def test_the_vocabulary_metrics_do_not_change_the_score():
+    from app.services.scoring import score_breakdown
+
+    base = {"fertility": 2.5, "compression": 3.0, "token_premium": 1.8, "f1": 0.4}
+    extended = {**base, "renyi_efficiency": 0.9, "productivity": 40.0, "idiosyncrasy": 3.0}
+
+    assert score_breakdown(base)["overall_score"] == score_breakdown(extended)["overall_score"]
+
 # ── PDFs do not get in, by any route ──────────────────────────────────────────
 #
 # PDF support is deliberately absent, not merely unimplemented: a PDF holds

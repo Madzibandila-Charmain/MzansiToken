@@ -261,4 +261,92 @@ describe("LeaderboardTable", () => {
             expect(button).toBeDisabled();
         }
     }); 
+
+    it("shows exactly the columns it is told to, but never hides Tokenizer or Score", () => {
+
+        render(
+            <LeaderboardTable
+                rows={makeRows()}
+                hiddenColumns={["fertility", "overall_score", "name", "productivity"]}
+            />
+        );
+
+        expect(
+            screen.queryByRole("columnheader", { name: /fertility/i })
+        ).not.toBeInTheDocument();
+
+        expect(
+            screen.queryByRole("columnheader", { name: /productivity/i })
+        ).not.toBeInTheDocument();
+
+        /* Asked to hide them, but a board needs a name and a score. */
+        expect(screen.getByRole("columnheader", { name: /tokenizer/i })).toBeInTheDocument();
+        expect(screen.getByRole("columnheader", { name: /score/i })).toBeInTheDocument();
+
+        /* Everything not listed is shown - Tokens and Precision too. */
+        expect(screen.getByRole("columnheader", { name: /tokens/i })).toBeInTheDocument();
+        expect(screen.getByRole("columnheader", { name: /precision/i })).toBeInTheDocument();
+        expect(screen.getByRole("columnheader", { name: /rényi/i })).toBeInTheDocument();
+    });
+
+    it("formats the vocabulary columns and explains an entry saved before they existed", () => {
+
+        const rows = makeRows();
+        rows[1] = {
+            ...rows[1],
+            renyi_efficiency: 0.6123,
+            productivity: 4.26,
+            idiosyncrasy: 12.26,
+        };
+
+        render(<LeaderboardTable rows={rows} hiddenColumns={[]} />);
+
+        expect(screen.getByText("0.61")).toBeInTheDocument();
+        expect(screen.getByText("4.3")).toBeInTheDocument();
+        expect(screen.getByText("12.3")).toBeInTheDocument();
+
+        /* byt5 was saved before these columns: dashes that say why. */
+        const byt5 = dataRows().find((row) => row.textContent.includes("byt5"));
+        const gaps = within(byt5)
+            .getAllByText("—")
+            .filter((cell) => /saved before this column existed/i.test(cell.title));
+
+        expect(gaps).toHaveLength(3);
+
+        /* An ordinary missing measurement (byt5's fertility) gets no such
+           note - it was measured and came back empty. */
+        expect(
+            within(byt5).getAllByText("—").some((cell) => !cell.title)
+        ).toBe(true);
+    });
+
+    it("stops sorting by a column once it is hidden", async () => {
+
+        const user = userEvent.setup();
+
+        const rows = makeRows().map((row, index) => ({
+            ...row,
+            productivity: index === 0 ? 2 : 9,
+        }));
+
+        const { rerender } = render(
+            <LeaderboardTable rows={rows} hiddenColumns={[]} />
+        );
+
+        /* Biggest first: gpt-4o (9) above byt5 (2). */
+        await user.click(screen.getByRole("columnheader", { name: /productivity/i }));
+        expect(dataRows()[0]).toHaveTextContent("gpt-4o");
+
+        /* The rows were handed in byt5-first, so once the sorted column
+           is gone that given order is back. */
+        rerender(<LeaderboardTable rows={rows} hiddenColumns={["productivity"]} />);
+
+        expect(dataRows()[0]).toHaveTextContent("byt5");
+        expect(
+            screen.getAllByRole("columnheader").some((header) =>
+                ["ascending", "descending"].includes(header.getAttribute("aria-sort"))
+            )
+        ).toBe(false);
+    });
+
 });

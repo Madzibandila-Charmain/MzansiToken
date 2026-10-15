@@ -39,8 +39,10 @@ const COLOUR_B = "#2f6fd0";
 */
 import { COMPARE_MEASURES as MEASURES } from "../lib/measures";
 
+import { useVocabulary } from "../lib/useVocabulary";
 
-function CompareCharts({ tokenizerA, tokenizerB }) {
+
+function CompareCharts({ tokenizerA, tokenizerB, waiting = false }) {
 
     /*
         The fetched data lives in context, so leaving Compare and coming
@@ -62,6 +64,14 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
     } = useAppState();
 
     const [hot, setHot] = useState(null);
+
+    /* Productivity and idiosyncrasy for every language, behind two of
+       the tabs - asked for straight away, so every tab is ready together. */
+    const {
+        vocabulary: vocabularyByName,
+        loading: vocabularyLoading,
+        failed: vocabularyFailed
+    } = useVocabulary([tokenizerA, tokenizerB]);
 
     const requestRef = useRef(0);
 
@@ -169,7 +179,27 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
         return null;
     }
 
-    const current = MEASURES.find((m) => m.key === measure);
+    /* If the vocabulary request failed, its two tabs are left out rather
+       than drawn as zeros. */
+    const shownMeasures = MEASURES.filter(
+        (m) => !m.fromVocabulary || vocabularyFailed.length === 0
+    );
+
+    /* A remembered tab that is no longer offered falls back to the first. */
+    const current =
+        shownMeasures.find((m) => m.key === measure) || shownMeasures[0];
+
+    /* No "better" direction for the vocabulary measures: say higher or
+       lower, and colour neither green nor red. */
+    const neutral = current.neutral === true;
+
+    const tone = (positive) => (neutral ? "" : positive ? "up" : "down");
+
+    /* Still on its way: the page's own boxes (`waiting`), or the numbers
+       behind the Productivity and Idiosyncrasy tabs. The chart stays under
+       its spinner until all of it is in, so it appears with the boxes and
+       every tab is ready the moment it does. */
+    const measuring = waiting || vocabularyLoading.length > 0;
 
     /* Only languages both tokenizers reported, so no row is half empty. */
     const names = Object.keys(pair.a).filter(
@@ -178,10 +208,14 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
 
     const valueOf = (side, name) => {
 
-        const value = pair[side][name]?.[measure];
+        const source = current.fromVocabulary
+            ? vocabularyByName[side === "a" ? tokenizerA : tokenizerB]
+            : pair[side];
+
+        const value = source?.[name]?.[current.key];
 
         if (value === null || value === undefined) {
-            return measure === "token_premium" ? 1 : 0;
+            return current.key === "token_premium" ? 1 : 0;
         }
 
         return value;
@@ -202,7 +236,8 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
             a: a,
             b: b,
             change: raw,
-            gain: current.lowerIsBetter ? -raw : raw
+            /* Neutral measures: positive simply means B is higher. */
+            gain: current.lowerIsBetter && !neutral ? -raw : raw
         };
     });
 
@@ -273,14 +308,17 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
     const TOP = 30;
     const ROW = 40;
 
-    const x = (value) => LEFT + (value / highest) * (RIGHT - LEFT);
+    /* highest is 0 while a vocabulary tab is still measuring - draw at the
+       left edge then, not at NaN. */
+    const x = (value) =>
+        LEFT + (highest > 0 ? value / highest : 0) * (RIGHT - LEFT);
 
     const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => f * highest);
 
     return (
         <section className="compare-charts">
 
-            <div className={"compare-body" + (loading ? " is-loading" : "")}>
+            <div className={"compare-body" + (loading || measuring ? " is-loading" : "")}>
 
                 <div className="compare-head">
                     <h2>All eight languages, both tokenizers</h2>
@@ -326,11 +364,11 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
                     </div>
 
                     <div className="compare-switch">
-                    {MEASURES.map((m) => (
+                    {shownMeasures.map((m) => (
                         <button
                             key={m.key}
                             type="button"
-                            aria-pressed={measure === m.key}
+                            aria-pressed={current.key === m.key}
                             onClick={() => setMeasure(m.key)}
                         >
                             {m.label}
@@ -518,9 +556,10 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
 
                     <h3>{current.title}</h3>
                     <p>
-                        Two bars per language, one for each tokenizer. The
-                        shorter bar wins for every measure except bytes per
-                        token, where longer is better.
+                        Two bars per language, one for each tokenizer.
+                        {neutral
+                            ? " For this measure neither length is better on its own."
+                            : " The shorter bar wins for every measure except bytes per token, where longer is better."}
                     </p>
 
                     <svg
@@ -640,14 +679,16 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
                 <div className="compare-verdict">
 
                     <div className="stat">
-                        <span className="k">Ahead overall</span>
+                        <span className="k">
+                            {neutral ? "Higher overall" : "Ahead overall"}
+                        </span>
                         <span className="v v-name">
                             {unchanged ? "Neither" : winner}
                         </span>
                         <span className="n">
                             {unchanged
                                 ? "the two sides give the same numbers"
-                                : `wins on ${winnerWins} of `
+                                : `${neutral ? "higher" : "wins"} on ${winnerWins} of `
                                     + `${southAfrican.length} SA languages`}
                         </span>
                     </div>
@@ -657,7 +698,7 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
                         <span
                             className={"v " + (unchanged
                                 ? ""
-                                : meanGain > 0 ? "up" : "down")}
+                                : tone(meanGain > 0))}
                         >
                             {unchanged
                                 ? "\u2014"
@@ -684,7 +725,7 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
                         <span
                             className={"v " + (unchanged || !widest
                                 ? ""
-                                : widest.gain > 0 ? "up" : "down")}
+                                : tone(widest.gain > 0))}
                         >
                             {unchanged || !widest
                                 ? "\u2014"
@@ -709,7 +750,7 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
                         <span
                             className={"v " + (unchanged || !closest
                                 ? ""
-                                : closest.gain > 0 ? "up" : "down")}
+                                : tone(closest.gain > 0))}
                         >
                             {unchanged || !closest
                                 ? "\u2014"
@@ -738,15 +779,22 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
                                 : " Check that both tokenizers actually loaded."}
                           </>
                         : <>
-                            On average <b>{winner}</b> comes out{" "}
+                            {/* The percentage is B measured against A, so B
+                                is what it describes. It used to name the
+                                winner instead, which read backwards whenever
+                                A was ahead ("A comes out 84% lower ... and
+                                is higher on 7 of 7"). */}
+                            On average <b>{tokenizerB}</b> comes out{" "}
                             {Math.abs(meanGain) < 1
                                 ? Math.abs(meanGain).toFixed(1)
                                 : Math.round(Math.abs(meanGain))}%{" "}
                             {meanGain > 0
                                 ? current.betterWord
                                 : current.worseWord}{" "}
-                            on {current.title.toLowerCase()}, and it is ahead
-                            on {winnerWins} of the {southAfrican.length} South
+                            than <b>{tokenizerA}</b> on{" "}
+                            {current.title.toLowerCase()}, and{" "}
+                            <b>{winner}</b> is {neutral ? "higher" : "ahead"}
+                            {" "}on {winnerWins} of the {southAfrican.length} South
                             African languages.
                             {" "}
                             {widest && (
@@ -785,6 +833,13 @@ function CompareCharts({ tokenizerA, tokenizerB }) {
                 <div className="charts-overlay">
                     <span className="spinner is-big"></span>
                     <span>Comparing {tokenizerA} and {tokenizerB}&hellip;</span>
+                </div>
+            )}
+
+            {!loading && measuring && (
+                <div className="charts-overlay">
+                    <span className="spinner is-big"></span>
+                    <span>Measuring all eight languages&hellip;</span>
                 </div>
             )}
 
